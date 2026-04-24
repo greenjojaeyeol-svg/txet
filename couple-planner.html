@@ -365,16 +365,14 @@ function render(cat){
   el.innerHTML=items.map(function(kv){return makeCard(kv[0],kv[1],cat)}).join('');
 }
 
-function makeCard(key, item, cat) {
-  var enc = encodeURIComponent(item.address || '');
-  var nameEnc = encodeURIComponent(item.name || '목적지'); // 목적지 이름 추가
+var nameEnc = encodeURIComponent(item.name || '목적지');
   var mapH = '';
 
   if (item.address) {
     var kakaoUrl = 'https://map.kakao.com/link/search/' + enc;
     var naverUrl = 'https://map.naver.com/v5/search/' + enc;
     
-    // 가장 확실하게 앱이 실행되는 navigate 스킴 (주소 + 이름 포함)
+    // 이 주소가 U+카카오내비 앱도 똑같이 호출합니다.
     var naviApp = 'kakaonavi://navigate?daddr=' + enc + '&dname=' + nameEnc;
 
     mapH = '<div class="mapbtns">'
@@ -383,7 +381,9 @@ function makeCard(key, item, cat) {
       + '<a class="mbtn na" href="' + naviApp + '">🚗 카카오내비</a>'
       + '</div>';
   }
-  // 이후 stepsH 관련 로직은 그대로 두시면 됩니다.  var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
+  
+  var stepsH = '';
+  var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
   var tagH=item.category?'<span class="card-tag">'+item.category+'</span>':'';
   var visitH=item.visited?'<span class="visited-badge">✅ 방문</span>':'';
   var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
