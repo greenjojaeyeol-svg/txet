@@ -142,6 +142,25 @@ h1,h2,h3{font-family:'Nanum Myeongjo',serif}
 .map-btn.navi{background:#1a73e8;color:#fff}
 .map-btn.navi:hover{background:#1558b0}
 
+/* 방문 배지 */
+.visited-btn{font-size:11px;padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;transition:.2s;margin-left:auto}
+.visited-btn.on{background:#e8f8ef;color:#1e7d45;border-color:#7ecfa0}
+.visited-badge{font-size:11px;padding:3px 10px;border-radius:20px;background:#e8f8ef;color:#1e7d45;font-weight:600;white-space:nowrap;flex-shrink:0}
+
+/* 아코디언 카드 */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;transition:.15s;overflow:hidden}
+.card:hover{border-color:var(--rose-l);box-shadow:var(--shadow)}
+.card-header-row{display:flex;align-items:center;gap:10px;padding:15px;cursor:pointer;user-select:none}
+.card-body{flex:1;min-width:0}
+.card-name{font-size:15px;font-weight:600;line-height:1.3}
+.card-tag{flex-shrink:0;font-size:11px;padding:3px 10px;border-radius:20px;background:var(--blush);color:var(--rose);font-weight:500;white-space:nowrap}
+.card-arrow{font-size:13px;color:var(--muted);transition:transform .25s;flex-shrink:0}
+.card.open .card-arrow{transform:rotate(180deg)}
+.card-detail{display:none;padding:0 15px 15px;border-top:1px solid var(--border);margin-top:0}
+.card.open .card-detail{display:block;animation:pgIn .2s ease}
+.card-sub{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.6}
+.card-footer{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center}
+
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(28,26,26,.45);z-index:200;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
 .modal-bg.open{display:flex}
 .modal{background:#fff;width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:26px 20px 36px;max-height:92vh;overflow-y:auto;animation:mUp .26s cubic-bezier(.4,0,.2,1)}
@@ -358,28 +377,53 @@ function mapBtns(address){
   const enc=encodeURIComponent(address);
   const kakao=`https://map.kakao.com/link/search/${enc}`;
   const naver=`https://map.naver.com/v5/search/${enc}`;
-  const navi=`https://map.kakao.com/link/to/${enc}`;
+  // 카카오내비 앱 딥링크
+  const navi=`kakaomap://route?ep=${enc}&by=CAR`;
+  const naviWeb=`https://kakaonavi.kakao.com/launch/index.do?ep=${enc}&by=CAR`;
   return `<div class="map-btns">
     <a class="map-btn kakao" href="${kakao}" target="_blank">🗺 카카오맵</a>
     <a class="map-btn naver" href="${naver}" target="_blank">🗺 네이버지도</a>
-    <a class="map-btn navi" href="${navi}" target="_blank">🚗 카카오내비</a>
+    <a class="map-btn navi" href="${navi}" onclick="if(!navigator.userAgent.match(/KAKAO/i)){window.open('${naviWeb}','_blank');return false;}">🚗 카카오내비</a>
   </div>`;
+}
+
+function toggleCard(key){
+  const el=$('card-'+key);
+  if(el) el.classList.toggle('open');
+}
+
+async function toggleVisited(key,type,cur,e){
+  e.stopPropagation();
+  await fb().update(rr(type+'/'+key),{visited:!cur});
 }
 
 function makeCard(key,item,type){
   const stepsHtml=(type==='course'&&item.steps?.length)?
-    `<div class="steps-wrap">${item.steps.map((s,i)=>`<div class="step-row"><div class="step-dot">${i+1}</div><div class="step-txt">${s}</div></div>`).join('')}</div>`:'';
+    `<div class="steps-wrap" style="margin-top:10px">${item.steps.map((s,i)=>`<div class="step-row"><div class="step-dot">${i+1}</div><div class="step-txt">${s}</div></div>`).join('')}</div>`:'';
   const dateStr=item.date?`<div style="font-size:12px;color:var(--rose);margin-bottom:4px;font-weight:500">${item.date}</div>`:'';
-  return `<div class="card"><div class="card-top"><div class="card-body">
-    ${dateStr}<div class="card-name">${item.name||''}</div>
-    ${item.address?`<div class="card-sub">📍 ${item.address}</div>`:''}
-    ${item.address?mapBtns(item.address):''}
-    ${item.memo?`<div class="card-sub" style="margin-top:6px">${item.memo}</div>`:''}
-  </div>${item.category?`<span class="card-tag">${item.category}</span>`:''}</div>${stepsHtml}
-  <div class="card-footer">
-    <button class="c-btn" onclick='editItem("${key}","${type}")'>수정</button>
-    <button class="c-btn del" onclick='delItem("${key}","${type}")'>삭제</button>
-  </div></div>`;
+  const visitedHtml=`<button class="visited-btn${item.visited?' on':''}" onclick='toggleVisited("${key}","${type}",${!!item.visited},event)'>${item.visited?'✅ 방문완료':'☑ 방문전'}</button>`;
+  return `<div class="card" id="card-${key}">
+    <div class="card-header-row" onclick='toggleCard("${key}")'>
+      <div class="card-body">
+        ${dateStr}
+        <div class="card-name">${item.name||''}</div>
+      </div>
+      ${item.category?`<span class="card-tag">${item.category}</span>`:''}
+      ${item.visited?`<span class="visited-badge">✅ 방문</span>`:''}
+      <span class="card-arrow">▼</span>
+    </div>
+    <div class="card-detail">
+      ${item.address?`<div class="card-sub">📍 ${item.address}</div>`:''}
+      ${item.address?mapBtns(item.address):''}
+      ${item.memo?`<div class="card-sub">${item.memo}</div>`:''}
+      ${stepsHtml}
+      <div class="card-footer">
+        <button class="c-btn" onclick='editItem("${key}","${type}")'>수정</button>
+        <button class="c-btn del" onclick='delItem("${key}","${type}")'>삭제</button>
+        ${visitedHtml}
+      </div>
+    </div>
+  </div>`;
 }
 
 function renderChecklist(){
@@ -448,6 +492,7 @@ function bgClick(e){if(e.target===$('modal-bg'))closeModal()}
 async function submitModal(){
   const nameEl=$('f-name');
   if(!nameEl?.value.trim()){nameEl.style.borderColor='#e24b4a';return}
+  const existing=editKey?(localData[curModal+'s']?.[editKey]||{}):{};
   const item={
     name:nameEl.value.trim(),
     category:($('f-cat')?.value)||'',
@@ -455,6 +500,7 @@ async function submitModal(){
     address:($('f-address')?.value)||'',
     steps:$('f-steps')?$('f-steps').value.split('\n').map(s=>s.trim()).filter(Boolean):[],
     date:($('f-date')?.value)||'',
+    visited:existing.visited||false,
     ts:Date.now()
   };
   await fb().set(rr(curModal+'s/'+(editKey||uid())),item);
