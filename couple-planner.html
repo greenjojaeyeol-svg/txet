@@ -370,12 +370,13 @@ function makeCard(key,item,cat){
   if(item.address){
     var kakaoUrl='https://map.kakao.com/link/search/'+enc;
     var naverUrl='https://map.naver.com/v5/search/'+enc;
-    var naviDeep='kakaonavi://route?ep='+enc+'&by=CAR';
+    // U+카카오내비 앱 딥링크
+    var naviDeep='upluskakaonavi://navi?ep='+enc+'&by=CAR';
     var naviWeb='https://kakaonavi.kakao.com/launch/index.do?ep='+enc+'&by=CAR';
     mapH='<div class="mapbtns">'
       +'<a class="mbtn kk" href="'+kakaoUrl+'" target="_blank">🗺 카카오맵</a>'
       +'<a class="mbtn nv" href="'+naverUrl+'" target="_blank">🗺 네이버지도</a>'
-      +'<a class="mbtn na" href="'+naviDeep+'" onclick="setTimeout(function(){window.open(\''+naviWeb+'\',\'_blank\')},700);return true;">🚗 U+카카오내비</a>'
+      +'<a class="mbtn na" href="'+naviDeep+'" onclick="setTimeout(function(){window.location.href=\''+naviWeb+'\'}, 1000);return true;">🚗 U+카카오내비</a>'
       +'</div>';
   }
   var stepsH='';
