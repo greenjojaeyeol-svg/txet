@@ -365,28 +365,25 @@ function render(cat){
   el.innerHTML=items.map(function(kv){return makeCard(kv[0],kv[1],cat)}).join('');
 }
 
-function makeCard(key,item,cat){
-  var enc=encodeURIComponent(item.address||'');
-  var mapH='';
-  if(item.address){
-    var kakaoUrl='https://map.kakao.com/link/search/'+enc;
-    var naverUrl='https://map.naver.com/v5/search/'+enc;
-    // 카카오내비 딥링크 - 목적지 주소 자동입력
-    var naviDeep='kakaonavi://route?ep='+enc+'&by=CAR&via=';
-    var naviWeb='kakaonavi://navigate?daddr='+enc+'&by=CAR';
-    mapH='<div class="mapbtns">'
-      +'<a class="mbtn kk" href="'+kakaoUrl+'" target="_blank">🗺 카카오맵</a>'
-      +'<a class="mbtn nv" href="'+naverUrl+'" target="_blank">🗺 네이버지도</a>'
-      +'<a class="mbtn na" href="'+naviDeep+'" onclick="setTimeout(function(){window.location.href=\''+naviWeb+'\'}, 1500);return true;">🚗 카카오내비</a>'
-      +'</div>';
+function makeCard(key, item, cat) {
+  var enc = encodeURIComponent(item.address || '');
+  var nameEnc = encodeURIComponent(item.name || '목적지'); // 목적지 이름 추가
+  var mapH = '';
+
+  if (item.address) {
+    var kakaoUrl = 'https://map.kakao.com/link/search/' + enc;
+    var naverUrl = 'https://map.naver.com/v5/search/' + enc;
+    
+    // 가장 확실하게 앱이 실행되는 navigate 스킴 (주소 + 이름 포함)
+    var naviApp = 'kakaonavi://navigate?daddr=' + enc + '&dname=' + nameEnc;
+
+    mapH = '<div class="mapbtns">'
+      + '<a class="mbtn kk" href="' + kakaoUrl + '" target="_blank">🗺 카카오맵</a>'
+      + '<a class="mbtn nv" href="' + naverUrl + '" target="_blank">🗺 네이버지도</a>'
+      + '<a class="mbtn na" href="' + naviApp + '">🚗 카카오내비</a>'
+      + '</div>';
   }
-  var stepsH='';
-  if(cat==='courses'&&item.steps&&item.steps.length){
-    stepsH='<div class="steps">'+item.steps.map(function(s,i){
-      return '<div class="step-r"><div class="step-dot">'+(i+1)+'</div><div class="step-t">'+s+'</div></div>';
-    }).join('')+'</div>';
-  }
-  var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
+  // 이후 stepsH 관련 로직은 그대로 두시면 됩니다.  var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
   var tagH=item.category?'<span class="card-tag">'+item.category+'</span>':'';
   var visitH=item.visited?'<span class="visited-badge">✅ 방문</span>':'';
   var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
