@@ -377,13 +377,13 @@ function mapBtns(address){
   const enc=encodeURIComponent(address);
   const kakao=`https://map.kakao.com/link/search/${enc}`;
   const naver=`https://map.naver.com/v5/search/${enc}`;
-  // 카카오내비 앱 딥링크
-  const navi=`kakaomap://route?ep=${enc}&by=CAR`;
+  // 카카오내비 앱 딥링크 (목적지 주소로 바로 실행)
+  const naviDeep=`kakaonavi://route?ep=${enc}&by=CAR`;
   const naviWeb=`https://kakaonavi.kakao.com/launch/index.do?ep=${enc}&by=CAR`;
   return `<div class="map-btns">
     <a class="map-btn kakao" href="${kakao}" target="_blank">🗺 카카오맵</a>
     <a class="map-btn naver" href="${naver}" target="_blank">🗺 네이버지도</a>
-    <a class="map-btn navi" href="${navi}" onclick="if(!navigator.userAgent.match(/KAKAO/i)){window.open('${naviWeb}','_blank');return false;}">🚗 카카오내비</a>
+    <a class="map-btn navi" href="${naviDeep}" onclick="setTimeout(()=>window.open('${naviWeb}','_blank'),500);return true;">🚗 카카오내비</a>
   </div>`;
 }
 
@@ -445,8 +445,13 @@ async function addCheck(){
 }
 async function toggleCheck(k){const cur=(localData.checklist[k]||{}).done||false;await fb().update(rr('checklist/'+k),{done:!cur})}
 async function delCheck(k){await fb().remove(rr('checklist/'+k))}
-async function delItem(key,type){if(!confirm('삭제할까요?'))return;await fb().remove(rr(type+'/'+key));toast('삭제했어요')}
-function editItem(key,type){editKey=key;openModalWith(type,localData[type]?.[key])}
+async function delItem(key,type){if(!confirm('삭제할까요?'))return;await fb().remove(rr(type+'s/'+key));toast('삭제했어요')}
+function editItem(key,type){
+  editKey=key;
+  curModal=type;
+  const item=localData[type+'s']?.[key];
+  openModalWith(type,item);
+}
 
 async function saveSettings(){
   await fb().set(rr('settings'),{name1:$('s-n1').value.trim(),name2:$('s-n2').value.trim(),anniversary:$('s-anniv').value,ts:Date.now()});
