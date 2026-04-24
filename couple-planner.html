@@ -365,20 +365,25 @@ function render(cat){
   el.innerHTML=items.map(function(kv){return makeCard(kv[0],kv[1],cat)}).join('');
 }
 
-function makeCard(key,item,cat){
-  var enc=encodeURIComponent(item.address||'');
-  var mapH='';
-  if(item.address){
-    var kakaoUrl='https://map.kakao.com/link/search/'+enc;
-    var naverUrl='https://map.naver.com/v5/search/'+enc;
-    // 카카오내비 딥링크 - 목적지 주소 자동입력
-    var naviDeep='kakaonavi://route?ep='+enc+'&by=CAR&via=';
-    var naviWeb='https://kakaonavi.kakao.com/launch/index.do?ep='+enc+'&by=CAR';
-    mapH='<div class="mapbtns">'
-      +'<a class="mbtn kk" href="'+kakaoUrl+'" target="_blank">🗺 카카오맵</a>'
-      +'<a class="mbtn nv" href="'+naverUrl+'" target="_blank">🗺 네이버지도</a>'
-      +'<a class="mbtn na" href="'+naviDeep+'" onclick="setTimeout(function(){window.location.href=\''+naviWeb+'\'}, 1500);return true;">🚗 카카오내비</a>'
-      +'</div>';
+function makeCard(key, item, cat) {
+  var encAddr = encodeURIComponent(item.address || '');
+  var encName = encodeURIComponent(item.name || '목적지'); // 목적지 이름 추가
+  var mapH = '';
+
+  if (item.address) {
+    var kakaoUrl = 'https://map.kakao.com/link/search/' + encAddr;
+    var naverUrl = 'https://map.naver.com/v5/search/' + encAddr;
+    
+    // 카카오네비 딥링크: 목적지(name)와 주소(address)를 포함하여 바로 길안내 실행
+    var naviDeep = 'kakaonavi://navigate?daddr=' + encAddr + '&dname=' + encName;
+    // 설치 미비 시 이동할 웹 페이지 (또는 스토어)
+    var naviWeb = 'https://kakaonavi.kakao.com/launch/index.do';
+
+    mapH = '<div class="mapbtns">'
+      + '<a class="mbtn kk" href="' + kakaoUrl + '" target="_blank">🗺 카카오맵</a>'
+      + '<a class="mbtn nv" href="' + naverUrl + '" target="_blank">🗺 네이버지도</a>'
+      + '<a class="mbtn na" href="' + naviDeep + '" onclick="setTimeout(function(){window.location.href=\'' + naviWeb + '\'}, 1500); return true;">🚗 카카오네비</a>'
+      + '</div>';
   }
   var stepsH='';
   if(cat==='courses'&&item.steps&&item.steps.length){
