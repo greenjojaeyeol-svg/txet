@@ -377,13 +377,13 @@ function mapBtns(address){
   const enc=encodeURIComponent(address);
   const kakao=`https://map.kakao.com/link/search/${enc}`;
   const naver=`https://map.naver.com/v5/search/${enc}`;
-  // 카카오내비 앱 딥링크 (목적지 주소로 바로 실행)
-  const naviDeep=`kakaonavi://route?ep=${enc}&by=CAR`;
+  // U+카카오내비 앱 딥링크
+  const naviDeep=`upluskakaonavi://route?ep=${enc}&by=CAR`;
   const naviWeb=`https://kakaonavi.kakao.com/launch/index.do?ep=${enc}&by=CAR`;
   return `<div class="map-btns">
     <a class="map-btn kakao" href="${kakao}" target="_blank">🗺 카카오맵</a>
     <a class="map-btn naver" href="${naver}" target="_blank">🗺 네이버지도</a>
-    <a class="map-btn navi" href="${naviDeep}" onclick="setTimeout(()=>window.open('${naviWeb}','_blank'),500);return true;">🚗 카카오내비</a>
+    <a class="map-btn navi" href="${naviDeep}" onclick="setTimeout(()=>window.open('${naviWeb}','_blank'),800);return true;">🚗 U+카카오내비</a>
   </div>`;
 }
 
@@ -485,18 +485,28 @@ const forms={
   })
 };
 
-function openModal(type){editKey=null;openModalWith(type,null)}
-function openModalWith(type,data){
-  curModal=type;const f=forms[type](data);
-  $('modal-title').textContent=f.title;$('modal-body').innerHTML=f.html;
+function openModal(type){
+  editKey=null;
+  curModal=type;
+  const f=forms[type](null);
+  $('modal-title').textContent=f.title;
+  $('modal-body').innerHTML=f.html;
   $('modal-bg').classList.add('open');
 }
-function closeModal(){$('modal-bg').classList.remove('open');editKey=null}
+function openModalWith(type,data){
+  curModal=type;
+  const f=forms[type](data);
+  $('modal-title').textContent=f.title;
+  $('modal-body').innerHTML=f.html;
+  $('modal-bg').classList.add('open');
+}
+function closeModal(){$('modal-bg').classList.remove('open');}
 function bgClick(e){if(e.target===$('modal-bg'))closeModal()}
 
 async function submitModal(){
   const nameEl=$('f-name');
   if(!nameEl?.value.trim()){nameEl.style.borderColor='#e24b4a';return}
+  const key=editKey||uid();
   const existing=editKey?(localData[curModal+'s']?.[editKey]||{}):{};
   const item={
     name:nameEl.value.trim(),
@@ -508,8 +518,11 @@ async function submitModal(){
     visited:existing.visited||false,
     ts:Date.now()
   };
-  await fb().set(rr(curModal+'s/'+(editKey||uid())),item);
-  closeModal();toast(editKey?'수정했어요 ♡':'추가했어요 ♡');
+  const wasEdit=!!editKey;
+  editKey=null;
+  await fb().set(rr(curModal+'s/'+key),item);
+  closeModal();
+  toast(wasEdit?'수정했어요 ♡':'추가했어요 ♡');
 }
 
 function showPage(page,btn){
