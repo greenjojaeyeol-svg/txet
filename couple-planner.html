@@ -23,6 +23,7 @@
   window._fb = { db, ref, onValue, set, remove, update };
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=2fc31a383f6d190a8f058919d1623966&libraries=services"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -370,13 +371,13 @@ function makeCard(key,item,cat){
   if(item.address){
     var kakaoUrl='https://map.kakao.com/link/search/'+enc;
     var naverUrl='https://map.naver.com/v5/search/'+enc;
-    // U+카카오내비 앱 딥링크
-    var naviDeep='upluskakaonavi://navi?ep='+enc+'&by=CAR';
-    var naviWeb='https://kakaonavi.kakao.com/launch/index.do?ep='+enc+'&by=CAR';
+    // 카카오내비 딥링크 - 목적지 주소 자동입력
+    var naviDeep='kakaonavi://route?ep='+enc+'&by=CAR&via=';
+    var naviWeb='kakaonavi://navigate?daddr='+enc+'&by=CAR';
     mapH='<div class="mapbtns">'
       +'<a class="mbtn kk" href="'+kakaoUrl+'" target="_blank">🗺 카카오맵</a>'
       +'<a class="mbtn nv" href="'+naverUrl+'" target="_blank">🗺 네이버지도</a>'
-      +'<a class="mbtn na" href="'+naviDeep+'" onclick="setTimeout(function(){window.location.href=\''+naviWeb+'\'}, 1000);return true;">🚗 U+카카오내비</a>'
+      +'<a class="mbtn na" href="'+naviDeep+'" onclick="setTimeout(function(){window.location.href=\''+naviWeb+'\'}, 1500);return true;">🚗 카카오내비</a>'
       +'</div>';
   }
   var stepsH='';
