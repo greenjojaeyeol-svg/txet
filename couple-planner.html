@@ -4,536 +4,598 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>우리 둘만의 공간 ♡</title>
-<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-<!-- Firebase SDK -->
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
   import { getDatabase, ref, onValue, set, remove, update }
     from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
-
   const firebaseConfig = {
-    apiKey:            "AIzaSyCItutGKUCET2VyDOuHcA3yemaAIlCcqBo",
-    authDomain:        "text-85ec2.firebaseapp.com",
-    databaseURL:       "https://text-85ec2-default-rtdb.firebaseio.com",
-    projectId:         "text-85ec2",
-    storageBucket:     "text-85ec2.firebasestorage.app",
-    messagingSenderId: "881067394604",
-    appId:             "1:881067394604:web:5d77e68acb58cc509f3389"
+    apiKey:"AIzaSyCItutGKUCET2VyDOuHcA3yemaAIlCcqBo",
+    authDomain:"text-85ec2.firebaseapp.com",
+    databaseURL:"https://text-85ec2-default-rtdb.firebaseio.com",
+    projectId:"text-85ec2",
+    storageBucket:"text-85ec2.firebasestorage.app",
+    messagingSenderId:"881067394604",
+    appId:"1:881067394604:web:5d77e68acb58cc509f3389"
   };
-
   const app = initializeApp(firebaseConfig);
   const db  = getDatabase(app);
   window._fb = { db, ref, onValue, set, remove, update };
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
-
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --rose:#C8506A;--rose-l:#ECA0B3;--blush:#FAEEF2;
-  --sand:#F7F1EC;--ivory:#FDFAF7;
-  --ink:#1C1A1A;--muted:#9A9086;
-  --border:rgba(200,80,106,0.15);
-  --r:16px;--shadow:0 4px 24px rgba(200,80,106,0.10);
+  --sand:#F7F1EC;--ink:#1C1A1A;--muted:#9A9086;
+  --border:rgba(200,80,106,0.15);--r:16px;
+  --shadow:0 4px 24px rgba(200,80,106,0.10);
 }
-html{background:var(--sand)}
-body{font-family:'Pretendard',sans-serif;color:var(--ink);min-height:100vh;background:var(--sand);-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:'Nanum Myeongjo',serif}
+html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
 
 /* 로그인 */
-#screen-login{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#fdf0f4 0%,var(--sand) 100%)}
-.login-wrap{width:100%;max-width:360px}
-.login-logo{text-align:center;margin-bottom:32px}
-.login-logo .heart{font-size:52px;display:block;margin-bottom:10px;animation:hb 2.4s ease-in-out infinite}
-@keyframes hb{0%,100%{transform:scale(1)}14%{transform:scale(1.18)}28%{transform:scale(1)}42%{transform:scale(1.10)}56%{transform:scale(1)}}
-.login-logo h1{font-size:28px;color:var(--rose);letter-spacing:-.5px}
-.login-logo p{font-size:13px;color:var(--muted);margin-top:6px}
-.login-card{background:#fff;border-radius:24px;padding:28px 24px;border:1px solid var(--border);box-shadow:var(--shadow)}
-.l-label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;display:block}
-.l-inp{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
-.l-inp:focus{border-color:var(--rose);background:#fff;box-shadow:0 0 0 3px rgba(200,80,106,0.08)}
-.l-inp::placeholder{color:var(--muted)}
-.l-hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.6}
-.btn-rose{width:100%;padding:14px;background:var(--rose);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:16px;transition:.2s}
-.btn-rose:hover{background:#a83c58;transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,80,106,0.25)}
-.btn-rose:disabled{opacity:.6;cursor:not-allowed;transform:none}
-.l-err{background:#fff0f3;border:1px solid #f8c0cb;color:#9b2c42;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:12px;display:none;line-height:1.5}
-.l-err.show{display:block}
+#scr-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#fdf0f4,var(--sand))}
+.lw{width:100%;max-width:360px;text-align:center}
+.lheart{font-size:54px;animation:hb 2.4s ease-in-out infinite;display:block;margin-bottom:10px}
+@keyframes hb{0%,100%{transform:scale(1)}14%{transform:scale(1.18)}28%{transform:scale(1)}42%{transform:scale(1.1)}56%{transform:scale(1)}}
+.ltitle{font-family:'Nanum Myeongjo',serif;font-size:28px;color:var(--rose);margin-bottom:6px}
+.lsub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.lcard{background:#fff;border-radius:24px;padding:28px 24px;border:1px solid var(--border);box-shadow:var(--shadow);text-align:left}
+.lcard label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.linp{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
+.linp:focus{border-color:var(--rose);background:#fff}
+.lhint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
+.lbtn{width:100%;padding:14px;background:var(--rose);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:16px;transition:.2s}
+.lbtn:hover{background:#a83c58}
+.lbtn:disabled{opacity:.6;cursor:not-allowed}
+.lerr{background:#fff0f3;border:1px solid #f8c0cb;color:#9b2c42;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:10px;display:none}
+.lerr.show{display:block}
 
 /* 앱 */
-#screen-app{display:none;max-width:700px;margin:0 auto;padding-bottom:88px}
-.app-header{background:#fff;border-bottom:1px solid var(--border);padding:16px 18px 14px;position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between}
-.app-header h2{font-size:18px;color:var(--rose)}
-.dday-txt{font-size:12px;color:var(--muted);margin-top:2px}
-.logout-btn{font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;transition:.15s}
-.logout-btn:hover{background:var(--blush);color:var(--rose);border-color:var(--rose-l)}
+#scr-app{display:none;max-width:700px;margin:0 auto;padding-bottom:80px}
+.hdr{background:#fff;border-bottom:1px solid var(--border);padding:14px 18px;position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between}
+.hdr h2{font-family:'Nanum Myeongjo',serif;font-size:18px;color:var(--rose)}
+.hdr-dday{font-size:12px;color:var(--muted);margin-top:2px}
+.hdr-out{font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif}
 
-.nav{display:flex;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:65px;z-index:59}
+.nav{display:flex;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:61px;z-index:59}
 .nav::-webkit-scrollbar{display:none}
-.nav-btn{flex:1;min-width:68px;padding:11px 4px 10px;font-size:11px;font-family:'Pretendard',sans-serif;background:none;border:none;border-bottom:2.5px solid transparent;color:var(--muted);cursor:pointer;transition:.2s;white-space:nowrap}
-.nav-btn .ni{display:block;font-size:16px;margin-bottom:3px}
-.nav-btn.active{color:var(--rose);border-bottom-color:var(--rose);font-weight:600}
+.nb{flex:1;min-width:68px;padding:10px 4px 9px;font-size:11px;font-family:'Pretendard',sans-serif;background:none;border:none;border-bottom:2.5px solid transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+.nb .ni{display:block;font-size:16px;margin-bottom:3px}
+.nb.on{color:var(--rose);border-bottom-color:var(--rose);font-weight:600}
 
-.page{display:none;padding:18px 16px;animation:pgIn .22s ease}
-.page.active{display:block}
-@keyframes pgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.pg{display:none;padding:16px}
+.pg.on{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-.sec-title{font-size:16px;color:var(--rose);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);font-family:'Nanum Myeongjo',serif}
-.add-btn{width:100%;padding:12px;margin-bottom:14px;background:var(--blush);border:1.5px dashed var(--rose-l);border-radius:var(--r);color:var(--rose);font-size:13px;font-weight:500;font-family:'Pretendard',sans-serif;cursor:pointer;transition:.2s}
-.add-btn:hover{background:var(--rose);color:#fff;border-style:solid}
+.sec{font-family:'Nanum Myeongjo',serif;font-size:16px;color:var(--rose);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.addbtn{width:100%;padding:11px;margin-bottom:14px;background:var(--blush);border:1.5px dashed var(--rose-l);border-radius:var(--r);color:var(--rose);font-size:13px;font-weight:500;font-family:'Pretendard',sans-serif;cursor:pointer;transition:.2s}
+.addbtn:hover{background:var(--rose);color:#fff;border-style:solid}
 
-.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:15px;margin-bottom:10px;transition:.15s}
-.card:hover{border-color:var(--rose-l);box-shadow:var(--shadow)}
-.card-top{display:flex;align-items:flex-start;gap:10px}
-.card-body{flex:1;min-width:0}
-.card-name{font-size:15px;font-weight:600;line-height:1.3}
-.card-sub{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.6}
-.card-tag{flex-shrink:0;font-size:11px;padding:3px 10px;border-radius:20px;background:var(--blush);color:var(--rose);font-weight:500;white-space:nowrap}
-.card-footer{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
-.c-btn{font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;transition:.15s}
-.c-btn:hover{background:var(--sand);color:var(--ink)}
-.c-btn.del:hover{background:#fceaea;color:#a32d2d;border-color:#f5aaaa}
+/* 카드 아코디언 */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;transition:.15s}
+.card:hover{border-color:var(--rose-l)}
+.card-hd{display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer;user-select:none}
+.card-hd-body{flex:1;min-width:0}
+.card-hd-name{font-size:15px;font-weight:600}
+.card-hd-date{font-size:11px;color:var(--rose);font-weight:500;margin-bottom:3px}
+.card-tag{font-size:11px;padding:3px 10px;border-radius:20px;background:var(--blush);color:var(--rose);font-weight:500;white-space:nowrap;flex-shrink:0}
+.visited-badge{font-size:11px;padding:3px 10px;border-radius:20px;background:#e8f8ef;color:#1e7d45;font-weight:600;flex-shrink:0}
+.card-arrow{font-size:12px;color:var(--muted);flex-shrink:0;transition:transform .25s}
+.card.open .card-arrow{transform:rotate(180deg)}
+.card-bd{display:none;padding:0 14px 14px;border-top:1px solid var(--border)}
+.card.open .card-bd{display:block}
+.card-sub{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
 
-.steps-wrap{margin-top:10px;display:flex;flex-direction:column;gap:6px}
-.step-row{display:flex;align-items:flex-start;gap:9px}
-.step-dot{width:22px;height:22px;border-radius:50%;background:var(--rose);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;margin-top:1px}
-.step-txt{font-size:13px;color:var(--muted);padding-top:3px;line-height:1.4}
+/* 지도 버튼 */
+.mapbtns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.mbtn{font-size:11px;padding:5px 11px;border-radius:20px;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;transition:.15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px}
+.mbtn.kk{background:#FEE500;color:#3A1D1D}
+.mbtn.nv{background:#03C75A;color:#fff}
+.mbtn.na{background:#1a73e8;color:#fff}
 
-.check-bar{display:flex;gap:8px;margin-bottom:14px}
-.check-bar input{flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
-.check-bar input:focus{border-color:var(--rose);background:#fff}
-.check-bar button{padding:11px 16px;background:var(--rose);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Pretendard',sans-serif;transition:.15s;white-space:nowrap}
-.check-bar button:hover{background:#a83c58}
+/* 스텝 */
+.steps{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.step-r{display:flex;align-items:flex-start;gap:8px}
+.step-dot{width:22px;height:22px;border-radius:50%;background:var(--rose);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600}
+.step-t{font-size:13px;color:var(--muted);padding-top:3px;line-height:1.4}
 
-.chk-item{display:flex;align-items:center;gap:12px;padding:13px 14px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;transition:.15s;user-select:none}
-.chk-item:hover{border-color:var(--rose-l)}
-.chk-item.done{opacity:.5}
-.chk-circle{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.2s}
-.chk-item.done .chk-circle{background:var(--rose);border-color:var(--rose)}
-.chk-ck{color:#fff;font-size:12px;font-weight:700;opacity:0;transition:.15s}
-.chk-item.done .chk-ck{opacity:1}
-.chk-label{flex:1;font-size:14px}
-.chk-item.done .chk-label{text-decoration:line-through}
-.chk-del{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0 2px;opacity:0;transition:.15s;line-height:1}
-.chk-item:hover .chk-del{opacity:1}
+/* 카드 푸터 */
+.card-ft{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.cbtn{font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;transition:.15s}
+.cbtn:hover{background:var(--sand);color:var(--ink)}
+.cbtn.del:hover{background:#fceaea;color:#a32d2d;border-color:#f5aaaa}
+.vbtn{font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;margin-left:auto;transition:.2s}
+.vbtn.on{background:#e8f8ef;color:#1e7d45;border-color:#7ecfa0}
 
-.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.stat-box{background:var(--blush);border-radius:14px;padding:16px;text-align:center}
+/* 체크리스트 */
+.chkbar{display:flex;gap:8px;margin-bottom:14px}
+.chkbar input{flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
+.chkbar input:focus{border-color:var(--rose);background:#fff}
+.chkbar button{padding:11px 16px;background:var(--rose);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Pretendard',sans-serif}
+.chki{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;user-select:none;transition:.15s}
+.chki.done{opacity:.5}
+.chk-c{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.2s}
+.chki.done .chk-c{background:var(--rose);border-color:var(--rose)}
+.chk-ck{color:#fff;font-size:12px;font-weight:700;opacity:0}
+.chki.done .chk-ck{opacity:1}
+.chk-lbl{flex:1;font-size:14px}
+.chki.done .chk-lbl{text-decoration:line-through}
+.chk-del{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;opacity:0;line-height:1;padding:0 2px}
+.chki:hover .chk-del{opacity:1}
+
+/* 통계 */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat{background:var(--blush);border-radius:14px;padding:16px;text-align:center}
 .stat-n{font-size:28px;color:var(--rose);font-family:'Nanum Myeongjo',serif}
 .stat-l{font-size:11px;color:var(--muted);margin-top:3px;font-weight:500}
 
-.set-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px}
-.set-save{width:100%;padding:13px;background:var(--rose);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;transition:.2s;margin-top:6px}
-.set-save:hover{background:#a83c58}
+/* 설정 */
+.setcard{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px}
+.setsave{width:100%;padding:13px;background:var(--rose);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:6px}
 
+/* 빈/로딩 */
 .empty{text-align:center;padding:44px 20px;color:var(--muted)}
-.empty-ico{font-size:38px;margin-bottom:10px}
-.empty-txt{font-size:14px;line-height:1.6}
+.empty-i{font-size:36px;margin-bottom:10px}
+.empty-t{font-size:14px}
 .loading{text-align:center;padding:30px;color:var(--muted);font-size:13px}
 
-/* 지도 버튼 */
-.map-btns{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
-.map-btn{font-size:11px;padding:4px 10px;border-radius:20px;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;transition:.15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px}
-.map-btn.kakao{background:#FEE500;color:#3A1D1D}
-.map-btn.kakao:hover{background:#f0d800}
-.map-btn.naver{background:#03C75A;color:#fff}
-.map-btn.naver:hover{background:#02a84a}
-.map-btn.navi{background:#1a73e8;color:#fff}
-.map-btn.navi:hover{background:#1558b0}
-
-/* 방문 배지 */
-.visited-btn{font-size:11px;padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;transition:.2s;margin-left:auto}
-.visited-btn.on{background:#e8f8ef;color:#1e7d45;border-color:#7ecfa0}
-.visited-badge{font-size:11px;padding:3px 10px;border-radius:20px;background:#e8f8ef;color:#1e7d45;font-weight:600;white-space:nowrap;flex-shrink:0}
-
-/* 아코디언 카드 */
-.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;transition:.15s;overflow:hidden}
-.card:hover{border-color:var(--rose-l);box-shadow:var(--shadow)}
-.card-header-row{display:flex;align-items:center;gap:10px;padding:15px;cursor:pointer;user-select:none}
-.card-body{flex:1;min-width:0}
-.card-name{font-size:15px;font-weight:600;line-height:1.3}
-.card-tag{flex-shrink:0;font-size:11px;padding:3px 10px;border-radius:20px;background:var(--blush);color:var(--rose);font-weight:500;white-space:nowrap}
-.card-arrow{font-size:13px;color:var(--muted);transition:transform .25s;flex-shrink:0}
-.card.open .card-arrow{transform:rotate(180deg)}
-.card-detail{display:none;padding:0 15px 15px;border-top:1px solid var(--border);margin-top:0}
-.card.open .card-detail{display:block;animation:pgIn .2s ease}
-.card-sub{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.6}
-.card-footer{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center}
-
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(28,26,26,.45);z-index:200;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
-.modal-bg.open{display:flex}
-.modal{background:#fff;width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:26px 20px 36px;max-height:92vh;overflow-y:auto;animation:mUp .26s cubic-bezier(.4,0,.2,1)}
-@keyframes mUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-title{font-size:19px;color:var(--rose);margin-bottom:18px}
+/* 모달 */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
+.mbg.on{display:flex}
+.modal{background:#fff;width:100%;max-width:480px;border-radius:22px 22px 0 0;padding:26px 20px 36px;max-height:92vh;overflow-y:auto;animation:mup .25s ease}
+@keyframes mup{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-ttl{font-family:'Nanum Myeongjo',serif;font-size:19px;color:var(--rose);margin-bottom:18px}
 .fg{margin-bottom:13px}
 .fg label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-bottom:6px;text-transform:uppercase}
 .fg input,.fg select,.fg textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;font-size:14px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--rose);background:#fff}
 .fg textarea{height:80px;resize:none}
-.modal-foot{display:flex;gap:10px;margin-top:20px}
-.modal-foot button{flex:1;padding:13px;border-radius:11px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;border:none;transition:.15s}
-.m-cancel{background:var(--sand);color:var(--muted)}
-.m-save{background:var(--rose);color:#fff}
-.m-save:hover{background:#a83c58}
+.mfoot{display:flex;gap:10px;margin-top:20px}
+.mfoot button{flex:1;padding:13px;border-radius:11px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;border:none}
+.mcancel{background:var(--sand);color:var(--muted)}
+.msave{background:var(--rose);color:#fff}
 
-#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--ink);color:#fff;padding:11px 22px;border-radius:22px;font-size:13px;font-weight:500;z-index:999;transition:transform .3s cubic-bezier(.4,0,.2,1);pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.18)}
-#toast.show{transform:translateX(-50%) translateY(0)}
-
+/* 토스트 */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(70px);background:#1C1A1A;color:#fff;padding:11px 22px;border-radius:22px;font-size:13px;font-weight:500;z-index:999;transition:transform .3s ease;pointer-events:none;white-space:nowrap}
+#toast.on{transform:translateX(-50%) translateY(0)}
 @media(max-width:480px){.modal{max-height:96vh}}
 </style>
 </head>
 <body>
 
 <!-- 로그인 -->
-<div id="screen-login">
-  <div class="login-wrap">
-    <div class="login-logo">
-      <span class="heart">♡</span>
-      <h1>우리 둘만의 공간</h1>
-      <p>같은 비밀번호로 연결돼요</p>
-    </div>
-    <div class="login-card">
-      <label class="l-label" for="pw-inp">비밀번호</label>
-      <input class="l-inp" type="password" id="pw-inp"
-        placeholder="비밀번호를 입력하세요"
-        onkeydown="if(event.key==='Enter')doLogin()">
-      <p class="l-hint">
-        둘이 똑같은 비밀번호를 입력하면 같은 공간에 연결돼요.<br>
-        처음 입력하면 새 공간이 자동으로 만들어집니다 🌸
-      </p>
-      <button class="btn-rose" id="login-btn" onclick="doLogin()">입장하기</button>
-      <div class="l-err" id="l-err"></div>
+<div id="scr-login">
+  <div class="lw">
+    <span class="lheart">♡</span>
+    <h1 class="ltitle">우리 둘만의 공간</h1>
+    <p class="lsub">같은 비밀번호로 연결돼요</p>
+    <div class="lcard">
+      <label>비밀번호</label>
+      <input class="linp" type="password" id="pw" placeholder="비밀번호를 입력하세요" onkeydown="if(event.key==='Enter')login()">
+      <p class="lhint">둘이 똑같은 비밀번호 → 같은 공간 연결<br>처음 입력하면 새 공간이 자동으로 만들어져요 🌸</p>
+      <button class="lbtn" id="lbtn" onclick="login()">입장하기</button>
+      <div class="lerr" id="lerr"></div>
     </div>
   </div>
 </div>
 
 <!-- 앱 -->
-<div id="screen-app">
-  <div class="app-header">
+<div id="scr-app">
+  <div class="hdr">
     <div>
-      <h2 id="hdr-names">우리 둘만의 공간 ♡</h2>
-      <div class="dday-txt" id="hdr-dday"></div>
+      <h2 id="hdr-name">우리 둘만의 공간 ♡</h2>
+      <div class="hdr-dday" id="hdr-dday"></div>
     </div>
-    <button class="logout-btn" onclick="doLogout()">나가기</button>
+    <button class="hdr-out" onclick="logout()">나가기</button>
   </div>
-
   <nav class="nav">
-    <button class="nav-btn active" onclick="showPage('courses',this)"><span class="ni">🗺️</span>코스</button>
-    <button class="nav-btn" onclick="showPage('restaurants',this)"><span class="ni">🍽️</span>맛집</button>
-    <button class="nav-btn" onclick="showPage('cafes',this)"><span class="ni">☕</span>카페</button>
-    <button class="nav-btn" onclick="showPage('plans',this)"><span class="ni">📅</span>일정</button>
-    <button class="nav-btn" onclick="showPage('checklist',this)"><span class="ni">✅</span>체크</button>
-    <button class="nav-btn" onclick="showPage('settings',this)"><span class="ni">⚙️</span>설정</button>
+    <button class="nb on" onclick="goPage('courses',this)"><span class="ni">🗺️</span>코스</button>
+    <button class="nb" onclick="goPage('restaurants',this)"><span class="ni">🍽️</span>맛집</button>
+    <button class="nb" onclick="goPage('cafes',this)"><span class="ni">☕</span>카페</button>
+    <button class="nb" onclick="goPage('plans',this)"><span class="ni">📅</span>일정</button>
+    <button class="nb" onclick="goPage('checklist',this)"><span class="ni">✅</span>체크</button>
+    <button class="nb" onclick="goPage('settings',this)"><span class="ni">⚙️</span>설정</button>
   </nav>
 
-  <div class="page active" id="page-courses">
-    <button class="add-btn" onclick="openModal('course')">+ 새 데이트 코스 추가</button>
-    <div class="sec-title">저장된 코스</div>
-    <div id="list-courses"><div class="loading">불러오는 중…</div></div>
+  <div class="pg on" id="pg-courses">
+    <button class="addbtn" onclick="openAdd('courses')">+ 데이트 코스 추가</button>
+    <div class="sec">저장된 코스</div>
+    <div id="lst-courses"><div class="loading">불러오는 중…</div></div>
   </div>
-
-  <div class="page" id="page-restaurants">
-    <button class="add-btn" onclick="openModal('restaurant')">+ 맛집 추가</button>
-    <div class="sec-title">우리만의 맛집 리스트</div>
-    <div id="list-restaurants"><div class="loading">불러오는 중…</div></div>
+  <div class="pg" id="pg-restaurants">
+    <button class="addbtn" onclick="openAdd('restaurants')">+ 맛집 추가</button>
+    <div class="sec">우리만의 맛집 리스트</div>
+    <div id="lst-restaurants"><div class="loading">불러오는 중…</div></div>
   </div>
-
-  <div class="page" id="page-cafes">
-    <button class="add-btn" onclick="openModal('cafe')">+ 카페 추가</button>
-    <div class="sec-title">좋아하는 카페</div>
-    <div id="list-cafes"><div class="loading">불러오는 중…</div></div>
+  <div class="pg" id="pg-cafes">
+    <button class="addbtn" onclick="openAdd('cafes')">+ 카페 추가</button>
+    <div class="sec">좋아하는 카페</div>
+    <div id="lst-cafes"><div class="loading">불러오는 중…</div></div>
   </div>
-
-  <div class="page" id="page-plans">
-    <div class="stat-row">
-      <div class="stat-box"><div class="stat-n" id="sn-c">0</div><div class="stat-l">저장된 코스</div></div>
-      <div class="stat-box"><div class="stat-n" id="sn-p">0</div><div class="stat-l">맛집 · 카페</div></div>
+  <div class="pg" id="pg-plans">
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="sn-c">0</div><div class="stat-l">저장된 코스</div></div>
+      <div class="stat"><div class="stat-n" id="sn-p">0</div><div class="stat-l">맛집·카페</div></div>
     </div>
-    <button class="add-btn" onclick="openModal('plan')">+ 데이트 일정 추가</button>
-    <div class="sec-title">데이트 일정</div>
-    <div id="list-plans"><div class="loading">불러오는 중…</div></div>
+    <button class="addbtn" onclick="openAdd('plans')">+ 데이트 일정 추가</button>
+    <div class="sec">데이트 일정</div>
+    <div id="lst-plans"><div class="loading">불러오는 중…</div></div>
   </div>
-
-  <div class="page" id="page-checklist">
-    <div class="check-bar">
-      <input type="text" id="chk-inp" placeholder="할 일을 입력하세요…"
-        onkeydown="if(event.key==='Enter')addCheck()">
+  <div class="pg" id="pg-checklist">
+    <div class="chkbar">
+      <input type="text" id="chk-inp" placeholder="할 일 입력…" onkeydown="if(event.key==='Enter')addCheck()">
       <button onclick="addCheck()">추가</button>
     </div>
-    <div class="sec-title">할 일 목록</div>
-    <div id="list-checklist"><div class="loading">불러오는 중…</div></div>
+    <div class="sec">할 일 목록</div>
+    <div id="lst-checklist"><div class="loading">불러오는 중…</div></div>
   </div>
-
-  <div class="page" id="page-settings">
-    <div class="sec-title">커플 정보</div>
-    <div class="set-card">
-      <div class="fg"><label>내 이름</label><input type="text" id="s-n1" placeholder="내 이름"></div>
-      <div class="fg"><label>상대방 이름</label><input type="text" id="s-n2" placeholder="상대방 이름"></div>
-      <div class="fg"><label>사귄 날짜</label><input type="date" id="s-anniv"></div>
-      <button class="set-save" onclick="saveSettings()">저장하기</button>
+  <div class="pg" id="pg-settings">
+    <div class="sec">커플 정보</div>
+    <div class="setcard">
+      <div class="fg"><label>내 이름</label><input type="text" id="s1" placeholder="내 이름"></div>
+      <div class="fg"><label>상대방 이름</label><input type="text" id="s2" placeholder="상대방 이름"></div>
+      <div class="fg"><label>사귄 날짜</label><input type="date" id="sa"></div>
+      <button class="setsave" onclick="saveSet()">저장하기</button>
     </div>
-    <div class="sec-title" style="margin-top:20px">연결 방식</div>
-    <div class="set-card" style="font-size:13px;color:var(--muted);line-height:1.8">
-      현재 비밀번호로 이 공간에 연결되어 있어요.<br>
-      상대방도 <strong style="color:var(--rose)">같은 비밀번호</strong>를 입력하면 자동으로 연결됩니다.<br>
-      <span style="color:#c8506a;font-size:12px">⚠ 비밀번호가 다르면 다른 공간으로 연결돼요.</span>
+    <div class="sec" style="margin-top:20px">연결 방식</div>
+    <div class="setcard" style="font-size:13px;color:var(--muted);line-height:1.8">
+      같은 비밀번호 입력 시 같은 공간으로 연결돼요.<br>
+      <span style="color:var(--rose);font-size:12px">⚠ 비밀번호가 다르면 다른 공간으로 연결됩니다.</span>
     </div>
   </div>
 </div>
 
 <!-- 모달 -->
-<div class="modal-bg" id="modal-bg" onclick="bgClick(event)">
+<div class="mbg" id="mbg" onclick="bgClick(event)">
   <div class="modal">
-    <h3 class="modal-title" id="modal-title">추가하기</h3>
-    <div id="modal-body"></div>
-    <div class="modal-foot">
-      <button class="m-cancel" onclick="closeModal()">취소</button>
-      <button class="m-save" onclick="submitModal()">저장</button>
+    <div class="modal-ttl" id="m-ttl">추가</div>
+    <div id="m-body"></div>
+    <div class="mfoot">
+      <button class="mcancel" onclick="closeModal()">취소</button>
+      <button class="msave" onclick="saveModal()">저장</button>
     </div>
   </div>
 </div>
-
 <div id="toast"></div>
 
 <script>
-let roomKey=null,editKey=null,curModal='',unsubs=[],
-    localData={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
+// ── 전역 상태 ──────────────────────────────────────────
+var RK=null; // roomKey
+var DB={}; // 로컬 데이터: DB.courses, DB.restaurants, DB.cafes, DB.plans, DB.checklist, DB.settings
+var UNSUBS=[];
+var M_TYPE=''; // 현재 모달 타입 (courses/restaurants/cafes/plans)
+var M_KEY=null; // 수정 중인 키 (null이면 새 추가)
 
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-const $=id=>document.getElementById(id);
-function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+// ── 유틸 ──────────────────────────────────────────────
+function $(i){return document.getElementById(i)}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function toast(msg){
+  var t=$('toast');t.textContent=msg;t.classList.add('on');
+  setTimeout(function(){t.classList.remove('on')},2200);
+}
 function fb(){return window._fb}
-function rr(path=''){return fb().ref(fb().db,'rooms/'+roomKey+(path?'/'+path:''))}
+function rr(path){
+  var p='rooms/'+RK+(path?'/'+path:'');
+  return fb().ref(fb().db,p);
+}
 
+// ── SHA256 ────────────────────────────────────────────
 async function sha256(str){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
-  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0')}).join('');
 }
 
-async function doLogin(){
-  const btn=$('login-btn'),pw=$('pw-inp').value.trim();
-  if(!pw){showErr('비밀번호를 입력해주세요.');return}
-  btn.disabled=true;btn.textContent='연결 중…';
+// ── 로그인 / 로그아웃 ─────────────────────────────────
+async function login(){
+  var pw=$('pw').value.trim();
+  if(!pw){showErr('비밀번호를 입력해주세요');return}
+  var btn=$('lbtn');btn.disabled=true;btn.textContent='연결 중…';
   try{
-    roomKey=await sha256('couple_v1_'+pw);
-    localStorage.setItem('cpw_hash',roomKey);
+    RK=await sha256('couple_v1_'+pw);
+    localStorage.setItem('RK',RK);
     enterApp();
-  }catch(e){showErr('오류가 발생했어요. 잠시 후 다시 시도해주세요.');btn.disabled=false;btn.textContent='입장하기'}
+  }catch(e){
+    showErr('오류가 발생했어요');btn.disabled=false;btn.textContent='입장하기';
+  }
 }
-function showErr(msg){const el=$('l-err');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3500)}
+function showErr(msg){var el=$('lerr');el.textContent=msg;el.classList.add('show');setTimeout(function(){el.classList.remove('show')},3000)}
 
-function doLogout(){
-  if(!confirm('공간을 나갈까요?'))return;
-  unsubs.forEach(u=>u());unsubs=[];
-  localStorage.removeItem('cpw_hash');roomKey=null;
-  $('screen-app').style.display='none';$('screen-login').style.display='flex';
-  $('pw-inp').value='';$('login-btn').disabled=false;$('login-btn').textContent='입장하기';
+function logout(){
+  if(!confirm('나갈까요?'))return;
+  UNSUBS.forEach(function(u){u()});UNSUBS=[];
+  localStorage.removeItem('RK');RK=null;
+  $('scr-app').style.display='none';$('scr-login').style.display='flex';
+  $('pw').value='';$('lbtn').disabled=false;$('lbtn').textContent='입장하기';
 }
 
 function enterApp(){
-  $('screen-login').style.display='none';$('screen-app').style.display='block';
+  $('scr-login').style.display='none';$('scr-app').style.display='block';
+  DB={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
   subscribeAll();
 }
 
+// ── 구독 ──────────────────────────────────────────────
 function subscribeAll(){
-  ['courses','restaurants','cafes','plans','checklist','settings'].forEach(cat=>{
-    const u=fb().onValue(rr(cat),snap=>{
-      localData[cat]=snap.val()||{};renderCat(cat);refreshHeader();
+  ['courses','restaurants','cafes','plans','checklist','settings'].forEach(function(cat){
+    var u=fb().onValue(rr(cat),function(snap){
+      DB[cat]=snap.val()||{};
+      render(cat);
+      refreshHdr();
     });
-    unsubs.push(u);
+    UNSUBS.push(u);
   });
 }
 
-function refreshHeader(){
-  const s=localData.settings||{};
-  if(s.name1&&s.name2)$('hdr-names').textContent=s.name1+' ♡ '+s.name2;
-  if(s.anniversary){const d=Math.floor((Date.now()-new Date(s.anniversary))/864e5)+1;$('hdr-dday').textContent='함께한 지 D+'+d+'일'}
-  const n1=$('s-n1'),n2=$('s-n2'),an=$('s-anniv');
-  if(n1&&!n1.value&&s.name1)n1.value=s.name1;
-  if(n2&&!n2.value&&s.name2)n2.value=s.name2;
-  if(an&&!an.value&&s.anniversary)an.value=s.anniversary;
-  $('sn-c').textContent=Object.keys(localData.courses||{}).length;
-  $('sn-p').textContent=Object.keys(localData.restaurants||{}).length+Object.keys(localData.cafes||{}).length;
+function refreshHdr(){
+  var s=DB.settings||{};
+  if(s.name1&&s.name2)$('hdr-name').textContent=s.name1+' ♡ '+s.name2;
+  if(s.anniversary){
+    var d=Math.floor((Date.now()-new Date(s.anniversary))/864e5)+1;
+    $('hdr-dday').textContent='함께한 지 D+'+d+'일';
+  }
+  if($('s1')&&!$('s1').value&&s.name1)$('s1').value=s.name1;
+  if($('s2')&&!$('s2').value&&s.name2)$('s2').value=s.name2;
+  if($('sa')&&!$('sa').value&&s.anniversary)$('sa').value=s.anniversary;
+  $('sn-c').textContent=Object.keys(DB.courses||{}).length;
+  $('sn-p').textContent=Object.keys(DB.restaurants||{}).length+Object.keys(DB.cafes||{}).length;
 }
 
-const emptyMsg={courses:'아직 저장된 코스가 없어요',restaurants:'가고 싶은 맛집을 추가해보세요',cafes:'좋아하는 카페를 추가해보세요',plans:'데이트 일정을 계획해보세요'};
-const emptyIco={courses:'🗺️',restaurants:'🍽️',cafes:'☕',plans:'📅'};
+// ── 렌더링 ────────────────────────────────────────────
+var EMPTY={
+  courses:['🗺️','아직 저장된 코스가 없어요'],
+  restaurants:['🍽️','가고 싶은 맛집을 추가해보세요'],
+  cafes:['☕','좋아하는 카페를 추가해보세요'],
+  plans:['📅','데이트 일정을 계획해보세요']
+};
 
-function renderCat(cat){
+function render(cat){
   if(cat==='settings')return;
-  if(cat==='checklist'){renderChecklist();return}
-  const el=$('list-'+cat);
+  if(cat==='checklist'){renderChk();return}
+  var el=$('lst-'+cat);
   if(!el)return;
-  const items=Object.entries(localData[cat]||{});
-  if(!items.length){el.innerHTML=`<div class="empty"><div class="empty-ico">${emptyIco[cat]||'♡'}</div><div class="empty-txt">${emptyMsg[cat]||''}</div></div>`;return}
-  let sorted=items;
-  if(cat==='plans')sorted=[...items].sort((a,b)=>(a[1].date||'').localeCompare(b[1].date||''));
-  el.innerHTML=sorted.map(([k,v])=>makeCard(k,v,cat)).join('');
+  var items=Object.entries(DB[cat]||{});
+  if(!items.length){
+    var e=EMPTY[cat]||['♡','비어있어요'];
+    el.innerHTML='<div class="empty"><div class="empty-i">'+e[0]+'</div><div class="empty-t">'+e[1]+'</div></div>';
+    return;
+  }
+  if(cat==='plans') items.sort(function(a,b){return (a[1].date||'').localeCompare(b[1].date||'')});
+  el.innerHTML=items.map(function(kv){return makeCard(kv[0],kv[1],cat)}).join('');
 }
 
-function mapBtns(address){
-  if(!address) return '';
-  const enc=encodeURIComponent(address);
-  const kakao=`https://map.kakao.com/link/search/${enc}`;
-  const naver=`https://map.naver.com/v5/search/${enc}`;
-  // U+카카오내비 앱 딥링크
-  const naviDeep=`upluskakaonavi://route?ep=${enc}&by=CAR`;
-  const naviWeb=`https://kakaonavi.kakao.com/launch/index.do?ep=${enc}&by=CAR`;
-  return `<div class="map-btns">
-    <a class="map-btn kakao" href="${kakao}" target="_blank">🗺 카카오맵</a>
-    <a class="map-btn naver" href="${naver}" target="_blank">🗺 네이버지도</a>
-    <a class="map-btn navi" href="${naviDeep}" onclick="setTimeout(()=>window.open('${naviWeb}','_blank'),800);return true;">🚗 U+카카오내비</a>
-  </div>`;
+function makeCard(key,item,cat){
+  var enc=encodeURIComponent(item.address||'');
+  var mapH='';
+  if(item.address){
+    var kakaoUrl='https://map.kakao.com/link/search/'+enc;
+    var naverUrl='https://map.naver.com/v5/search/'+enc;
+    var naviDeep='kakaonavi://route?ep='+enc+'&by=CAR';
+    var naviWeb='https://kakaonavi.kakao.com/launch/index.do?ep='+enc+'&by=CAR';
+    mapH='<div class="mapbtns">'
+      +'<a class="mbtn kk" href="'+kakaoUrl+'" target="_blank">🗺 카카오맵</a>'
+      +'<a class="mbtn nv" href="'+naverUrl+'" target="_blank">🗺 네이버지도</a>'
+      +'<a class="mbtn na" href="'+naviDeep+'" onclick="setTimeout(function(){window.open(\''+naviWeb+'\',\'_blank\')},700);return true;">🚗 U+카카오내비</a>'
+      +'</div>';
+  }
+  var stepsH='';
+  if(cat==='courses'&&item.steps&&item.steps.length){
+    stepsH='<div class="steps">'+item.steps.map(function(s,i){
+      return '<div class="step-r"><div class="step-dot">'+(i+1)+'</div><div class="step-t">'+s+'</div></div>';
+    }).join('')+'</div>';
+  }
+  var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
+  var tagH=item.category?'<span class="card-tag">'+item.category+'</span>':'';
+  var visitH=item.visited?'<span class="visited-badge">✅ 방문</span>':'';
+  var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
+
+  return '<div class="card" id="cd-'+key+'">'
+    +'<div class="card-hd" onclick="toggleCard(\''+key+'\')">'
+      +'<div class="card-hd-body">'+dateH+'<div class="card-hd-name">'+escH(item.name||'')+'</div></div>'
+      +tagH+visitH
+      +'<span class="card-arrow">▼</span>'
+    +'</div>'
+    +'<div class="card-bd">'
+      +(item.address?'<div class="card-sub">📍 '+escH(item.address)+'</div>':'' )
+      +mapH
+      +(item.memo?'<div class="card-sub">'+escH(item.memo)+'</div>':'')
+      +stepsH
+      +'<div class="card-ft">'
+        +'<button class="cbtn" onclick="openEdit(\''+key+'\',\''+cat+'\')">수정</button>'
+        +'<button class="cbtn del" onclick="delItem(\''+key+'\',\''+cat+'\')">삭제</button>'
+        +vbtnH
+      +'</div>'
+    +'</div>'
+  +'</div>';
 }
+
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
 function toggleCard(key){
-  const el=$('card-'+key);
-  if(el) el.classList.toggle('open');
+  var el=$('cd-'+key);
+  if(el)el.classList.toggle('open');
 }
 
-async function toggleVisited(key,type,cur,e){
+async function toggleVisit(key,cat,cur,e){
   e.stopPropagation();
-  await fb().update(rr(type+'/'+key),{visited:!cur});
+  await fb().update(rr(cat+'/'+key),{visited:!cur});
 }
 
-function makeCard(key,item,type){
-  const stepsHtml=(type==='course'&&item.steps?.length)?
-    `<div class="steps-wrap" style="margin-top:10px">${item.steps.map((s,i)=>`<div class="step-row"><div class="step-dot">${i+1}</div><div class="step-txt">${s}</div></div>`).join('')}</div>`:'';
-  const dateStr=item.date?`<div style="font-size:12px;color:var(--rose);margin-bottom:4px;font-weight:500">${item.date}</div>`:'';
-  const visitedHtml=`<button class="visited-btn${item.visited?' on':''}" onclick='toggleVisited("${key}","${type}",${!!item.visited},event)'>${item.visited?'✅ 방문완료':'☑ 방문전'}</button>`;
-  return `<div class="card" id="card-${key}">
-    <div class="card-header-row" onclick='toggleCard("${key}")'>
-      <div class="card-body">
-        ${dateStr}
-        <div class="card-name">${item.name||''}</div>
-      </div>
-      ${item.category?`<span class="card-tag">${item.category}</span>`:''}
-      ${item.visited?`<span class="visited-badge">✅ 방문</span>`:''}
-      <span class="card-arrow">▼</span>
-    </div>
-    <div class="card-detail">
-      ${item.address?`<div class="card-sub">📍 ${item.address}</div>`:''}
-      ${item.address?mapBtns(item.address):''}
-      ${item.memo?`<div class="card-sub">${item.memo}</div>`:''}
-      ${stepsHtml}
-      <div class="card-footer">
-        <button class="c-btn" onclick='editItem("${key}","${type}")'>수정</button>
-        <button class="c-btn del" onclick='delItem("${key}","${type}")'>삭제</button>
-        ${visitedHtml}
-      </div>
-    </div>
-  </div>`;
+async function delItem(key,cat){
+  if(!confirm('삭제할까요?'))return;
+  await fb().remove(rr(cat+'/'+key));
+  toast('삭제했어요');
 }
 
-function renderChecklist(){
-  const el=$('list-checklist'),items=Object.entries(localData.checklist||{});
-  if(!items.length){el.innerHTML='<div class="empty"><div class="empty-ico">✅</div><div class="empty-txt">할 일을 추가해보세요</div></div>';return}
-  el.innerHTML=[...items].sort((a,b)=>(a[1].done?1:0)-(b[1].done?1:0))
-    .map(([k,v])=>`<div class="chk-item${v.done?' done':''}" onclick='toggleCheck("${k}")'>
-      <div class="chk-circle"><span class="chk-ck">✓</span></div>
-      <div class="chk-label">${v.text||''}</div>
-      <button class="chk-del" onclick='event.stopPropagation();delCheck("${k}")'>×</button>
-    </div>`).join('');
+// ── 체크리스트 ────────────────────────────────────────
+function renderChk(){
+  var el=$('lst-checklist');
+  var items=Object.entries(DB.checklist||{});
+  if(!items.length){el.innerHTML='<div class="empty"><div class="empty-i">✅</div><div class="empty-t">할 일을 추가해보세요</div></div>';return}
+  items.sort(function(a,b){return (a[1].done?1:0)-(b[1].done?1:0)});
+  el.innerHTML=items.map(function(kv){
+    var k=kv[0],v=kv[1];
+    return '<div class="chki'+(v.done?' done':'')+'" onclick="toggleChk(\''+k+'\')">'
+      +'<div class="chk-c"><span class="chk-ck">✓</span></div>'
+      +'<div class="chk-lbl">'+escH(v.text||'')+'</div>'
+      +'<button class="chk-del" onclick="event.stopPropagation();delChk(\''+k+'\')">×</button>'
+      +'</div>';
+  }).join('');
 }
-
 async function addCheck(){
-  const inp=$('chk-inp'),text=inp.value.trim();
+  var inp=$('chk-inp'),text=inp.value.trim();
   if(!text)return;
-  await fb().set(rr('checklist/'+uid()),{text,done:false,ts:Date.now()});
+  await fb().set(rr('checklist/'+uid()),{text:text,done:false,ts:Date.now()});
   inp.value='';
 }
-async function toggleCheck(k){const cur=(localData.checklist[k]||{}).done||false;await fb().update(rr('checklist/'+k),{done:!cur})}
-async function delCheck(k){await fb().remove(rr('checklist/'+k))}
-async function delItem(key,type){if(!confirm('삭제할까요?'))return;await fb().remove(rr(type+'s/'+key));toast('삭제했어요')}
-function editItem(key,type){
-  editKey=key;
-  curModal=type;
-  const item=localData[type+'s']?.[key];
-  openModalWith(type,item);
+async function toggleChk(k){
+  var cur=(DB.checklist[k]||{}).done||false;
+  await fb().update(rr('checklist/'+k),{done:!cur});
+}
+async function delChk(k){
+  await fb().remove(rr('checklist/'+k));
 }
 
-async function saveSettings(){
-  await fb().set(rr('settings'),{name1:$('s-n1').value.trim(),name2:$('s-n2').value.trim(),anniversary:$('s-anniv').value,ts:Date.now()});
+// ── 설정 ──────────────────────────────────────────────
+async function saveSet(){
+  await fb().set(rr('settings'),{
+    name1:$('s1').value.trim(),
+    name2:$('s2').value.trim(),
+    anniversary:$('sa').value,
+    ts:Date.now()
+  });
   toast('저장했어요 ♡');
 }
 
-const forms={
-  course:d=>({title:d?'코스 수정':'데이트 코스 추가',
-    html:`<div class="fg"><label>코스 이름 *</label><input type="text" id="f-name" value="${d?d.name||'':''}" placeholder="예: 홍대 반나절 코스"></div>
-      <div class="fg"><label>카테고리</label><select id="f-cat"><option value="">선택 안 함</option>${['로맨틱','액티비티','힐링','맛집투어','야경'].map(c=>`<option${d&&d.category===c?' selected':''}>${c}</option>`).join('')}</select></div>
-      <div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="경복궁&#10;인사동&#10;광장시장">${d&&d.steps?d.steps.join('\n'):''}</textarea></div>
-      <div class="fg"><label>메모</label><input type="text" id="f-memo" value="${d?d.memo||'':''}" placeholder="간단한 메모"></div>`
-  }),
-  restaurant:d=>({title:d?'맛집 수정':'맛집 추가',
-    html:`<div class="fg"><label>상호명 *</label><input type="text" id="f-name" value="${d?d.name||'':''}" placeholder="맛집 이름"></div>
-      <div class="fg"><label>종류</label><select id="f-cat"><option value="">선택 안 함</option>${['한식','일식','양식','중식','분식','기타'].map(c=>`<option${d&&d.category===c?' selected':''}>${c}</option>`).join('')}</select></div>
-      <div class="fg"><label>주소</label><input type="text" id="f-address" value="${d?d.address||'':''}" placeholder="주소 입력"></div>
-      <div class="fg"><label>메모</label><input type="text" id="f-memo" value="${d?d.memo||'':''}" placeholder="웨이팅 필수, 주차 가능 등"></div>`
-  }),
-  cafe:d=>({title:d?'카페 수정':'카페 추가',
-    html:`<div class="fg"><label>카페 이름 *</label><input type="text" id="f-name" value="${d?d.name||'':''}" placeholder="카페 이름"></div>
-      <div class="fg"><label>분위기</label><select id="f-cat"><option value="">선택 안 함</option>${['감성카페','대형카페','디저트','루프탑','베이커리'].map(c=>`<option${d&&d.category===c?' selected':''}>${c}</option>`).join('')}</select></div>
-      <div class="fg"><label>주소</label><input type="text" id="f-address" value="${d?d.address||'':''}" placeholder="주소 입력"></div>
-      <div class="fg"><label>메모</label><input type="text" id="f-memo" value="${d?d.memo||'':''}" placeholder="포토존 있음 등"></div>`
-  }),
-  plan:d=>({title:d?'일정 수정':'데이트 일정 추가',
-    html:`<div class="fg"><label>날짜</label><input type="date" id="f-date" value="${d?d.date||'':''}"></div>
-      <div class="fg"><label>제목 *</label><input type="text" id="f-name" value="${d?d.name||'':''}" placeholder="예: 성수 데이트"></div>
-      <div class="fg"><label>유형</label><select id="f-cat"><option value="">선택 안 함</option>${['당일치기','1박2일','기념일','일상데이트'].map(c=>`<option${d&&d.category===c?' selected':''}>${c}</option>`).join('')}</select></div>
-      <div class="fg"><label>메모</label><textarea id="f-memo" placeholder="특별한 계획을 적어보세요">${d?d.memo||'':''}</textarea></div>`
-  })
+// ── 모달 폼 정의 ──────────────────────────────────────
+var FORMS={
+  courses:function(d){
+    var cats=['로맨틱','액티비티','힐링','맛집투어','야경'];
+    return {
+      title:d?'코스 수정':'데이트 코스 추가',
+      html:'<div class="fg"><label>코스 이름 *</label><input type="text" id="f-name" value="'+(d?escH(d.name||''):'')+'" placeholder="예: 홍대 반나절 코스"></div>'
+        +'<div class="fg"><label>카테고리</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +cats.map(function(c){return '<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="경복궁&#10;인사동&#10;광장시장">'+(d&&d.steps?d.steps.join('\n'):'')+'</textarea></div>'
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+(d?escH(d.memo||''):'')+'" placeholder="간단한 메모"></div>'
+    };
+  },
+  restaurants:function(d){
+    var cats=['한식','일식','양식','중식','분식','기타'];
+    return {
+      title:d?'맛집 수정':'맛집 추가',
+      html:'<div class="fg"><label>상호명 *</label><input type="text" id="f-name" value="'+(d?escH(d.name||''):'')+'" placeholder="맛집 이름"></div>'
+        +'<div class="fg"><label>종류</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +cats.map(function(c){return '<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+(d?escH(d.address||''):'')+'" placeholder="주소 입력"></div>'
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+(d?escH(d.memo||''):'')+'" placeholder="웨이팅 필수 등"></div>'
+    };
+  },
+  cafes:function(d){
+    var cats=['감성카페','대형카페','디저트','루프탑','베이커리'];
+    return {
+      title:d?'카페 수정':'카페 추가',
+      html:'<div class="fg"><label>카페 이름 *</label><input type="text" id="f-name" value="'+(d?escH(d.name||''):'')+'" placeholder="카페 이름"></div>'
+        +'<div class="fg"><label>분위기</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +cats.map(function(c){return '<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+(d?escH(d.address||''):'')+'" placeholder="주소 입력"></div>'
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+(d?escH(d.memo||''):'')+'" placeholder="포토존 있음 등"></div>'
+    };
+  },
+  plans:function(d){
+    var cats=['당일치기','1박2일','기념일','일상데이트'];
+    return {
+      title:d?'일정 수정':'데이트 일정 추가',
+      html:'<div class="fg"><label>날짜</label><input type="date" id="f-date" value="'+(d?d.date||'':'')+'"></div>'
+        +'<div class="fg"><label>제목 *</label><input type="text" id="f-name" value="'+(d?escH(d.name||''):'')+'" placeholder="예: 성수 데이트"></div>'
+        +'<div class="fg"><label>유형</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +cats.map(function(c){return '<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>메모</label><textarea id="f-memo" placeholder="특별한 계획을 적어보세요">'+(d?escH(d.memo||''):'')+'</textarea></div>'
+    };
+  }
 };
 
-function openModal(type){
-  editKey=null;
-  curModal=type;
-  const f=forms[type](null);
-  $('modal-title').textContent=f.title;
-  $('modal-body').innerHTML=f.html;
-  $('modal-bg').classList.add('open');
+// ── 모달 열기/닫기 ────────────────────────────────────
+function openAdd(cat){
+  M_TYPE=cat;
+  M_KEY=null;
+  var f=FORMS[cat](null);
+  $('m-ttl').textContent=f.title;
+  $('m-body').innerHTML=f.html;
+  $('mbg').classList.add('on');
 }
-function openModalWith(type,data){
-  curModal=type;
-  const f=forms[type](data);
-  $('modal-title').textContent=f.title;
-  $('modal-body').innerHTML=f.html;
-  $('modal-bg').classList.add('open');
-}
-function closeModal(){$('modal-bg').classList.remove('open');}
-function bgClick(e){if(e.target===$('modal-bg'))closeModal()}
 
-async function submitModal(){
-  const nameEl=$('f-name');
-  if(!nameEl?.value.trim()){nameEl.style.borderColor='#e24b4a';return}
-  const key=editKey||uid();
-  const existing=editKey?(localData[curModal+'s']?.[editKey]||{}):{};
-  const item={
+function openEdit(key,cat){
+  M_TYPE=cat;
+  M_KEY=key;
+  var item=DB[cat]&&DB[cat][key];
+  if(!item){toast('항목을 찾을 수 없어요');return}
+  var f=FORMS[cat](item);
+  $('m-ttl').textContent=f.title;
+  $('m-body').innerHTML=f.html;
+  $('mbg').classList.add('on');
+}
+
+function closeModal(){
+  $('mbg').classList.remove('on');
+}
+
+function bgClick(e){
+  if(e.target===$('mbg'))closeModal();
+}
+
+async function saveModal(){
+  var nameEl=$('f-name');
+  if(!nameEl||!nameEl.value.trim()){
+    if(nameEl)nameEl.style.borderColor='#e24b4a';
+    return;
+  }
+  var catEl=$('f-cat');
+  var memoEl=$('f-memo');
+  var addrEl=$('f-addr');
+  var stepsEl=$('f-steps');
+  var dateEl=$('f-date');
+  var existVisited=(M_KEY&&DB[M_TYPE]&&DB[M_TYPE][M_KEY])?DB[M_TYPE][M_KEY].visited||false:false;
+
+  var item={
     name:nameEl.value.trim(),
-    category:($('f-cat')?.value)||'',
-    memo:($('f-memo')?.value)||'',
-    address:($('f-address')?.value)||'',
-    steps:$('f-steps')?$('f-steps').value.split('\n').map(s=>s.trim()).filter(Boolean):[],
-    date:($('f-date')?.value)||'',
-    visited:existing.visited||false,
+    category:catEl?catEl.value:'',
+    memo:memoEl?memoEl.value.trim():'',
+    address:addrEl?addrEl.value.trim():'',
+    steps:stepsEl?stepsEl.value.split('\n').map(function(s){return s.trim()}).filter(Boolean):[],
+    date:dateEl?dateEl.value:'',
+    visited:existVisited,
     ts:Date.now()
   };
-  const wasEdit=!!editKey;
-  editKey=null;
-  await fb().set(rr(curModal+'s/'+key),item);
-  closeModal();
-  toast(wasEdit?'수정했어요 ♡':'추가했어요 ♡');
+
+  var saveKey=M_KEY||uid();
+  var wasEdit=!!M_KEY;
+
+  try{
+    await fb().set(rr(M_TYPE+'/'+saveKey),item);
+    closeModal();
+    toast(wasEdit?'수정했어요 ♡':'추가했어요 ♡');
+  }catch(err){
+    toast('저장 실패: '+err.message);
+  }
 }
 
-function showPage(page,btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  $('page-'+page).classList.add('active');btn.classList.add('active');
+// ── 페이지 전환 ───────────────────────────────────────
+function goPage(page,btn){
+  document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on')});
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on')});
+  $('pg-'+page).classList.add('on');
+  btn.classList.add('on');
 }
 
-window.addEventListener('firebase-ready',()=>{
-  const saved=localStorage.getItem('cpw_hash');
-  if(saved){roomKey=saved;enterApp()}
+// ── 초기화 ────────────────────────────────────────────
+window.addEventListener('firebase-ready',function(){
+  var saved=localStorage.getItem('RK');
+  if(saved){RK=saved;enterApp();}
 });
 </script>
 </body>
