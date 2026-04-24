@@ -366,26 +366,32 @@ function render(cat){
 }
 
 function makeCard(key, item, cat) {
-  var encAddr = encodeURIComponent(item.address || '');
-  var encName = encodeURIComponent(item.name || '목적지');
+  // 필수 파라미터: 주소와 이름이 비어있지 않도록 보장
+  var addr = item.address || '';
+  var name = item.name || '목적지';
+  var encAddr = encodeURIComponent(addr);
+  var encName = encodeURIComponent(name);
   var mapH = '';
 
-  if (item.address) {
+  if (addr) {
     var kakaoUrl = 'https://map.kakao.com/link/search/' + encAddr;
     var naverUrl = 'https://map.naver.com/v5/search/' + encAddr;
+    
+    // 필수 파라미터 에러 방지: daddr(주소)와 dname(장소이름)을 모두 포함
     var naviDeep = 'kakaonavi://navigate?daddr=' + encAddr + '&dname=' + encName;
     var naviWeb = 'https://kakaonavi.kakao.com/launch/index.do';
 
     mapH = '<div class="mapbtns">'
       + '<a class="mbtn kk" href="' + kakaoUrl + '" target="_blank">🗺 카카오맵</a>'
       + '<a class="mbtn nv" href="' + naverUrl + '" target="_blank">🗺 네이버지도</a>'
-      + '<a class="mbtn na" href="' + naviDeep + '" onclick="'
-      + 'var start = Date.now(); '
-      + 'setTimeout(function() { '
-      + '  if (Date.now() - start < 2000) { ' // 2초 이내에 화면 변화가 없다면(앱 실행 실패 시)
-      + '    window.location.href = \'' + naviWeb + '\'; '
+      + '<a class="mbtn na" href="#" onclick="'
+      + 'var start = Date.now();'
+      + 'location.href = \'' + naviDeep + '\';' // 앱 실행 시도
+      + 'setTimeout(function() {'
+      + '  if (Date.now() - start < 2000) {' // 앱이 안 열렸을 때만(2초 이내) 웹으로 이동
+      + '    location.href = \'' + naviWeb + '\';'
       + '  }'
-      + '}, 1500); return true;">🚗 카카오네비</a>'
+      + '}, 1500); return false;">🚗 카카오네비</a>'
       + '</div>';
   }
   var stepsH='';
