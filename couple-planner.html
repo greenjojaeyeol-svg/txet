@@ -375,7 +375,7 @@ function makeCard(key,item,cat){
     mapH='<div class="mapbtns">'
       +'<a class="mbtn kk" href="'+kakaoUrl+'" target="_blank">🗺 카카오맵</a>'
       +'<a class="mbtn nv" href="'+naverUrl+'" target="_blank">🗺 네이버지도</a>'
-      +'<button class="mbtn na" onclick="openNavi(\''+escH(item.address||'')+'\')">🚗 카카오내비</button>'
+      +'<button class="mbtn na" onclick="openNavi(\''+escH(item.address||'')+'\')">🗺 카카오맵 길찾기</button>'
       +'</div>';
   }
   var stepsH='';
@@ -587,11 +587,9 @@ async function saveModal(){
 // ── 카카오내비 ────────────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
-  navigator.clipboard.writeText(address).catch(function(){});
-  toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
-  setTimeout(function(){
-    window.location.href='intent://#Intent;scheme=kakaonavi;package=com.lguplus.navi;end';
-  },800);
+  var enc=encodeURIComponent(address);
+  // 카카오맵 앱 딥링크 - 크롬에서도 바로 실행됨
+  window.location.href='kakaomap://search?q='+enc+'&center=';
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
