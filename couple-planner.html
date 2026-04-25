@@ -23,6 +23,7 @@
   window._fb = { db, ref, onValue, set, remove, update };
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
+
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=2fc31a383f6d190a8f058919d1623966&libraries=services"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -365,50 +366,18 @@ function render(cat){
   el.innerHTML=items.map(function(kv){return makeCard(kv[0],kv[1],cat)}).join('');
 }
 
-function makeCard(key, item, cat) {
-  // ... (기존 변수 선언들)
-  var mapH = '';
-  if (item.address) {
-    var kakaoUrl = 'https://map.kakao.com/link/search/' + encodeURIComponent(item.address);
-    var naverUrl = 'https://map.naver.com/v5/search/' + encodeURIComponent(item.address);
-    
-    mapH = '<div class="mapbtns">'
-      + '<a class="mbtn kk" href="' + kakaoUrl + '" target="_blank">🗺 카카오맵</a>'
-      + '<a class="mbtn nv" href="' + naverUrl + '" target="_blank">🗺 네이버지도</a>'
-      // 아래 버튼이 핵심입니다. 함수 호출 방식으로 변경하여 파라미터 충돌을 막습니다.
-      + '<a class="mbtn na" href="#" onclick="goNavi(\'' + escH(item.name || '목적지') + '\', \'' + escH(item.address) + '\'); return false;">🚗 카카오네비</a>'
-      + '</div>';
+function makeCard(key,item,cat){
+  var enc=encodeURIComponent(item.address||'');
+  var mapH='';
+  if(item.address){
+    var kakaoUrl='https://map.kakao.com/link/search/'+enc;
+    var naverUrl='https://map.naver.com/v5/search/'+enc;
+    mapH='<div class="mapbtns">'
+      +'<a class="mbtn kk" href="'+kakaoUrl+'" target="_blank">🗺 카카오맵</a>'
+      +'<a class="mbtn nv" href="'+naverUrl+'" target="_blank">🗺 네이버지도</a>'
+      +'<button class="mbtn na" onclick="openNavi(\''+escH(item.address||'')+'\')">🚗 카카오내비</button>'
+      +'</div>';
   }
-// 스크립트 하단 적당한 위치에 추가하세요
-function goNavi(name, addr) {
-  if (!addr) return;
-
-  // 1. 파라미터 인코딩 (특수문자/공백으로 인한 '필수파라미터 실패' 방지)
-  var encName = encodeURIComponent(name);
-  var encAddr = encodeURIComponent(addr);
-  
-  // 2. 카카오네비 실행 주소 구성
-  // daddr: 목적지 주소, dname: 목적지 이름 (둘 다 있어야 에러 확률이 낮음)
-  var naviDeep = 'kakaonavi://navigate?daddr=' + encAddr + '&dname=' + encName;
-  var naviWeb = 'https://kakaonavi.kakao.com/launch/index.do';
-
-  var start = Date.now();
-  
-  // 3. 앱 실행 시도
-  location.href = naviDeep;
-
-  // 4. 웹페이지 겹침 방지 로직 (유저가 앱으로 떠났는지 확인)
-  setTimeout(function() {
-    // 앱이 실행되어 백그라운드로 갔다면 타이머가 늦게 작동함
-    // 2.5초 이내에 이 코드가 실행된다면 앱이 안 열린 것으로 간주
-    if (Date.now() - start < 2500) {
-      window.location.href = naviWeb;
-    }
-  }, 2000);
-}
-
-
- 
   var stepsH='';
   if(cat==='courses'&&item.steps&&item.steps.length){
     stepsH='<div class="steps">'+item.steps.map(function(s,i){
@@ -613,6 +582,47 @@ async function saveModal(){
   }catch(err){
     toast('저장 실패: '+err.message);
   }
+}
+
+// ── 카카오내비 ────────────────────────────────────────
+function openNavi(address){
+  if(!address){toast('주소가 없어요');return}
+  toast('카카오내비 실행 중…');
+  // 카카오 REST API로 주소 → 좌표 변환
+  fetch('https://dapi.kakao.com/v2/local/search/address.json?query='+encodeURIComponent(address),{
+    headers:{'Authorization':'KakaoAK 2fc31a383f6d190a8f058919d1623966'}
+  })
+  .then(function(r){return r.json()})
+  .then(function(data){
+    var doc=data.documents&&data.documents[0];
+    if(doc){
+      var lat=doc.y;
+      var lng=doc.x;
+      var name=encodeURIComponent(address);
+      // 카카오내비 앱 딥링크 (좌표+이름)
+      var deep='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
+      window.location.href=deep;
+      // 앱 없으면 1.5초 후 웹으로
+      setTimeout(function(){
+        window.open('https://kakaonavi.kakao.com/launch/index.do?ep='+lng+','+lat+','+name+'&by=CAR','_blank');
+      },1500);
+    }else{
+      // 좌표 못 찾으면 이름으로 시도
+      var name=encodeURIComponent(address);
+      window.location.href='kakaonavi://route?ep='+name+'&by=CAR';
+      setTimeout(function(){
+        window.open('https://kakaonavi.kakao.com/launch/index.do?ep='+name+'&by=CAR','_blank');
+      },1500);
+    }
+  })
+  .catch(function(){
+    // API 실패시 이름으로 바로 시도
+    var name=encodeURIComponent(address);
+    window.location.href='kakaonavi://route?ep='+name+'&by=CAR';
+    setTimeout(function(){
+      window.open('https://kakaonavi.kakao.com/launch/index.do?ep='+name+'&by=CAR','_blank');
+    },1500);
+  });
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
