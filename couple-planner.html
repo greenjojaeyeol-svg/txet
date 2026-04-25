@@ -587,12 +587,10 @@ async function saveModal(){
 // ── 카카오내비 ────────────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
-  // 주소 클립보드 복사
   navigator.clipboard.writeText(address).catch(function(){});
   toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
   setTimeout(function(){
-    // U+카카오내비 앱 실행
-    window.location.href='intent://#Intent;scheme=kakaonavi;package=com.lguplus.navi;end';
+    window.location.href='intent://com.lguplus.navi#Intent;scheme=upluskakaonavi;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.lguplus.navi;end';
   }, 800);
 }
 
