@@ -587,11 +587,10 @@ async function saveModal(){
 // ── 카카오내비 ────────────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
-  // 주소 클립보드 복사
   navigator.clipboard.writeText(address).catch(function(){});
-  toast('📋 주소 복사됨! 카카오내비 실행 중…');
+  toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
   setTimeout(function(){
-    window.location.href='kakaonavi://';
+    window.location.href='https://carner.kakaomobility.com/web2app/bridge?action=kakaonavi%3A%2F%2Fstartapp';
   },500);
 }
 
