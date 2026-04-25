@@ -375,7 +375,7 @@ function makeCard(key,item,cat){
     mapH='<div class="mapbtns">'
       +'<a class="mbtn kk" href="'+kakaoUrl+'" target="_blank">🗺 카카오맵</a>'
       +'<a class="mbtn nv" href="'+naverUrl+'" target="_blank">🗺 네이버지도</a>'
-      +'<button class="mbtn na" onclick="openNavi(\''+escH(item.address||'')+'\')">🗺 카카오맵 길찾기</button>'
+      +'<button class="mbtn na" onclick="openNavi(\''+escH(item.address||'')+'\')">🚗 길찾기</button>'
       +'</div>';
   }
   var stepsH='';
@@ -587,9 +587,29 @@ async function saveModal(){
 // ── 카카오내비 ────────────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
-  var enc=encodeURIComponent(address);
-  // 카카오맵 앱 딥링크 - 크롬에서도 바로 실행됨
-  window.location.href='kakaomap://search?q='+enc+'&center=';
+  toast('경로 검색 중…');
+  var PROXY='https://kakao-proxy-seven.vercel.app';
+  fetch(PROXY+'/api/geocode?query='+encodeURIComponent(address))
+  .then(function(r){return r.json()})
+  .then(function(data){
+    var doc=data.documents&&data.documents[0];
+    if(doc){
+      var lat=doc.y||doc.latitude;
+      var lng=doc.x||doc.longitude;
+      var name=encodeURIComponent(address);
+      if(lat&&lng){
+        // 카카오맵 앱 직접 실행 + 길찾기 (크롬에서 바로 작동)
+        window.location.href='kakaomap://route?ep='+lat+','+lng+','+name+'&by=CAR';
+      }else{
+        toast('좌표를 찾을 수 없어요');
+      }
+    }else{
+      toast('주소를 찾을 수 없어요');
+    }
+  })
+  .catch(function(e){
+    toast('오류: '+e.message);
+  });
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
