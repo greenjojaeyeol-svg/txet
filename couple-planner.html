@@ -587,28 +587,16 @@ async function saveModal(){
 // ── 카카오내비 ────────────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
-  toast('경로 검색 중…');
-  var PROXY='https://kakao-proxy-seven.vercel.app';
-  fetch(PROXY+'/api/geocode?query='+encodeURIComponent(address))
-  .then(function(r){return r.json()})
-  .then(function(data){
-    var doc=data.documents&&data.documents[0];
-    if(doc){
-      var lat=doc.y||doc.latitude;
-      var lng=doc.x||doc.longitude;
-      var name=encodeURIComponent(address);
-      if(lat&&lng){
-        // 카카오내비 공식 웹 링크 (앱 설치시 앱으로 바로 열림)
-        window.location.href='https://kakaonavi.kakao.com/launch/index.do?ep='+lng+','+lat+','+name+'&by=CAR&via=';
-      }else{
-        toast('좌표를 찾을 수 없어요');
-      }
-    }else{
-      toast('주소를 찾을 수 없어요');
-    }
-  })
-  .catch(function(e){
-    toast('오류: '+e.message);
+  // 클립보드에 주소 복사 후 카카오내비 실행
+  navigator.clipboard.writeText(address).then(function(){
+    toast('주소 복사됨! 카카오내비 실행 중…');
+    setTimeout(function(){
+      window.location.href='kakaonavi://';
+    }, 800);
+  }).catch(function(){
+    // 클립보드 실패시 그냥 앱만 실행
+    toast('카카오내비 실행 중…');
+    window.location.href='kakaonavi://';
   });
 }
 
