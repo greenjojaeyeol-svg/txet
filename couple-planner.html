@@ -590,7 +590,7 @@ function openNavi(address){
   navigator.clipboard.writeText(address).catch(function(){});
   toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
   setTimeout(function(){
-    'intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.lguplus.navi;end';
+    window.location.href='intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.lguplus.navi;end';
   },800);
 }
 
