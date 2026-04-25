@@ -594,24 +594,29 @@ function openNavi(address){
   .then(function(data){
     var doc=data.documents&&data.documents[0];
     if(doc){
-      // 주소검색: x,y / 키워드검색: x,y 둘 다 동일
       var lat=doc.y||doc.latitude;
       var lng=doc.x||doc.longitude;
       var name=encodeURIComponent(address);
-      console.log('좌표:', lat, lng);
       if(lat&&lng){
-        window.location.href='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
+        var isAndroid=/Android/i.test(navigator.userAgent);
+        var isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if(isAndroid){
+          // 안드로이드 인텐트 방식
+          window.location.href='intent://route?ep='+lng+','+lat+','+name+'&by=CAR#Intent;scheme=kakaonavi;package=com.kakaomobility.knsdk;end';
+        }else if(isIOS){
+          window.location.href='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
+        }else{
+          window.open('https://kakaonavi.kakao.com/launch/index.do?ep='+lng+','+lat+','+name+'&by=CAR','_blank');
+        }
       }else{
         toast('좌표를 찾을 수 없어요');
       }
     }else{
       toast('주소를 찾을 수 없어요');
-      console.log('API 응답:', JSON.stringify(data));
     }
   })
   .catch(function(e){
     toast('오류: '+e.message);
-    console.log('fetch 오류:', e);
   });
 }
 
