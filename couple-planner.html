@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>우리 둘만의 공간 ♡</title>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+  import { getDatabase, ref, onValue, set, remove, update }
+    from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+  const firebaseConfig = {
+    apiKey:"AIzaSyCItutGKUCET2VyDOuHcA3yemaAIlCcqBo",
+    authDomain:"text-85ec2.firebaseapp.com",
+    databaseURL:"https://text-85ec2-default-rtdb.firebaseio.com",
+    projectId:"text-85ec2",
+    storageBucket:"text-85ec2.firebasestorage.app",
+    messagingSenderId:"881067394604",
+    appId:"1:881067394604:web:5d77e68acb58cc509f3389"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  window._fb = { db, ref, onValue, set, remove, update };
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=2fc31a383f6d190a8f058919d1623966&libraries=services"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rose:#C8506A;--rose-l:#ECA0B3;--blush:#FAEEF2;
+  --sand:#F7F1EC;--ink:#1C1A1A;--muted:#9A9086;
+  --border:rgba(200,80,106,0.15);--r:16px;
+  --shadow:0 4px 24px rgba(200,80,106,0.10);
+}
+html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+
+/* 로그인 */
+#scr-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#fdf0f4,var(--sand))}
+.lw{width:100%;max-width:360px;text-align:center}
+.lheart{font-size:54px;animation:hb 2.4s ease-in-out infinite;display:block;margin-bottom:10px}
+@keyframes hb{0%,100%{transform:scale(1)}14%{transform:scale(1.18)}28%{transform:scale(1)}42%{transform:scale(1.1)}56%{transform:scale(1)}}
+.ltitle{font-family:'Nanum Myeongjo',serif;font-size:28px;color:var(--rose);margin-bottom:6px}
+.lsub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.lcard{background:#fff;border-radius:24px;padding:28px 24px;border:1px solid var(--border);box-shadow:var(--shadow);text-align:left}
+.lcard label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.linp{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
+.linp:focus{border-color:var(--rose);background:#fff}
+.lhint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
+.lbtn{width:100%;padding:14px;background:var(--rose);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:16px;transition:.2s}
+.lbtn:hover{background:#a83c58}
+.lbtn:disabled{opacity:.6;cursor:not-allowed}
+.lerr{background:#fff0f3;border:1px solid #f8c0cb;color:#9b2c42;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:10px;display:none}
+.lerr.show{display:block}
+
+/* 앱 */
+#scr-app{display:none;max-width:700px;margin:0 auto;padding-bottom:80px}
+.hdr{background:#fff;border-bottom:1px solid var(--border);padding:14px 18px;position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between}
+.hdr h2{font-family:'Nanum Myeongjo',serif;font-size:18px;color:var(--rose)}
+.hdr-dday{font-size:12px;color:var(--muted);margin-top:2px}
+.hdr-out{font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif}
+
+.nav{display:flex;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:61px;z-index:59}
+.nav::-webkit-scrollbar{display:none}
+.nb{flex:1;min-width:68px;padding:10px 4px 9px;font-size:11px;font-family:'Pretendard',sans-serif;background:none;border:none;border-bottom:2.5px solid transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+.nb .ni{display:block;font-size:16px;margin-bottom:3px}
+.nb.on{color:var(--rose);border-bottom-color:var(--rose);font-weight:600}
+
+.pg{display:none;padding:16px}
+.pg.on{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.sec{font-family:'Nanum Myeongjo',serif;font-size:16px;color:var(--rose);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.addbtn{width:100%;padding:11px;margin-bottom:14px;background:var(--blush);border:1.5px dashed var(--rose-l);border-radius:var(--r);color:var(--rose);font-size:13px;font-weight:500;font-family:'Pretendard',sans-serif;cursor:pointer;transition:.2s}
+.addbtn:hover{background:var(--rose);color:#fff;border-style:solid}
+
+/* 카드 아코디언 */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;transition:.15s}
+.card:hover{border-color:var(--rose-l)}
+.card-hd{display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer;user-select:none}
+.card-hd-body{flex:1;min-width:0}
+.card-hd-name{font-size:15px;font-weight:600}
+.card-hd-date{font-size:11px;color:var(--rose);font-weight:500;margin-bottom:3px}
+.card-tag{font-size:11px;padding:3px 10px;border-radius:20px;background:var(--blush);color:var(--rose);font-weight:500;white-space:nowrap;flex-shrink:0}
+.visited-badge{font-size:11px;padding:3px 10px;border-radius:20px;background:#e8f8ef;color:#1e7d45;font-weight:600;flex-shrink:0}
+.card-arrow{font-size:12px;color:var(--muted);flex-shrink:0;transition:transform .25s}
+.card.open .card-arrow{transform:rotate(180deg)}
+.card-bd{display:none;padding:0 14px 14px;border-top:1px solid var(--border)}
+.card.open .card-bd{display:block}
+.card-sub{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
+
+/* 지도 버튼 */
+.mapbtns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.mbtn{font-size:11px;padding:5px 11px;border-radius:20px;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;transition:.15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px}
+.mbtn.kk{background:#FEE500;color:#3A1D1D}
+.mbtn.nv{background:#03C75A;color:#fff}
+.mbtn.na{background:#1a73e8;color:#fff}
+
+/* 스텝 */
+.steps{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.step-r{display:flex;align-items:flex-start;gap:8px}
+.step-dot{width:22px;height:22px;border-radius:50%;background:var(--rose);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600}
+.step-t{font-size:13px;color:var(--muted);padding-top:3px;line-height:1.4}
+
+/* 카드 푸터 */
+.card-ft{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.cbtn{font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;transition:.15s}
+.cbtn:hover{background:var(--sand);color:var(--ink)}
+.cbtn.del:hover{background:#fceaea;color:#a32d2d;border-color:#f5aaaa}
+.vbtn{font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;margin-left:auto;transition:.2s}
+.vbtn.on{background:#e8f8ef;color:#1e7d45;border-color:#7ecfa0}
+
+/* 체크리스트 */
+.chkbar{display:flex;gap:8px;margin-bottom:14px}
+.chkbar input{flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
+.chkbar input:focus{border-color:var(--rose);background:#fff}
+.chkbar button{padding:11px 16px;background:var(--rose);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Pretendard',sans-serif}
+.chki{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;user-select:none;transition:.15s}
+.chki.done{opacity:.5}
+.chk-c{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.2s}
+.chki.done .chk-c{background:var(--rose);border-color:var(--rose)}
+.chk-ck{color:#fff;font-size:12px;font-weight:700;opacity:0}
+.chki.done .chk-ck{opacity:1}
+.chk-lbl{flex:1;font-size:14px}
+.chki.done .chk-lbl{text-decoration:line-through}
+.chk-del{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;opacity:0;line-height:1;padding:0 2px}
+.chki:hover .chk-del{opacity:1}
+
+/* 통계 */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat{background:var(--blush);border-radius:14px;padding:16px;text-align:center}
+.stat-n{font-size:28px;color:var(--rose);font-family:'Nanum Myeongjo',serif}
+.stat-l{font-size:11px;color:var(--muted);margin-top:3px;font-weight:500}
+
+/* 설정 */
+.setcard{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px}
+.setsave{width:100%;padding:13px;background:var(--rose);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:6px}
+
+/* 빈/로딩 */
+.empty{text-align:center;padding:44px 20px;color:var(--muted)}
+.empty-i{font-size:36px;margin-bottom:10px}
+.empty-t{font-size:14px}
+.loading{text-align:center;padding:30px;color:var(--muted);font-size:13px}
+
+/* 모달 */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
+.mbg.on{display:flex}
+.modal{background:#fff;width:100%;max-width:480px;border-radius:22px 22px 0 0;padding:26px 20px 36px;max-height:92vh;overflow-y:auto;animation:mup .25s ease}
+@keyframes mup{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-ttl{font-family:'Nanum Myeongjo',serif;font-size:19px;color:var(--rose);margin-bottom:18px}
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-bottom:6px;text-transform:uppercase}
+.fg input,.fg select,.fg textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;font-size:14px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--rose);background:#fff}
+.fg textarea{height:80px;resize:none}
+.mfoot{display:flex;gap:10px;margin-top:20px}
+.mfoot button{flex:1;padding:13px;border-radius:11px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;border:none}
+.mcancel{background:var(--sand);color:var(--muted)}
+.msave{background:var(--rose);color:#fff}
+
+/* 토스트 */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(70px);background:#1C1A1A;color:#fff;padding:11px 22px;border-radius:22px;font-size:13px;font-weight:500;z-index:999;transition:transform .3s ease;pointer-events:none;white-space:nowrap}
+#toast.on{transform:translateX(-50%) translateY(0)}
+@media(max-width:480px){.modal{max-height:96vh}}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="scr-login">
+  <div class="lw">
+    <span class="lheart">♡</span>
+    <h1 class="ltitle">우리 둘만의 공간</h1>
+    <p class="lsub">같은 비밀번호로 연결돼요</p>
+    <div class="lcard">
+      <label>비밀번호</label>
+      <input class="linp" type="password" id="pw" placeholder="비밀번호를 입력하세요" onkeydown="if(event.key==='Enter')login()">
+      <p class="lhint">둘이 똑같은 비밀번호 → 같은 공간 연결<br>처음 입력하면 새 공간이 자동으로 만들어져요 🌸</p>
+      <button class="lbtn" id="lbtn" onclick="login()">입장하기</button>
+      <div class="lerr" id="lerr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 앱 -->
+<div id="scr-app">
+  <div class="hdr">
+    <div>
+      <h2 id="hdr-name">우리 둘만의 공간 ♡</h2>
+      <div class="hdr-dday" id="hdr-dday"></div>
+    </div>
+    <button class="hdr-out" onclick="logout()">나가기</button>
+  </div>
+  <nav class="nav">
+    <button class="nb on" onclick="goPage('courses',this)"><span class="ni">🗺️</span>코스</button>
+    <button class="nb" onclick="goPage('restaurants',this)"><span class="ni">🍽️</span>맛집</button>
+    <button class="nb" onclick="goPage('cafes',this)"><span class="ni">☕</span>카페</button>
+    <button class="nb" onclick="goPage('plans',this)"><span class="ni">📅</span>일정</button>
+    <button class="nb" onclick="goPage('checklist',this)"><span class="ni">✅</span>체크</button>
+    <button class="nb" onclick="goPage('settings',this)"><span class="ni">⚙️</span>설정</button>
+  </nav>
+
+  <div class="pg on" id="pg-courses">
+    <button class="addbtn" onclick="openAdd('courses')">+ 데이트 코스 추가</button>
+    <div class="sec">저장된 코스</div>
+    <div id="lst-courses"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="pg" id="pg-restaurants">
+    <button class="addbtn" onclick="openAdd('restaurants')">+ 맛집 추가</button>
+    <div class="sec">우리만의 맛집 리스트</div>
+    <div id="lst-restaurants"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="pg" id="pg-cafes">
+    <button class="addbtn" onclick="openAdd('cafes')">+ 카페 추가</button>
+    <div class="sec">좋아하는 카페</div>
+    <div id="lst-cafes"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="pg" id="pg-plans">
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="sn-c">0</div><div class="stat-l">저장된 코스</div></div>
+      <div class="stat"><div class="stat-n" id="sn-p">0</div><div class="stat-l">맛집·카페</div></div>
+    </div>
+    <button class="addbtn" onclick="openAdd('plans')">+ 데이트 일정 추가</button>
+    <div class="sec">데이트 일정</div>
+    <div id="lst-plans"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="pg" id="pg-checklist">
+    <div class="chkbar">
+      <input type="text" id="chk-inp" placeholder="할 일 입력…" onkeydown="if(event.key==='Enter')addCheck()">
+      <button onclick="addCheck()">추가</button>
+    </div>
+    <div class="sec">할 일 목록</div>
+    <div id="lst-checklist"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="pg" id="pg-settings">
+    <div class="sec">커플 정보</div>
+    <div class="setcard">
+      <div class="fg"><label>내 이름</label><input type="text" id="s1" placeholder="내 이름"></div>
+      <div class="fg"><label>상대방 이름</label><input type="text" id="s2" placeholder="상대방 이름"></div>
+      <div class="fg"><label>사귄 날짜</label><input type="date" id="sa"></div>
+      <button class="setsave" onclick="saveSet()">저장하기</button>
+    </div>
+    <div class="sec" style="margin-top:20px">연결 방식</div>
+    <div class="setcard" style="font-size:13px;color:var(--muted);line-height:1.8">
+      같은 비밀번호 입력 시 같은 공간으로 연결돼요.<br>
+      <span style="color:var(--rose);font-size:12px">⚠ 비밀번호가 다르면 다른 공간으로 연결됩니다.</span>
+    </div>
+  </div>
+</div>
+
+<!-- 모달 -->
+<div class="mbg" id="mbg" onclick="bgClick(event)">
+  <div class="modal">
+    <div class="modal-ttl" id="m-ttl">추가</div>
+    <div id="m-body"></div>
+    <div class="mfoot">
+      <button class="mcancel" onclick="closeModal()">취소</button>
+      <button class="msave" onclick="saveModal()">저장</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ── 전역 상태 ──────────────────────────────────────────
+var RK=null; // roomKey
+var DB={}; // 로컬 데이터: DB.courses, DB.restaurants, DB.cafes, DB.plans, DB.checklist, DB.settings
+var UNSUBS=[];
+var M_TYPE=''; // 현재 모달 타입 (courses/restaurants/cafes/plans)
+var M_KEY=null; // 수정 중인 키 (null이면 새 추가)
+
+// ── 유틸 ──────────────────────────────────────────────
+function $(i){return document.getElementById(i)}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function toast(msg){
+  var t=$('toast');t.textContent=msg;t.classList.add('on');
+  setTimeout(function(){t.classList.remove('on')},2200);
+}
+function fb(){return window._fb}
+function rr(path){
+  var p='rooms/'+RK+(path?'/'+path:'');
+  return fb().ref(fb().db,p);
+}
+
+// ── SHA256 ────────────────────────────────────────────
+async function sha256(str){
+  var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0')}).join('');
+}
+
+// ── 로그인 / 로그아웃 ─────────────────────────────────
+async function login(){
+  var pw=$('pw').value.trim();
+  if(!pw){showErr('비밀번호를 입력해주세요');return}
+  var btn=$('lbtn');btn.disabled=true;btn.textContent='연결 중…';
+  try{
+    RK=await sha256('couple_v1_'+pw);
+    localStorage.setItem('RK',RK);
+    enterApp();
+  }catch(e){
+    showErr('오류가 발생했어요');btn.disabled=false;btn.textContent='입장하기';
+  }
+}
+function showErr(msg){var el=$('lerr');el.textContent=msg;el.classList.add('show');setTimeout(function(){el.classList.remove('show')},3000)}
+
+function logout(){
+  if(!confirm('나갈까요?'))return;
+  UNSUBS.forEach(function(u){u()});UNSUBS=[];
+  localStorage.removeItem('RK');RK=null;
+  $('scr-app').style.display='none';$('scr-login').style.display='flex';
+  $('pw').value='';$('lbtn').disabled=false;$('lbtn').textContent='입장하기';
+}
+
+function enterApp(){
+  $('scr-login').style.display='none';$('scr-app').style.display='block';
+  DB={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
+  subscribeAll();
+}
+
+// ── 구독 ──────────────────────────────────────────────
+function subscribeAll(){
+  ['courses','restaurants','cafes','plans','checklist','settings'].forEach(function(cat){
+    var u=fb().onValue(rr(cat),function(snap){
+      DB[cat]=snap.val()||{};
+      render(cat);
+      refreshHdr();
+    });
+    UNSUBS.push(u);
+  });
+}
+
+function refreshHdr(){
+  var s=DB.settings||{};
+  if(s.name1&&s.name2)$('hdr-name').textContent=s.name1+' ♡ '+s.name2;
+  if(s.anniversary){
+    var d=Math.floor((Date.now()-new Date(s.anniversary))/864e5)+1;
+    $('hdr-dday').textContent='함께한 지 D+'+d+'일';
+  }
+  if($('s1')&&!$('s1').value&&s.name1)$('s1').value=s.name1;
+  if($('s2')&&!$('s2').value&&s.name2)$('s2').value=s.name2;
+  if($('sa')&&!$('sa').value&&s.anniversary)$('sa').value=s.anniversary;
+  $('sn-c').textContent=Object.keys(DB.courses||{}).length;
+  $('sn-p').textContent=Object.keys(DB.restaurants||{}).length+Object.keys(DB.cafes||{}).length;
+}
+
+// ── 렌더링 ────────────────────────────────────────────
+var EMPTY={
+  courses:['🗺️','아직 저장된 코스가 없어요'],
+  restaurants:['🍽️','가고 싶은 맛집을 추가해보세요'],
+  cafes:['☕','좋아하는 카페를 추가해보세요'],
+  plans:['📅','데이트 일정을 계획해보세요']
+};
+
+function render(cat){
+  if(cat==='settings')return;
+  if(cat==='checklist'){renderChk();return}
+  var el=$('lst-'+cat);
+  if(!el)return;
+  var items=Object.entries(DB[cat]||{});
+  if(!items.length){
+    var e=EMPTY[cat]||['♡','비어있어요'];
+    el.innerHTML='<div class="empty"><div class="empty-i">'+e[0]+'</div><div class="empty-t">'+e[1]+'</div></div>';
+    return;
+  }
+  if(cat==='plans') items.sort(function(a,b){return (a[1].date||'').localeCompare(b[1].date||'')});
+  el.innerHTML=items.map(function(kv){return makeCard(kv[0],kv[1],cat)}).join('');
+}
+
+function makeCard(key,item,cat){
+  var enc=encodeURIComponent(item.address||'');
+  var mapH='';
+  if(item.address){
+    var kakaoUrl='https://map.kakao.com/link/search/'+enc;
+    var naverUrl='https://map.naver.com/v5/search/'+enc;
+    mapH='<div class="mapbtns">'
+      +'<a class="mbtn kk" href="'+kakaoUrl+'" target="_blank">🗺 카카오맵</a>'
+      +'<a class="mbtn nv" href="'+naverUrl+'" target="_blank">🗺 네이버지도</a>'
+      +'<button class="mbtn na" onclick="openNavi(\''+escH(item.address||'')+'\')">🚗 카카오내비</button>'
+      +'</div>';
+  }
+  var stepsH='';
+  if(cat==='courses'&&item.steps&&item.steps.length){
+    stepsH='<div class="steps">'+item.steps.map(function(s,i){
+      return '<div class="step-r"><div class="step-dot">'+(i+1)+'</div><div class="step-t">'+s+'</div></div>';
+    }).join('')+'</div>';
+  }
+  var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
+  var tagH=item.category?'<span class="card-tag">'+item.category+'</span>':'';
+  var visitH=item.visited?'<span class="visited-badge">✅ 방문</span>':'';
+  var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
+
+  return '<div class="card" id="cd-'+key+'">'
+    +'<div class="card-hd" onclick="toggleCard(\''+key+'\')">'
+      +'<div class="card-hd-body">'+dateH+'<div class="card-hd-name">'+escH(item.name||'')+'</div></div>'
+      +tagH+visitH
+      +'<span class="card-arrow">▼</span>'
+    +'</div>'
+    +'<div class="card-bd">'
+      +(item.address?'<div class="card-sub">📍 '+escH(item.address)+'</div>':'' )
+      +mapH
+      +(item.memo?'<div class="card-sub">'+escH(item.memo)+'</div>':'')
+      +stepsH
+      +'<div class="card-ft">'
+        +'<button class="cbtn" onclick="openEdit(\''+key+'\',\''+cat+'\')">수정</button>'
+        +'<button class="cbtn del" onclick="delItem(\''+key+'\',\''+cat+'\')">삭제</button>'
+        +vbtnH
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function toggleCard(key){
+  var el=$('cd-'+key);
+  if(el)el.classList.toggle('open');
+}
+
+async function toggleVisit(key,cat,cur,e){
+  e.stopPropagation();
+  await fb().update(rr(cat+'/'+key),{visited:!cur});
+}
+
+async function delItem(key,cat){
+  if(!confirm('삭제할까요?'))return;
+  await fb().remove(rr(cat+'/'+key));
+  toast('삭제했어요');
+}
+
+// ── 체크리스트 ────────────────────────────────────────
+function renderChk(){
+  var el=$('lst-checklist');
+  var items=Object.entries(DB.checklist||{});
+  if(!items.length){el.innerHTML='<div class="empty"><div class="empty-i">✅</div><div class="empty-t">할 일을 추가해보세요</div></div>';return}
+  items.sort(function(a,b){return (a[1].done?1:0)-(b[1].done?1:0)});
+  el.innerHTML=items.map(function(kv){
+    var k=kv[0],v=kv[1];
+    return '<div class="chki'+(v.done?' done':'')+'" onclick="toggleChk(\''+k+'\')">'
+      +'<div class="chk-c"><span class="chk-ck">✓</span></div>'
+      +'<div class="chk-lbl">'+escH(v.text||'')+'</div>'
+      +'<button class="chk-del" onclick="event.stopPropagation();delChk(\''+k+'\')">×</button>'
+      +'</div>';
+  }).join('');
+}
+async function addCheck(){
+  var inp=$('chk-inp'),text=inp.value.trim();
+  if(!text)return;
+  await fb().set(rr('checklist/'+uid()),{text:text,done:false,ts:Date.now()});
+  inp.value='';
+}
+async function toggleChk(k){
+  var cur=(DB.checklist[k]||{}).done||false;
+  await fb().update(rr('checklist/'+k),{done:!cur});
+}
+async function delChk(k){
+  await fb().remove(rr('checklist/'+k));
+}
+
+// ── 설정 ──────────────────────────────────────────────
+async function saveSet(){
+  await fb().set(rr('settings'),{
+    name1:$('s1').value.trim(),
+    name2:$('s2').value.trim(),
+    anniversary:$('sa').value,
+    ts:Date.now()
+  });
+  toast('저장했어요 ♡');
+}
+
+// ── 모달 폼 정의 ──────────────────────────────────────
+var FORMS={
+  courses:function(d){
+    var cats=['로맨틱','액티비티','힐링','맛집투어','야경'];
+    return {
+      title:d?'코스 수정':'데이트 코스 추가',
+      html:'<div class="fg"><label>코스 이름 *</label><input type="text" id="f-name" value="'+(d?escH(d.name||''):'')+'" placeholder="예: 홍대 반나절 코스"></div>'
+        +'<div class="fg"><label>카테고리</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +cats.map(function(c){return '<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="경복궁&#10;인사동&#10;광장시장">'+(d&&d.steps?d.steps.join('\n'):'')+'</textarea></div>'
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+(d?escH(d.memo||''):'')+'" placeholder="간단한 메모"></div>'
+    };
+  },
+  restaurants:function(d){
+    var cats=['한식','일식','양식','중식','분식','기타'];
+    return {
+      title:d?'맛집 수정':'맛집 추가',
+      html:'<div class="fg"><label>상호명 *</label><input type="text" id="f-name" value="'+(d?escH(d.name||''):'')+'" placeholder="맛집 이름"></div>'
+        +'<div class="fg"><label>종류</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +cats.map(function(c){return '<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+(d?escH(d.address||''):'')+'" placeholder="주소 입력"></div>'
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+(d?escH(d.memo||''):'')+'" placeholder="웨이팅 필수 등"></div>'
+    };
+  },
+  cafes:function(d){
+    var cats=['감성카페','대형카페','디저트','루프탑','베이커리'];
+    return {
+      title:d?'카페 수정':'카페 추가',
+      html:'<div class="fg"><label>카페 이름 *</label><input type="text" id="f-name" value="'+(d?escH(d.name||''):'')+'" placeholder="카페 이름"></div>'
+        +'<div class="fg"><label>분위기</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +cats.map(function(c){return '<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+(d?escH(d.address||''):'')+'" placeholder="주소 입력"></div>'
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+(d?escH(d.memo||''):'')+'" placeholder="포토존 있음 등"></div>'
+    };
+  },
+  plans:function(d){
+    var cats=['당일치기','1박2일','기념일','일상데이트'];
+    return {
+      title:d?'일정 수정':'데이트 일정 추가',
+      html:'<div class="fg"><label>날짜</label><input type="date" id="f-date" value="'+(d?d.date||'':'')+'"></div>'
+        +'<div class="fg"><label>제목 *</label><input type="text" id="f-name" value="'+(d?escH(d.name||''):'')+'" placeholder="예: 성수 데이트"></div>'
+        +'<div class="fg"><label>유형</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +cats.map(function(c){return '<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>메모</label><textarea id="f-memo" placeholder="특별한 계획을 적어보세요">'+(d?escH(d.memo||''):'')+'</textarea></div>'
+    };
+  }
+};
+
+// ── 모달 열기/닫기 ────────────────────────────────────
+function openAdd(cat){
+  M_TYPE=cat;
+  M_KEY=null;
+  var f=FORMS[cat](null);
+  $('m-ttl').textContent=f.title;
+  $('m-body').innerHTML=f.html;
+  $('mbg').classList.add('on');
+}
+
+function openEdit(key,cat){
+  M_TYPE=cat;
+  M_KEY=key;
+  var item=DB[cat]&&DB[cat][key];
+  if(!item){toast('항목을 찾을 수 없어요');return}
+  var f=FORMS[cat](item);
+  $('m-ttl').textContent=f.title;
+  $('m-body').innerHTML=f.html;
+  $('mbg').classList.add('on');
+}
+
+function closeModal(){
+  $('mbg').classList.remove('on');
+}
+
+function bgClick(e){
+  if(e.target===$('mbg'))closeModal();
+}
+
+async function saveModal(){
+  var nameEl=$('f-name');
+  if(!nameEl||!nameEl.value.trim()){
+    if(nameEl)nameEl.style.borderColor='#e24b4a';
+    return;
+  }
+  var catEl=$('f-cat');
+  var memoEl=$('f-memo');
+  var addrEl=$('f-addr');
+  var stepsEl=$('f-steps');
+  var dateEl=$('f-date');
+  var existVisited=(M_KEY&&DB[M_TYPE]&&DB[M_TYPE][M_KEY])?DB[M_TYPE][M_KEY].visited||false:false;
+
+  var item={
+    name:nameEl.value.trim(),
+    category:catEl?catEl.value:'',
+    memo:memoEl?memoEl.value.trim():'',
+    address:addrEl?addrEl.value.trim():'',
+    steps:stepsEl?stepsEl.value.split('\n').map(function(s){return s.trim()}).filter(Boolean):[],
+    date:dateEl?dateEl.value:'',
+    visited:existVisited,
+    ts:Date.now()
+  };
+
+  var saveKey=M_KEY||uid();
+  var wasEdit=!!M_KEY;
+
+  try{
+    await fb().set(rr(M_TYPE+'/'+saveKey),item);
+    closeModal();
+    toast(wasEdit?'수정했어요 ♡':'추가했어요 ♡');
+  }catch(err){
+    toast('저장 실패: '+err.message);
+  }
+}
+
+// ── 카카오내비 ────────────────────────────────────────
+function openNavi(address){
+  if(!address){toast('주소가 없어요');return}
+  navigator.clipboard.writeText(address).catch(function(){});
+  toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
+  setTimeout(function(){
+    window.location.href='intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.lguplus.navi;end';
+  },800);
+}
+
+// ── 페이지 전환 ───────────────────────────────────────
+function goPage(page,btn){
+  document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on')});
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on')});
+  $('pg-'+page).classList.add('on');
+  btn.classList.add('on');
+}
+
+// ── 초기화 ────────────────────────────────────────────
+window.addEventListener('firebase-ready',function(){
+  var saved=localStorage.getItem('RK');
+  if(saved){RK=saved;enterApp();}
+});
+</script>
+</body>
+</html>
