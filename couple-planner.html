@@ -588,22 +588,10 @@ async function saveModal(){
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
   navigator.clipboard.writeText(address).catch(function(){});
-  toast('📋 주소 복사됨! 잠시 후 앱이 열려요');
-
-  // 여러 스킴 순서대로 시도
-  var schemes=[
-    'upluskakaonavi://navi',
-    'kakaonavi://navi',
-    'intent://navi#Intent;scheme=upluskakaonavi;package=com.lguplus.navi;end',
-    'intent://navi#Intent;scheme=kakaonavi;package=com.lguplus.navi;end'
-  ];
-  var idx=0;
-  function tryNext(){
-    if(idx>=schemes.length)return;
-    window.location.href=schemes[idx++];
-    setTimeout(tryNext,1000);
-  }
-  setTimeout(tryNext,800);
+  toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
+  setTimeout(function(){
+    window.location.href='intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.lguplus.navi;end';
+  },800);
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
