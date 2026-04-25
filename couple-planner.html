@@ -587,16 +587,13 @@ async function saveModal(){
 // ── 카카오내비 ────────────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
+  // 주소 클립보드 복사
   navigator.clipboard.writeText(address).catch(function(){});
   toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
   setTimeout(function(){
-    var ua=navigator.userAgent;
-    if(/Android/i.test(ua)){
-      window.location.href='intent://#Intent;scheme=kakaonavi;package=com.kakaomobility.knsdk;end';
-    }else if(/iPhone|iPad|iPod/i.test(ua)){
-      window.location.href='kakaonavi://';
-    }
-  },800);
+    // U+카카오내비 앱 실행
+    window.location.href='intent://#Intent;scheme=kakaonavi;package=com.lguplus.navi;end';
+  }, 800);
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
