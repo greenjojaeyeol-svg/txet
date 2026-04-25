@@ -166,7 +166,6 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 </head>
 <body>
 
-<!-- 로그인 -->
 <div id="scr-login">
   <div class="lw">
     <span class="lheart">♡</span>
@@ -182,7 +181,6 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
   </div>
 </div>
 
-<!-- 앱 -->
 <div id="scr-app">
   <div class="hdr">
     <div>
@@ -248,7 +246,6 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
   </div>
 </div>
 
-<!-- 모달 -->
 <div class="mbg" id="mbg" onclick="bgClick(event)">
   <div class="modal">
     <div class="modal-ttl" id="m-ttl">추가</div>
@@ -584,44 +581,39 @@ async function saveModal(){
   }
 }
 
-// ── 카카오내비 ────────────────────────────────────────
+// ── 카카오내비 연동 (Vercel Proxy 적용) ──────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
   toast('카카오내비 실행 중…');
-  // 카카오 REST API로 주소 → 좌표 변환
-  fetch('https://dapi.kakao.com/v2/local/search/address.json?query='+encodeURIComponent(address),{
-    headers:{'Authorization':'KakaoAK 2fc31a383f6d190a8f058919d1623966'}
-  })
+
+  // 전달해주신 Vercel 프록시 주소
+  var proxyUrl = 'https://kakao-proxy-fi653dowu-greenjojaeyeol-4549s-projects.vercel.app/v2/local/search/address.json?query=';
+
+  fetch(proxyUrl + encodeURIComponent(address))
   .then(function(r){return r.json()})
   .then(function(data){
     var doc=data.documents&&data.documents[0];
+    var name=encodeURIComponent(address);
     if(doc){
       var lat=doc.y;
       var lng=doc.x;
-      var name=encodeURIComponent(address);
       // 카카오내비 앱 딥링크 (좌표+이름)
       var deep='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
       window.location.href=deep;
-      // 앱 없으면 1.5초 후 웹으로
+      
+      // 앱이 없을 경우를 대비해 1.5초 후 카카오맵 길찾기 웹으로 연결
       setTimeout(function(){
-        window.open('https://kakaonavi.kakao.com/launch/index.do?ep='+lng+','+lat+','+name+'&by=CAR','_blank');
+        window.open('https://map.kakao.com/link/to/'+name+','+lat+','+lng, '_blank');
       },1500);
     }else{
-      // 좌표 못 찾으면 이름으로 시도
-      var name=encodeURIComponent(address);
-      window.location.href='kakaonavi://route?ep='+name+'&by=CAR';
-      setTimeout(function(){
-        window.open('https://kakaonavi.kakao.com/launch/index.do?ep='+name+'&by=CAR','_blank');
-      },1500);
+      // 좌표를 못 찾으면 이름으로 직접 검색 시도
+      window.location.href='kakaonavi://search?q='+name;
     }
   })
-  .catch(function(){
-    // API 실패시 이름으로 바로 시도
-    var name=encodeURIComponent(address);
-    window.location.href='kakaonavi://route?ep='+name+'&by=CAR';
-    setTimeout(function(){
-      window.open('https://kakaonavi.kakao.com/launch/index.do?ep='+name+'&by=CAR','_blank');
-    },1500);
+  .catch(function(err){
+    console.error('Navi Error:', err);
+    // 오류 발생 시 카카오맵 검색 결과 페이지로 안전하게 이동
+    window.open('https://map.kakao.com/link/search/'+encodeURIComponent(address),'_blank');
   });
 }
 
