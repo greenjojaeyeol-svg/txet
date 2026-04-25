@@ -598,16 +598,8 @@ function openNavi(address){
       var lng=doc.x||doc.longitude;
       var name=encodeURIComponent(address);
       if(lat&&lng){
-        var isAndroid=/Android/i.test(navigator.userAgent);
-        var isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if(isAndroid){
-          // 안드로이드 인텐트 방식
-          window.location.href='intent://route?ep='+lng+','+lat+','+name+'&by=CAR#Intent;scheme=kakaonavi;package=com.kakaomobility.knsdk;end';
-        }else if(isIOS){
-          window.location.href='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
-        }else{
-          window.open('https://kakaonavi.kakao.com/launch/index.do?ep='+lng+','+lat+','+name+'&by=CAR','_blank');
-        }
+        // 카카오내비 공식 웹 링크 (앱 설치시 앱으로 바로 열림)
+        window.location.href='https://kakaonavi.kakao.com/launch/index.do?ep='+lng+','+lat+','+name+'&by=CAR&via=';
       }else{
         toast('좌표를 찾을 수 없어요');
       }
