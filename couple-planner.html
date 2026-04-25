@@ -587,8 +587,25 @@ async function saveModal(){
 // ── 카카오내비 ────────────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
-  var name=encodeURIComponent(address);
-  window.location.href='kakaonavi://route?ep='+name+'&by=CAR';
+  toast('경로 검색 중…');
+  var PROXY='https://kakao-proxy-fi653dowu-greenjojaeyeol-4549s-projects.vercel.app';
+  fetch(PROXY+'/api/geocode?query='+encodeURIComponent(address))
+  .then(function(r){return r.json()})
+  .then(function(data){
+    var doc=data.documents&&data.documents[0];
+    if(doc){
+      var lat=doc.y;
+      var lng=doc.x;
+      var name=encodeURIComponent(address);
+      // 카카오내비 앱 딥링크 (좌표+이름으로 목적지 자동입력)
+      window.location.href='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
+    }else{
+      toast('주소를 찾을 수 없어요');
+    }
+  })
+  .catch(function(){
+    toast('오류가 발생했어요');
+  });
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
