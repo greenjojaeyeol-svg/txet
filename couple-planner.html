@@ -588,7 +588,7 @@ async function saveModal(){
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
   toast('경로 검색 중…');
-  var PROXY='https://kakao-proxy-fi653dowu-greenjojaeyeol-4549s-projects.vercel.app';
+  var PROXY='https://kakao-proxy-seven.vercel.app';
   fetch(PROXY+'/api/geocode?query='+encodeURIComponent(address))
   .then(function(r){return r.json()})
   .then(function(data){
