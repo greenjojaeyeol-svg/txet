@@ -588,10 +588,13 @@ async function saveModal(){
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
   navigator.clipboard.writeText(address).catch(function(){});
-  toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
+  toast('📋 주소 복사! 앱 선택 후 붙여넣기 하세요');
   setTimeout(function(){
-    window.location.href='intent://com.lguplus.navi#Intent;scheme=upluskakaonavi;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.lguplus.navi;end';
-  }, 800);
+    // 설치된 앱 실행 선택 팝업 띄우기
+    var a=document.createElement('a');
+    a.href='intent://navi#Intent;scheme=kakaonavi;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;end';
+    a.click();
+  },800);
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
