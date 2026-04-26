@@ -587,27 +587,11 @@ async function saveModal(){
 // ── 카카오내비 ────────────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
-  toast('경로 검색 중…');
-  var PROXY='https://kakao-proxy-seven.vercel.app';
-  fetch(PROXY+'/api/geocode?query='+encodeURIComponent(address))
-  .then(function(r){return r.json()})
-  .then(function(data){
-    var doc=data.documents&&data.documents[0];
-    if(doc){
-      var lat=doc.y;
-      var lng=doc.x;
-      var name=encodeURIComponent(address);
-      // 카카오내비 앱 직접 실행
-      window.location.href='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
-    }else{
-      navigator.clipboard.writeText(address).catch(function(){});
-      toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
-    }
-  })
-  .catch(function(){
-    navigator.clipboard.writeText(address).catch(function(){});
-    toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
-  });
+  navigator.clipboard.writeText(address).catch(function(){});
+  toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
+  setTimeout(function(){
+    window.location.href='https://carner.kakaomobility.com/web2app/bridge?action=kakaonavi%3A%2F%2Fstartapp';
+  },500);
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
