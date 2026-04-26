@@ -427,12 +427,19 @@ function render(cat){
 }
 
 // ── 카드 ──────────────────────────────────────────────
-function timeBadge(ot,ct){
+function timeBadge(ot,ct,lo,bt_s,bt_e,allday){
+  if(allday)return'<span class="tbadge open">🟢 24시간 영업</span>';
   if(!ot||!ct)return'';
   var now=new Date(),cur=now.getHours()*60+now.getMinutes();
   var op=toMin(ot),cl=toMin(ct);
+  var loMin=lo?toMin(lo):null;
+  var bt_sMin=bt_s?toMin(bt_s):null,bt_eMin=bt_e?toMin(bt_e):null;
+  // 브레이크타임 중인지
+  if(bt_sMin&&bt_eMin&&cur>=bt_sMin&&cur<bt_eMin)
+    return'<span class="tbadge soon">🟠 브레이크타임 ~'+bt_e+'</span>';
   if(cur<op-30||cur>=cl)return'<span class="tbadge closed">🔴 마감 '+ct+'</span>';
   if(cur<op)return'<span class="tbadge soon">🟡 오픈예정 '+ot+'</span>';
+  if(loMin&&cur>=loMin)return'<span class="tbadge soon">🟡 라스트오더 '+lo+'</span>';
   if(cur>=cl-30)return'<span class="tbadge soon">🟡 마감임박 '+ct+'</span>';
   return'<span class="tbadge open">🟢 영업중 ~'+ct+'</span>';
 }
@@ -459,7 +466,16 @@ function makeCard(key,item,cat){
   var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
   var tagH=item.category?'<span class="card-tag">'+esc(item.category)+'</span>':'';
   var vbadge=item.visited?'<span class="vbadge">✅ 방문</span>':'';
-  var tb=timeBadge(item.open_time,item.close_time);
+  var tb=timeBadge(item.open_time,item.close_time,item.last_order,item.break_start,item.break_end,item.allday);
+  var timeDetail='';
+  if(item.allday){
+    timeDetail='<div class="card-sub">🕐 24시간 영업</div>';
+  }else if(item.open_time||item.close_time){
+    timeDetail='<div class="card-sub">🕐 '+( item.open_time||'--')+'~'+(item.close_time||'--');
+    if(item.last_order)timeDetail+=' · 라스트오더 '+item.last_order;
+    if(item.break_start&&item.break_end)timeDetail+=' · 브레이크 '+item.break_start+'~'+item.break_end;
+    timeDetail+='</div>';
+  }
   var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
 
   return '<div class="card" id="cd-'+key+'">'
@@ -469,6 +485,7 @@ function makeCard(key,item,cat){
     +'</div>'
     +'<div class="card-bd">'
       +(item.address?'<div class="card-sub">📍 '+esc(item.address)+'</div>':'')
+      +timeDetail
       +mapH
       +(item.memo?'<div class="card-sub">'+esc(item.memo)+'</div>':'')
       +stepsH
@@ -612,28 +629,52 @@ var FORMS={
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="간단한 메모"></div>'};
   },
   restaurants:function(d){
+    var alld=d&&d.allday;
     return{title:d?'맛집 수정':'맛집 추가',
       html:'<div class="fg"><label>상호명 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="맛집 이름"></div>'
         +'<div class="fg"><label>종류</label><select id="f-cat"><option value="">선택 안 함</option>'
         +['한식','일식','양식','중식','분식','기타'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
-        +'<div class="fg" style="display:flex;gap:8px">'
-          +'<div style="flex:1"><label>오픈시간</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
-          +'<div style="flex:1"><label>마감시간</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
+        +'<div class="fg"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:13px"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+'>24시간 영업</label></div>'
+        +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>마감</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
+            +'<div style="flex:1"><label>&nbsp;</label></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>브레이크 시작</label><input type="time" id="f-bts" value="'+(d?d.break_start||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
+          +'</div>'
         +'</div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="웨이팅 필수 등"></div>'};
   },
   cafes:function(d){
+    var alld=d&&d.allday;
     return{title:d?'카페 수정':'카페 추가',
       html:'<div class="fg"><label>카페 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="카페 이름"></div>'
         +'<div class="fg"><label>분위기</label><select id="f-cat"><option value="">선택 안 함</option>'
         +['감성카페','대형카페','디저트','루프탑','베이커리'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
-        +'<div class="fg" style="display:flex;gap:8px">'
-          +'<div style="flex:1"><label>오픈시간</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
-          +'<div style="flex:1"><label>마감시간</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
+        +'<div class="fg"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:13px"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+'>24시간 영업</label></div>'
+        +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>마감</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
+            +'<div style="flex:1"><label>&nbsp;</label></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>브레이크 시작</label><input type="time" id="f-bts" value="'+(d?d.break_start||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
+          +'</div>'
         +'</div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="포토존 있음 등"></div>'};
   },
@@ -647,6 +688,11 @@ var FORMS={
         +'<div class="fg"><label>메모</label><textarea id="f-memo" placeholder="특별한 계획을 적어보세요">'+(d?esc(d.memo||''):'')+'</textarea></div>'};
   }
 };
+
+function toggleAllday(){
+  var chk=g('f-allday'),wrap=g('f-time-wrap');
+  if(chk&&wrap)wrap.style.display=chk.checked?'none':'';
+}
 
 function openAdd(cat){M_TYPE=cat;M_KEY=null;var f=FORMS[cat](null);g('m-ttl').textContent=f.title;g('m-body').innerHTML=f.html;g('mbg').classList.add('on')}
 function openEdit(key,cat){
@@ -662,6 +708,7 @@ async function saveModal(){
   var ne=g('f-name');
   if(!ne||!ne.value.trim()){if(ne)ne.style.borderColor='#e24b4a';return}
   var exist=(M_KEY&&DB[M_TYPE]&&DB[M_TYPE][M_KEY])||{};
+  var alldayEl=g('f-allday');
   var item={
     name:ne.value.trim(),
     category:(g('f-cat')||{}).value||'',
@@ -669,8 +716,12 @@ async function saveModal(){
     address:(g('f-addr')||{}).value||'',
     steps:g('f-steps')?g('f-steps').value.split('\n').map(function(s){return s.trim()}).filter(Boolean):[],
     date:(g('f-date')||{}).value||'',
+    allday:alldayEl?alldayEl.checked:false,
     open_time:(g('f-open')||{}).value||'',
     close_time:(g('f-close')||{}).value||'',
+    last_order:(g('f-lo')||{}).value||'',
+    break_start:(g('f-bts')||{}).value||'',
+    break_end:(g('f-bte')||{}).value||'',
     visited:exist.visited||false,
     ts:Date.now()
   };
