@@ -587,11 +587,32 @@ async function saveModal(){
 // ── 카카오내비 ────────────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
-  navigator.clipboard.writeText(address).catch(function(){});
-  toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
-  setTimeout(function(){
+  toast('경로 검색 중…');
+  var PROXY='https://kakao-proxy-seven.vercel.app';
+  fetch(PROXY+'/api/geocode?query='+encodeURIComponent(address))
+  .then(function(r){return r.json()})
+  .then(function(data){
+    var doc=data.documents&&data.documents[0];
+    if(doc){
+      var lat=doc.y;
+      var lng=doc.x;
+      var name=encodeURIComponent(address);
+      // 브릿지 URL에 좌표 딥링크 파라미터로 전달
+      var naviDeep='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
+      var bridge='https://carner.kakaomobility.com/web2app/bridge?action='+encodeURIComponent(naviDeep);
+      window.location.href=bridge;
+    }else{
+      // 좌표 못찾으면 브릿지로 앱만 실행 + 주소 복사
+      navigator.clipboard.writeText(address).catch(function(){});
+      toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
+      window.location.href='https://carner.kakaomobility.com/web2app/bridge?action=kakaonavi%3A%2F%2Fstartapp';
+    }
+  })
+  .catch(function(){
+    navigator.clipboard.writeText(address).catch(function(){});
+    toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
     window.location.href='https://carner.kakaomobility.com/web2app/bridge?action=kakaonavi%3A%2F%2Fstartapp';
-  },500);
+  });
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
