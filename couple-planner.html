@@ -194,7 +194,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
       <label>비밀번호</label>
       <input class="linp" type="password" id="pw" placeholder="비밀번호를 입력하세요" onkeydown="if(event.key==='Enter')login()">
       <p class="lhint">둘이 똑같은 비밀번호 → 같은 공간 연결<br>처음 입력하면 새 공간이 자동으로 만들어져요 🌸</p>
-      <button class="lbtn" id="lbtn" onclick="login()">입장하기</button>
+      <button class="lbtn" id="lbtn" onclick="login()" disabled>로딩 중…</button>
       <div class="lerr" id="lerr"></div>
     </div>
   </div>
@@ -812,15 +812,8 @@ function goPage(page,btn){
 window.addEventListener('firebase-ready',function(){
   var saved=localStorage.getItem('RK');
   if(saved){RK=saved;enterApp();}
-  // 입장하기 버튼 활성화
-  var btn=$('lbtn');
+  var btn=document.getElementById('lbtn');
   if(btn){btn.disabled=false;btn.textContent='입장하기';}
-});
-
-// 페이지 로드 시 버튼 비활성화 (Firebase 로딩 전)
-document.addEventListener('DOMContentLoaded',function(){
-  var btn=$('lbtn');
-  if(btn&&!window._fbReady){btn.textContent='로딩 중…';btn.disabled=true;}
 });
 </script>
 </body>
