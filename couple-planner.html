@@ -136,8 +136,27 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .setcard{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px}
 .setsave{width:100%;padding:13px;background:var(--rose);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:6px}
 
-/* 빈/로딩 */
-.empty{text-align:center;padding:44px 20px;color:var(--muted)}
+/* 날씨 위젯 */
+.weather-bar{background:linear-gradient(135deg,#667eea,#764ba2);padding:12px 16px;color:#fff;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.weather-bar::-webkit-scrollbar{display:none}
+.w-item{flex-shrink:0;text-align:center;min-width:60px}
+.w-icon{font-size:20px;display:block}
+.w-val{font-size:13px;font-weight:600;display:block;margin-top:2px}
+.w-label{font-size:10px;opacity:.8;display:block}
+.w-divider{width:1px;background:rgba(255,255,255,.3);flex-shrink:0;margin:4px 0}
+
+/* 필터 버튼 */
+.filter-bar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:10px;margin-bottom:4px;-webkit-overflow-scrolling:touch}
+.filter-bar::-webkit-scrollbar{display:none}
+.fbtn{font-size:12px;padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:500;white-space:nowrap;transition:.15s;flex-shrink:0}
+.fbtn.on{background:var(--rose);color:#fff;border-color:var(--rose)}
+.fbtn:hover{border-color:var(--rose-l)}
+
+/* 오픈시간 뱃지 */
+.time-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:20px;margin-top:5px;font-weight:500}
+.time-badge.open{background:#e8f8ef;color:#1e7d45}
+.time-badge.closed{background:#fceaea;color:#a32d2d}
+.time-badge.soon{background:#fff3e0;color:#e65100}
 .empty-i{font-size:36px;margin-bottom:10px}
 .empty-t{font-size:14px}
 .loading{text-align:center;padding:30px;color:var(--muted);font-size:13px}
@@ -191,6 +210,11 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
     </div>
     <button class="hdr-out" onclick="logout()">나가기</button>
   </div>
+
+  <!-- 날씨 바 -->
+  <div class="weather-bar" id="weather-bar">
+    <div class="w-item"><span class="w-icon">⏳</span><span class="w-val">로딩</span><span class="w-label">날씨</span></div>
+  </div>
   <nav class="nav">
     <button class="nb on" onclick="goPage('courses',this)"><span class="ni">🗺️</span>코스</button>
     <button class="nb" onclick="goPage('restaurants',this)"><span class="ni">🍽️</span>맛집</button>
@@ -202,16 +226,19 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 
   <div class="pg on" id="pg-courses">
     <button class="addbtn" onclick="openAdd('courses')">+ 데이트 코스 추가</button>
+    <div class="filter-bar" id="fb-courses"></div>
     <div class="sec">저장된 코스</div>
     <div id="lst-courses"><div class="loading">불러오는 중…</div></div>
   </div>
   <div class="pg" id="pg-restaurants">
     <button class="addbtn" onclick="openAdd('restaurants')">+ 맛집 추가</button>
+    <div class="filter-bar" id="fb-restaurants"></div>
     <div class="sec">우리만의 맛집 리스트</div>
     <div id="lst-restaurants"><div class="loading">불러오는 중…</div></div>
   </div>
   <div class="pg" id="pg-cafes">
     <button class="addbtn" onclick="openAdd('cafes')">+ 카페 추가</button>
+    <div class="filter-bar" id="fb-cafes"></div>
     <div class="sec">좋아하는 카페</div>
     <div id="lst-cafes"><div class="loading">불러오는 중…</div></div>
   </div>
@@ -269,8 +296,152 @@ var UNSUBS=[];
 var M_TYPE=''; // 현재 모달 타입 (courses/restaurants/cafes/plans)
 var M_KEY=null; // 수정 중인 키 (null이면 새 추가)
 
-// ── 유틸 ──────────────────────────────────────────────
-function $(i){return document.getElementById(i)}
+// ── 필터 상태 ─────────────────────────────────────────
+var FILTER={courses:'전체',restaurants:'전체',cafes:'전체',visit:'전체'};
+
+// ── 필터 바 렌더링 ────────────────────────────────────
+var CATS={
+  courses:['전체','로맨틱','액티비티','힐링','맛집투어','야경'],
+  restaurants:['전체','한식','일식','양식','중식','분식','기타'],
+  cafes:['전체','감성카페','대형카페','디저트','루프탑','베이커리']
+};
+var VISIT_CATS=['전체','방문전','방문완료'];
+
+function renderFilterBar(cat){
+  var el=$('fb-'+cat);
+  if(!el)return;
+  var cats=CATS[cat]||[];
+  // 방문 필터도 추가
+  var visitBtns=VISIT_CATS.map(function(v){
+    return '<button class="fbtn'+(FILTER.visit===v?' on':'')+'" onclick="setVisitFilter(\''+v+'\',\''+cat+'\')">'+(v==='방문완료'?'✅ ':v==='방문전'?'☑ ':'')+v+'</button>';
+  }).join('');
+  var catBtns=cats.map(function(c){
+    return '<button class="fbtn'+(FILTER[cat]===c?' on':'')+'" onclick="setCatFilter(\''+cat+'\',\''+c+'\')">'+(c==='전체'?'전체':c)+'</button>';
+  }).join('');
+  el.innerHTML=catBtns+'<div style="width:1px;background:var(--border);flex-shrink:0;margin:0 2px"></div>'+visitBtns;
+}
+
+function setCatFilter(cat,val){
+  FILTER[cat]=val;
+  renderFilterBar(cat);
+  render(cat);
+}
+
+function setVisitFilter(val,cat){
+  FILTER.visit=val;
+  renderFilterBar(cat);
+  render(cat);
+}
+
+// ── 날씨 ─────────────────────────────────────────────
+function loadWeather(){
+  if(!navigator.geolocation){return}
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat=pos.coords.latitude,lon=pos.coords.longitude;
+    // Open-Meteo 무료 API (키 불필요)
+    fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature,uv_index&daily=uv_index_max&timezone=Asia%2FSeoul&forecast_days=1')
+    .then(function(r){return r.json()})
+    .then(function(d){
+      var c=d.current;
+      var wcode=c.weathercode;
+      var icon=getWeatherIcon(wcode);
+      var temp=Math.round(c.temperature_2m);
+      var feel=Math.round(c.apparent_temperature);
+      var humid=c.relativehumidity_2m;
+      var uv=Math.round(c.uv_index||0);
+      var wind=Math.round(c.windspeed_10m);
+      // 미세먼지는 Open-Meteo에 없어서 대기질 API 따로 호출
+      fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+lat+'&longitude='+lon+'&current=pm10,pm2_5&timezone=Asia%2FSeoul')
+      .then(function(r){return r.json()})
+      .then(function(aq){
+        var pm10=Math.round((aq.current&&aq.current.pm10)||0);
+        var pm25=Math.round((aq.current&&aq.current.pm2_5)||0);
+        var pm10grade=getPMGrade(pm10,'pm10');
+        var pm25grade=getPMGrade(pm25,'pm25');
+        var uvgrade=getUVGrade(uv);
+        $('weather-bar').innerHTML=
+          '<div class="w-item"><span class="w-icon">'+icon+'</span><span class="w-val">'+temp+'°</span><span class="w-label">기온</span></div>'+
+          '<div class="w-divider"></div>'+
+          '<div class="w-item"><span class="w-icon">🌡️</span><span class="w-val">'+feel+'°</span><span class="w-label">체감</span></div>'+
+          '<div class="w-divider"></div>'+
+          '<div class="w-item"><span class="w-icon">💧</span><span class="w-val">'+humid+'%</span><span class="w-label">습도</span></div>'+
+          '<div class="w-divider"></div>'+
+          '<div class="w-item"><span class="w-icon">'+pm10grade.icon+'</span><span class="w-val">'+pm10grade.label+'</span><span class="w-label">미세먼지</span></div>'+
+          '<div class="w-divider"></div>'+
+          '<div class="w-item"><span class="w-icon">'+pm25grade.icon+'</span><span class="w-val">'+pm25grade.label+'</span><span class="w-label">초미세</span></div>'+
+          '<div class="w-divider"></div>'+
+          '<div class="w-item"><span class="w-icon">☀️</span><span class="w-val">'+uvgrade+'</span><span class="w-label">자외선</span></div>'+
+          '<div class="w-divider"></div>'+
+          '<div class="w-item"><span class="w-icon">💨</span><span class="w-val">'+wind+'</span><span class="w-label">풍속</span></div>';
+      }).catch(function(){
+        $('weather-bar').innerHTML=
+          '<div class="w-item"><span class="w-icon">'+icon+'</span><span class="w-val">'+temp+'°</span><span class="w-label">기온</span></div>'+
+          '<div class="w-divider"></div>'+
+          '<div class="w-item"><span class="w-icon">🌡️</span><span class="w-val">'+feel+'°</span><span class="w-label">체감</span></div>'+
+          '<div class="w-divider"></div>'+
+          '<div class="w-item"><span class="w-icon">💧</span><span class="w-val">'+humid+'%</span><span class="w-label">습도</span></div>'+
+          '<div class="w-divider"></div>'+
+          '<div class="w-item"><span class="w-icon">☀️</span><span class="w-val">'+getUVGrade(uv)+'</span><span class="w-label">자외선</span></div>';
+      });
+    });
+  },function(){
+    $('weather-bar').innerHTML='<div class="w-item" style="font-size:12px;opacity:.7">위치 권한을 허용하면 날씨가 표시돼요</div>';
+  });
+}
+
+function getWeatherIcon(code){
+  if(code===0)return '☀️';
+  if(code<=2)return '⛅';
+  if(code<=3)return '☁️';
+  if(code<=48)return '🌫️';
+  if(code<=57)return '🌧️';
+  if(code<=67)return '🌧️';
+  if(code<=77)return '❄️';
+  if(code<=82)return '🌧️';
+  if(code<=86)return '❄️';
+  return '⛈️';
+}
+
+function getPMGrade(val,type){
+  if(type==='pm10'){
+    if(val<=30)return{icon:'😊',label:'좋음'};
+    if(val<=80)return{icon:'😐',label:'보통'};
+    if(val<=150)return{icon:'😷',label:'나쁨'};
+    return{icon:'🤢',label:'매우나쁨'};
+  }else{
+    if(val<=15)return{icon:'😊',label:'좋음'};
+    if(val<=35)return{icon:'😐',label:'보통'};
+    if(val<=75)return{icon:'😷',label:'나쁨'};
+    return{icon:'🤢',label:'매우나쁨'};
+  }
+}
+
+function getUVGrade(uv){
+  if(uv<=2)return'낮음';
+  if(uv<=5)return'보통';
+  if(uv<=7)return'높음';
+  if(uv<=10)return'매우높음';
+  return'위험';
+}
+
+// ── 오픈시간 뱃지 ─────────────────────────────────────
+function getTimeBadge(open,close){
+  if(!open||!close)return'';
+  var now=new Date();
+  var h=now.getHours(),m=now.getMinutes();
+  var cur=h*60+m;
+  var op=toMin(open),cl=toMin(close);
+  var soon=op-30;
+  if(cur<soon||cur>=cl)return'<span class="time-badge closed">🔴 마감 '+close+'</span>';
+  if(cur<op)return'<span class="time-badge soon">🟡 오픈예정 '+open+'</span>';
+  if(cur>=cl-30)return'<span class="time-badge soon">🟡 마감임박 '+close+'</span>';
+  return'<span class="time-badge open">🟢 영업중 ~'+close+'</span>';
+}
+
+function toMin(t){
+  var p=t.split(':');
+  return parseInt(p[0])*60+parseInt(p[1]||0);
+}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function toast(msg){
   var t=$('toast');t.textContent=msg;t.classList.add('on');
@@ -315,6 +486,7 @@ function enterApp(){
   $('scr-login').style.display='none';$('scr-app').style.display='block';
   DB={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
   subscribeAll();
+  loadWeather();
 }
 
 // ── 구독 ──────────────────────────────────────────────
@@ -356,7 +528,18 @@ function render(cat){
   if(cat==='checklist'){renderChk();return}
   var el=$('lst-'+cat);
   if(!el)return;
+  renderFilterBar(cat);
   var items=Object.entries(DB[cat]||{});
+  // 카테고리 필터
+  if(FILTER[cat]&&FILTER[cat]!=='전체'){
+    items=items.filter(function(kv){return kv[1].category===FILTER[cat]});
+  }
+  // 방문 필터
+  if(FILTER.visit==='방문완료'){
+    items=items.filter(function(kv){return kv[1].visited});
+  }else if(FILTER.visit==='방문전'){
+    items=items.filter(function(kv){return !kv[1].visited});
+  }
   if(!items.length){
     var e=EMPTY[cat]||['♡','비어있어요'];
     el.innerHTML='<div class="empty"><div class="empty-i">'+e[0]+'</div><div class="empty-t">'+e[1]+'</div></div>';
@@ -388,10 +571,11 @@ function makeCard(key,item,cat){
   var tagH=item.category?'<span class="card-tag">'+item.category+'</span>':'';
   var visitH=item.visited?'<span class="visited-badge">✅ 방문</span>':'';
   var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
+  var timeBadge=getTimeBadge(item.open_time,item.close_time);
 
   return '<div class="card" id="cd-'+key+'">'
     +'<div class="card-hd" onclick="toggleCard(\''+key+'\')">'
-      +'<div class="card-hd-body">'+dateH+'<div class="card-hd-name">'+escH(item.name||'')+'</div></div>'
+      +'<div class="card-hd-body">'+dateH+'<div class="card-hd-name">'+escH(item.name||'')+'</div>'+(timeBadge?timeBadge:'')+'</div>'
       +tagH+visitH
       +'<span class="card-arrow">▼</span>'
     +'</div>'
@@ -490,6 +674,7 @@ var FORMS={
         +cats.map(function(c){return '<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+(d?escH(d.address||''):'')+'" placeholder="주소 입력"></div>'
+        +'<div class="fg" style="display:flex;gap:8px"><div style="flex:1"><label>오픈시간</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div><div style="flex:1"><label>마감시간</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div></div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+(d?escH(d.memo||''):'')+'" placeholder="웨이팅 필수 등"></div>'
     };
   },
@@ -502,6 +687,7 @@ var FORMS={
         +cats.map(function(c){return '<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+(d?escH(d.address||''):'')+'" placeholder="주소 입력"></div>'
+        +'<div class="fg" style="display:flex;gap:8px"><div style="flex:1"><label>오픈시간</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div><div style="flex:1"><label>마감시간</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div></div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+(d?escH(d.memo||''):'')+'" placeholder="포토존 있음 등"></div>'
     };
   },
@@ -559,6 +745,8 @@ async function saveModal(){
   var addrEl=$('f-addr');
   var stepsEl=$('f-steps');
   var dateEl=$('f-date');
+  var openEl=$('f-open');
+  var closeEl=$('f-close');
   var existVisited=(M_KEY&&DB[M_TYPE]&&DB[M_TYPE][M_KEY])?DB[M_TYPE][M_KEY].visited||false:false;
 
   var item={
@@ -568,6 +756,8 @@ async function saveModal(){
     address:addrEl?addrEl.value.trim():'',
     steps:stepsEl?stepsEl.value.split('\n').map(function(s){return s.trim()}).filter(Boolean):[],
     date:dateEl?dateEl.value:'',
+    open_time:openEl?openEl.value:'',
+    close_time:closeEl?closeEl.value:'',
     visited:existVisited,
     ts:Date.now()
   };
@@ -587,11 +777,27 @@ async function saveModal(){
 // ── 카카오내비 ────────────────────────────────────────
 function openNavi(address){
   if(!address){toast('주소가 없어요');return}
-  navigator.clipboard.writeText(address).catch(function(){});
-  toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
-  setTimeout(function(){
-    window.location.href='https://carner.kakaomobility.com/web2app/bridge?action=kakaonavi%3A%2F%2Fstartapp';
-  },500);
+  toast('경로 검색 중…');
+  var PROXY='https://kakao-proxy-seven.vercel.app';
+  fetch(PROXY+'/api/geocode?query='+encodeURIComponent(address))
+  .then(function(r){return r.json()})
+  .then(function(data){
+    var doc=data.documents&&data.documents[0];
+    if(doc){
+      var lat=doc.y;
+      var lng=doc.x;
+      var name=encodeURIComponent(address);
+      // 카카오내비 앱 직접 실행
+      window.location.href='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
+    }else{
+      navigator.clipboard.writeText(address).catch(function(){});
+      toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
+    }
+  })
+  .catch(function(){
+    navigator.clipboard.writeText(address).catch(function(){});
+    toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
+  });
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
