@@ -597,21 +597,16 @@ function openNavi(address){
       var lat=doc.y;
       var lng=doc.x;
       var name=encodeURIComponent(address);
-      // 브릿지 URL에 좌표 딥링크 파라미터로 전달
-      var naviDeep='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
-      var bridge='https://carner.kakaomobility.com/web2app/bridge?action='+encodeURIComponent(naviDeep);
-      window.location.href=bridge;
+      // 카카오내비 앱 직접 실행
+      window.location.href='kakaonavi://route?ep='+lng+','+lat+','+name+'&by=CAR';
     }else{
-      // 좌표 못찾으면 브릿지로 앱만 실행 + 주소 복사
       navigator.clipboard.writeText(address).catch(function(){});
       toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
-      window.location.href='https://carner.kakaomobility.com/web2app/bridge?action=kakaonavi%3A%2F%2Fstartapp';
     }
   })
   .catch(function(){
     navigator.clipboard.writeText(address).catch(function(){});
     toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
-    window.location.href='https://carner.kakaomobility.com/web2app/bridge?action=kakaonavi%3A%2F%2Fstartapp';
   });
 }
 
