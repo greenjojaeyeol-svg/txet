@@ -21,10 +21,9 @@
   const app = initializeApp(firebaseConfig);
   const db  = getDatabase(app);
   window._fb = { db, ref, onValue, set, remove, update };
+  window._fbReady = true;
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
-
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=2fc31a383f6d190a8f058919d1623966&libraries=services"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -463,6 +462,7 @@ async function sha256(str){
 async function login(){
   var pw=$('pw').value.trim();
   if(!pw){showErr('비밀번호를 입력해주세요');return}
+  if(!window._fbReady){showErr('잠시 후 다시 시도해주세요');return}
   var btn=$('lbtn');btn.disabled=true;btn.textContent='연결 중…';
   try{
     RK=await sha256('couple_v1_'+pw);
@@ -812,6 +812,15 @@ function goPage(page,btn){
 window.addEventListener('firebase-ready',function(){
   var saved=localStorage.getItem('RK');
   if(saved){RK=saved;enterApp();}
+  // 입장하기 버튼 활성화
+  var btn=$('lbtn');
+  if(btn){btn.disabled=false;btn.textContent='입장하기';}
+});
+
+// 페이지 로드 시 버튼 비활성화 (Firebase 로딩 전)
+document.addEventListener('DOMContentLoaded',function(){
+  var btn=$('lbtn');
+  if(btn&&!window._fbReady){btn.textContent='로딩 중…';btn.disabled=true;}
 });
 </script>
 </body>
