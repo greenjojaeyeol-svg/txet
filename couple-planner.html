@@ -510,7 +510,7 @@ function render(cat){
 
 // ── 카드 ──────────────────────────────────────────────
 function timeBadge(ot,ct,lo,bt_s,bt_e,allday){
-  if(allday)return'<span class="tbadge open">🟢 24시간</span>';
+  if(allday)return'<span class="tbadge open">🟢 24시간 영업</span>';
   if(!ot||!ct)return'';
   var now=new Date(),cur=now.getHours()*60+now.getMinutes();
   var op=toMin(ot),cl=toMin(ct);
