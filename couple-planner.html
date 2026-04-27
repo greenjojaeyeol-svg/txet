@@ -146,6 +146,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .setcard{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
 .setsave{width:100%;padding:12px;background:var(--rose);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:6px}
 
+/* 드라이브 뱃지 */
+.drive-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:#1a56a0;background:#e8f0fe;padding:3px 10px;border-radius:20px;margin-top:6px}
+
 /* 드래그 핸들 */
 .card.dragging{opacity:.5;box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .card.drag-over{border:2px dashed var(--rose);background:var(--blush)}
@@ -421,7 +424,6 @@ function setFvisit(val,cat){FILTER.visit=val;renderFbar(cat);render(cat)}
 function setFsort(cat,val){
   SORT[cat]=val;
   if(val==='거리순'&&USER_LAT){
-    // 주소 → 좌표 변환 후 거리 계산
     var items=Object.entries(DB[cat]||{});
     var pending=items.filter(function(kv){return kv[1].address&&DIST_CACHE[kv[0]]===undefined});
     if(pending.length===0){renderFbar(cat);render(cat);return;}
@@ -448,20 +450,45 @@ function geocodeAddr(addr,cb){
   }).catch(function(){cb(null,null);});
 }
 
-// Haversine 거리 (m)
+// Haversine 거리 (m) - 거리순 정렬용
 function haversine(la1,lo1,la2,lo2){
   var R=6371000,dLat=(la2-la1)*Math.PI/180,dLon=(lo2-lo1)*Math.PI/180;
   var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-// 자동차 소요시간 추정 (거리 기반 간단 계산, 시내 평균 25km/h)
-function driveTime(meters){
-  if(!meters||meters===Infinity)return null;
-  var mins=Math.round(meters/1000/25*60);
-  if(mins<1)return'1분 미만';
-  if(mins<60)return'약 '+mins+'분';
-  return'약 '+Math.floor(mins/60)+'시간 '+((mins%60)?mins%60+'분':'');
+// 카카오 Directions API로 실제 자차 소요시간
+var ROUTE_CACHE={}; // key -> {duration(sec), distance(m)}
+function fetchRoute(key,addr,cb){
+  if(ROUTE_CACHE[key]){cb(ROUTE_CACHE[key]);return}
+  if(!USER_LAT||!addr){cb(null);return}
+  // 주소 → 좌표 변환 후 Directions 호출
+  geocodeAddr(addr,function(lat,lon){
+    if(!lat||!lon){cb(null);return}
+    // 직선거리도 캐시
+    DIST_CACHE[key]=haversine(USER_LAT,USER_LON,lat,lon);
+    // Directions API 호출
+    fetch('https://kakao-proxy-seven.vercel.app/api/directions?ox='+USER_LON+'&oy='+USER_LAT+'&dx='+lon+'&dy='+lat)
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.duration){
+        ROUTE_CACHE[key]={duration:d.duration,distance:d.distance};
+        cb(ROUTE_CACHE[key]);
+      }else{cb(null)}
+    }).catch(function(){cb(null)});
+  });
+}
+
+function formatDuration(sec){
+  if(!sec)return null;
+  var m=Math.round(sec/60);
+  if(m<1)return'1분 미만';
+  if(m<60)return m+'분';
+  return Math.floor(m/60)+'시간'+(m%60?' '+(m%60)+'분':'');
+}
+function formatDist(m){
+  if(!m)return null;
+  return m>=1000?(m/1000).toFixed(1)+'km':Math.round(m)+'m';
 }
 
 // ── 렌더링 ────────────────────────────────────────────
@@ -530,13 +557,29 @@ function toMin(t){var p=(t||'').split(':');return parseInt(p[0]||0)*60+parseInt(
 function makeCard(key,item,cat){
   var enc=encodeURIComponent(item.address||'');
   var mapH='';
-  // 거리 및 소요시간
+  // 거리 및 소요시간 (캐시 있으면 즉시, 없으면 비동기)
   var distH='';
-  if(USER_LAT&&item.address&&DIST_CACHE[key]!==undefined&&DIST_CACHE[key]!==Infinity){
-    var dm=DIST_CACHE[key];
-    var distStr=dm>=1000?(dm/1000).toFixed(1)+'km':Math.round(dm)+'m';
-    var dtStr=driveTime(dm);
-    distH='<div class="card-sub">🚗 현재 위치에서 '+distStr+(dtStr?' · '+dtStr:'')+'</div>';
+  if(USER_LAT&&item.address){
+    var rc=ROUTE_CACHE[key];
+    if(rc){
+      var dStr=formatDist(rc.distance);
+      var tStr=formatDuration(rc.duration);
+      distH='<div class="drive-badge">🚗 '+( dStr?dStr+' · ':'')+( tStr?tStr:'')+'</div>';
+    }else{
+      // 비동기로 로드 후 해당 카드만 업데이트
+      distH='<div class="drive-badge" id="drv-'+key+'">🚗 <span style="opacity:.5">계산 중…</span></div>';
+      (function(k,addr){
+        fetchRoute(k,addr,function(r){
+          var el=document.getElementById('drv-'+k);
+          if(!el)return;
+          if(r){
+            var dStr=formatDist(r.distance);
+            var tStr=formatDuration(r.duration);
+            el.innerHTML='🚗 '+(dStr?dStr+' · ':'')+tStr;
+          }else{el.style.display='none'}
+        });
+      })(key,item.address);
+    }
   }
   if(item.address){
     var kk='https://map.kakao.com/link/search/'+enc;
@@ -791,7 +834,7 @@ var FORMS={
         +['한식','일식','양식','중식','분식','기타'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
-        +'<div class="fg"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:13px"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+'>24시간 영업</label></div>'
+        +'<div class="fg" style="margin-bottom:8px"><label style="display:inline-flex;align-items:center;gap:6px;text-transform:none;font-size:13px;white-space:nowrap"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+' style="flex-shrink:0;width:16px;height:16px;accent-color:var(--rose)">24시간 영업</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
           +'<div class="fg" style="display:flex;gap:8px">'
             +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
@@ -816,7 +859,7 @@ var FORMS={
         +['감성카페','대형카페','디저트','루프탑','베이커리'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
-        +'<div class="fg"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:13px"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+'>24시간 영업</label></div>'
+        +'<div class="fg" style="margin-bottom:8px"><label style="display:inline-flex;align-items:center;gap:6px;text-transform:none;font-size:13px;white-space:nowrap"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+' style="flex-shrink:0;width:16px;height:16px;accent-color:var(--rose)">24시간 영업</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
           +'<div class="fg" style="display:flex;gap:8px">'
             +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
