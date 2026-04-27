@@ -550,60 +550,36 @@ async function saveSet(){
   toast('저장했어요 ♡');
 }
 
-// ── 날씨 (기상청) ─────────────────────────────────────
+// ── 날씨 (Open-Meteo) ────────────────────────────────
 function loadWeather(){
   if(!navigator.geolocation){
-    g('wbar').innerHTML='<div class="wi" style="font-size:12px;opacity:.8">위치 권한을 허용하면 날씨가 표시돼요</div>';
+    g('wbar').innerHTML='<div class="wbar-main"><span class="wbar-desc">위치 권한을 허용하면 날씨가 표시돼요 🌤️</span></div>';
     return;
   }
   navigator.geolocation.getCurrentPosition(function(pos){
     var la=pos.coords.latitude,lo=pos.coords.longitude;
-    var PROXY='https://kakao-proxy-seven.vercel.app';
-    fetch(PROXY+'/api/weather?lat='+la+'&lon='+lo)
+    fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature,uv_index&timezone=Asia%2FSeoul')
     .then(function(r){return r.json()})
     .then(function(d){
-      if(d.error){loadWeatherFallback(la,lo);return}
-      var rainIcon=['','🌧️','🌨️','❄️','⛈️','🌧️','🌨️'];
-      var ico=d.rainType&&d.rainType!=='0'?(rainIcon[parseInt(d.rainType)]||'🌧️'):'🌤️';
-      var tmp=d.temp?Math.round(d.temp):null;
-      var hum=d.humidity||null;
-      var wind=d.windSpeed?Math.round(d.windSpeed):null;
+      var c=d.current;
+      var ico=wIcon(c.weathercode);
+      var tmp=Math.round(c.temperature_2m);
+      var feel=Math.round(c.apparent_temperature);
+      var hum=c.relativehumidity_2m;
+      var uv=Math.round(c.uv_index||0);
+      var wind=Math.round(c.windspeed_10m);
       fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+la+'&longitude='+lo+'&current=pm10,pm2_5&timezone=Asia%2FSeoul')
       .then(function(r){return r.json()})
       .then(function(aq){
         var pm10=Math.round((aq.current&&aq.current.pm10)||0);
         var pm25=Math.round((aq.current&&aq.current.pm2_5)||0);
-        setWbar(ico,tmp,'--',hum,pm10,pm25,d.uv,wind,'kma');
-      }).catch(function(){
-        setWbar(ico,tmp,'--',hum,null,null,d.uv,wind,'kma');
-      });
-    })
-    .catch(function(){loadWeatherFallback(la,lo)});
+        setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,'openmeteo');
+      }).catch(function(){setWbar(ico,tmp,feel,hum,null,null,uv,wind,'openmeteo')});
+    }).catch(function(){
+      g('wbar').innerHTML='<div class="wbar-main"><span class="wbar-desc">날씨를 불러올 수 없어요</span></div>';
+    });
   },function(){
-    g('wbar').innerHTML='<div class="wi" style="font-size:11px;opacity:.8;white-space:nowrap">위치 권한을 허용하면 날씨가 표시돼요 🌤️</div>';
-  });
-}
-
-function loadWeatherFallback(la,lo){
-  fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature,uv_index&timezone=Asia%2FSeoul')
-  .then(function(r){return r.json()})
-  .then(function(d){
-    var c=d.current;
-    var ico=wIcon(c.weathercode);
-    var tmp=Math.round(c.temperature_2m);
-    var feel=Math.round(c.apparent_temperature);
-    var hum=c.relativehumidity_2m;
-    var uv=Math.round(c.uv_index||0);
-    var wind=Math.round(c.windspeed_10m);
-    fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+la+'&longitude='+lo+'&current=pm10,pm2_5&timezone=Asia%2FSeoul')
-    .then(function(r){return r.json()})
-    .then(function(aq){
-      var pm10=Math.round((aq.current&&aq.current.pm10)||0);
-      var pm25=Math.round((aq.current&&aq.current.pm2_5)||0);
-      setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,'openmeteo');
-    }).catch(function(){setWbar(ico,tmp,feel,hum,null,null,uv,wind,'openmeteo')});
-  }).catch(function(){
-    g('wbar').innerHTML='<div class="wi" style="font-size:11px;opacity:.8">날씨를 불러올 수 없어요</div>';
+    g('wbar').innerHTML='<div class="wbar-main"><span class="wbar-desc">위치 권한을 허용하면 날씨가 표시돼요 🌤️</span></div>';
   });
 }
 
