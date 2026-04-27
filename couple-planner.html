@@ -562,6 +562,7 @@ function loadWeather(){
   }
   navigator.geolocation.getCurrentPosition(function(pos){
     var la=pos.coords.latitude,lo=pos.coords.longitude;
+    loadLocation(la,lo);
     fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature,uv_index&timezone=Asia%2FSeoul')
     .then(function(r){return r.json()})
     .then(function(d){
@@ -612,7 +613,10 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
       +'</div>'
     +'</div>'
     +'<div class="wbar-sub">'+subItems+'</div>'
-    +'<div class="wbar-src">'+srcTxt+'</div>';
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'
+      +'<div class="wbar-loc" id="wbar-loc" style="font-size:11px;opacity:.65"></div>'
+      +'<div class="wbar-src">'+srcTxt+'</div>'
+    +'</div>';
   startClock();
 }
 
@@ -641,16 +645,36 @@ function startClock(){
   if(clockTimer)clearInterval(clockTimer);
   function tick(){
     var now=new Date();
-    var h=String(now.getHours()).padStart(2,'0');
-    var m=String(now.getMinutes()).padStart(2,'0');
+    var h=now.getHours(),m=now.getMinutes();
+    var ampm=h<12?'AM':'PM';
+    var h12=h%12||12;
     var days=['일','월','화','수','목','금','토'];
     var mo=now.getMonth()+1,d=now.getDate(),day=days[now.getDay()];
     var te=g('wbar-time'),de=g('wbar-date');
-    if(te)te.textContent=h+':'+m;
+    if(te)te.innerHTML='<span style="font-size:11px;opacity:.7;margin-right:3px">'+ampm+'</span>'+String(h12).padStart(2,'0')+':'+String(m).padStart(2,'0');
     if(de)de.textContent=mo+'월 '+d+'일 ('+day+')';
   }
   tick();
   clockTimer=setInterval(tick,1000);
+}
+
+// ── 위치 표시 ─────────────────────────────────────────
+function loadLocation(lat,lon){
+  fetch('https://kakao-proxy-seven.vercel.app/api/geocode?query='+lat+','+lon)
+  .catch(function(){});
+  // 카카오 역지오코딩
+  fetch('https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x='+lon+'&y='+lat,{
+    headers:{'Authorization':'KakaoAK b67c5d797ab1def425ed459c1c7c42c1'}
+  })
+  .then(function(r){return r.json()})
+  .then(function(d){
+    var doc=d.documents&&d.documents[0];
+    if(doc){
+      var loc=doc.region_1depth_name+' '+doc.region_2depth_name;
+      var el=g('wbar-loc');
+      if(el)el.textContent='📍 '+loc;
+    }
+  }).catch(function(){});
 }
 
 // ── 내비 ──────────────────────────────────────────────
