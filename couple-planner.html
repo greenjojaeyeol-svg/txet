@@ -38,10 +38,14 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 
 /* 날씨바 */
 .wbar{background:linear-gradient(135deg,#5b6fd4,#6b4f9e);padding:14px 18px 10px;color:#fff;position:relative}
-.wbar-main{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.wbar-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.wbar-main{display:flex;align-items:center;gap:14px}
 .wbar-ico{font-size:32px;line-height:1}
 .wbar-temp{font-size:28px;font-weight:600;line-height:1}
 .wbar-desc{font-size:12px;opacity:.85;margin-top:3px}
+.wbar-clock{text-align:right}
+.wbar-time{font-size:22px;font-weight:600;line-height:1;letter-spacing:1px}
+.wbar-date{font-size:11px;opacity:.75;margin-top:3px}
 .wbar-sub{display:flex;gap:14px;flex-wrap:wrap}
 .wsi{display:flex;align-items:center;gap:4px;font-size:12px;opacity:.9}
 .wsi-ico{font-size:13px}
@@ -587,7 +591,6 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
   var pm10g=pm10!==null?pmGrade(pm10,'pm10'):null;
   var pm25g=pm25!==null?pmGrade(pm25,'pm25'):null;
   var subItems=[
-    hum?'<div class="wsi"><span class="wsi-ico">💧</span>'+hum+'%</div>':'',
     wind?'<div class="wsi"><span class="wsi-ico">💨</span>'+wind+'m/s</div>':'',
     uv!==null?'<div class="wsi"><span class="wsi-ico">☀️</span>자외선 '+uvGrade(uv)+'</div>':'',
     pm10g?'<div class="wsi"><span class="wsi-ico">'+pm10g.i+'</span>미세 '+pm10g.l+'</div>':'',
@@ -595,15 +598,22 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
   ].filter(Boolean).join('');
   var srcTxt=src==='kma'?'📡 기상청':'📡 Open-Meteo';
   g('wbar').innerHTML=
-    '<div class="wbar-main">'
-      +'<span class="wbar-ico">'+ico+'</span>'
-      +'<div>'
-        +'<div class="wbar-temp">'+(tmp!==null?tmp+'°':'--')+'</div>'
-        +'<div class="wbar-desc">'+(feel&&feel!=='--'?'체감 '+feel+'° · ':'')+''+'습도 '+(hum||'--')+'%</div>'
+    '<div class="wbar-top">'
+      +'<div class="wbar-main">'
+        +'<span class="wbar-ico">'+ico+'</span>'
+        +'<div>'
+          +'<div class="wbar-temp">'+(tmp!==null?tmp+'°':'--')+'</div>'
+          +'<div class="wbar-desc">'+(feel&&feel!=='--'?'체감 '+feel+'° · ':'')+hum+'%</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="wbar-clock">'
+        +'<div class="wbar-time" id="wbar-time">--:--</div>'
+        +'<div class="wbar-date" id="wbar-date"></div>'
       +'</div>'
     +'</div>'
     +'<div class="wbar-sub">'+subItems+'</div>'
     +'<div class="wbar-src">'+srcTxt+'</div>';
+  startClock();
 }
 
 function wIcon(c){
@@ -623,6 +633,24 @@ function pmGrade(v,t){
 function uvGrade(v){
   if(v<=2)return'낮음';if(v<=5)return'보통';if(v<=7)return'높음';
   if(v<=10)return'매우높음';return'위험';
+}
+
+// ── 시계 ──────────────────────────────────────────────
+var clockTimer=null;
+function startClock(){
+  if(clockTimer)clearInterval(clockTimer);
+  function tick(){
+    var now=new Date();
+    var h=String(now.getHours()).padStart(2,'0');
+    var m=String(now.getMinutes()).padStart(2,'0');
+    var days=['일','월','화','수','목','금','토'];
+    var mo=now.getMonth()+1,d=now.getDate(),day=days[now.getDay()];
+    var te=g('wbar-time'),de=g('wbar-date');
+    if(te)te.textContent=h+':'+m;
+    if(de)de.textContent=mo+'월 '+d+'일 ('+day+')';
+  }
+  tick();
+  clockTimer=setInterval(tick,1000);
 }
 
 // ── 내비 ──────────────────────────────────────────────
