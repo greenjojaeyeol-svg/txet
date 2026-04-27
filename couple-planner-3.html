@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>우리 둘만의 공간 ♡</title>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rose:#C8506A;--rose-l:#ECA0B3;--blush:#FAEEF2;
+  --sand:#F7F1EC;--ink:#1C1A1A;--muted:#9A9086;
+  --border:rgba(200,80,106,0.15);--r:16px;
+  --shadow:0 4px 24px rgba(200,80,106,0.10);
+}
+html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+
+/* 로그인 */
+#scr-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#fdf0f4,var(--sand))}
+.lw{width:100%;max-width:360px;text-align:center}
+.lheart{font-size:54px;animation:hb 2.4s ease-in-out infinite;display:block;margin-bottom:10px}
+@keyframes hb{0%,100%{transform:scale(1)}14%{transform:scale(1.18)}28%{transform:scale(1)}42%{transform:scale(1.1)}56%{transform:scale(1)}}
+.ltitle{font-family:'Nanum Myeongjo',serif;font-size:28px;color:var(--rose);margin-bottom:6px}
+.lsub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.lcard{background:#fff;border-radius:24px;padding:28px 24px;border:1px solid var(--border);box-shadow:var(--shadow);text-align:left}
+.lcard label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.linp{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
+.linp:focus{border-color:var(--rose);background:#fff}
+.lhint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
+.lbtn{width:100%;padding:14px;background:var(--rose);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:16px;transition:.2s}
+.lbtn:hover{background:#a83c58}
+.lbtn:disabled{opacity:.6;cursor:not-allowed}
+.lerr{background:#fff0f3;border:1px solid #f8c0cb;color:#9b2c42;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:10px;display:none}
+.lerr.show{display:block}
+
+/* 앱 */
+#scr-app{display:none;max-width:700px;margin:0 auto;padding-bottom:80px}
+
+/* 날씨바 */
+.wbar{background:linear-gradient(135deg,#5b6fd4,#6b4f9e);padding:14px 18px 10px;color:#fff;position:relative}
+.wbar-main{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.wbar-ico{font-size:32px;line-height:1}
+.wbar-temp{font-size:28px;font-weight:600;line-height:1}
+.wbar-desc{font-size:12px;opacity:.85;margin-top:3px}
+.wbar-sub{display:flex;gap:14px;flex-wrap:wrap}
+.wsi{display:flex;align-items:center;gap:4px;font-size:12px;opacity:.9}
+.wsi-ico{font-size:13px}
+.wbar-src{font-size:10px;opacity:.55;margin-top:8px;text-align:right}
+
+/* 헤더 */
+.hdr{background:#fff;border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between}
+.hdr h2{font-family:'Nanum Myeongjo',serif;font-size:17px;color:var(--rose)}
+.hdr-dday{font-size:11px;color:var(--muted);margin-top:1px}
+.hdr-out{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif}
+
+/* 탭 */
+.nav{display:flex;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:57px;z-index:59}
+.nav::-webkit-scrollbar{display:none}
+.nb{flex:1;min-width:60px;padding:10px 4px 9px;font-size:11px;font-family:'Pretendard',sans-serif;background:none;border:none;border-bottom:2.5px solid transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+.nb .ni{display:block;font-size:15px;margin-bottom:2px}
+.nb.on{color:var(--rose);border-bottom-color:var(--rose);font-weight:600}
+
+/* 페이지 */
+.pg{display:none;padding:14px}
+.pg.on{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.sec{font-family:'Nanum Myeongjo',serif;font-size:15px;color:var(--rose);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.addbtn{width:100%;padding:11px;margin-bottom:10px;background:var(--blush);border:1.5px dashed var(--rose-l);border-radius:var(--r);color:var(--rose);font-size:13px;font-weight:500;font-family:'Pretendard',sans-serif;cursor:pointer;transition:.2s}
+.addbtn:hover{background:var(--rose);color:#fff;border-style:solid}
+
+/* 필터바 */
+.fbar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:10px;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+.fbar::-webkit-scrollbar{display:none}
+.fbtn{font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:500;white-space:nowrap;transition:.15s;flex-shrink:0}
+.fbtn.on{background:var(--rose);color:#fff;border-color:var(--rose)}
+.fbar-div{width:1px;background:var(--border);flex-shrink:0;margin:3px 2px}
+
+/* 카드 */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.card-hd{display:flex;align-items:center;gap:8px;padding:13px;cursor:pointer;user-select:none}
+.card-hd-body{flex:1;min-width:0}
+.card-hd-name{font-size:14px;font-weight:600}
+.card-hd-date{font-size:11px;color:var(--rose);font-weight:500;margin-bottom:2px}
+.card-tag{font-size:11px;padding:2px 9px;border-radius:20px;background:var(--blush);color:var(--rose);font-weight:500;white-space:nowrap;flex-shrink:0}
+.vbadge{font-size:11px;padding:2px 9px;border-radius:20px;background:#e8f8ef;color:#1e7d45;font-weight:600;flex-shrink:0}
+.arrow{font-size:11px;color:var(--muted);flex-shrink:0;transition:transform .25s}
+.card.open .arrow{transform:rotate(180deg)}
+.card-bd{display:none;padding:0 13px 13px;border-top:1px solid var(--border)}
+.card.open .card-bd{display:block}
+.card-sub{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.5}
+
+/* 시간 뱃지 */
+.tbadge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 8px;border-radius:20px;margin-top:4px;font-weight:500}
+.tbadge.open{background:#e8f8ef;color:#1e7d45}
+.tbadge.closed{background:#fceaea;color:#a32d2d}
+.tbadge.soon{background:#fff3e0;color:#e65100}
+
+/* 지도버튼 */
+.mapbtns{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.mbtn{font-size:11px;padding:4px 10px;border-radius:20px;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;transition:.15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px}
+.mbtn.kk{background:#FEE500;color:#3A1D1D}
+.mbtn.nv{background:#03C75A;color:#fff}
+.mbtn.na{background:#1a73e8;color:#fff}
+
+/* 스텝 */
+.steps{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.step-r{display:flex;align-items:flex-start;gap:7px}
+.step-dot{width:20px;height:20px;border-radius:50%;background:var(--rose);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600}
+.step-t{font-size:12px;color:var(--muted);padding-top:2px}
+
+/* 카드 푸터 */
+.card-ft{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.cbtn{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;transition:.15s}
+.cbtn:hover{background:var(--sand)}
+.cbtn.del:hover{background:#fceaea;color:#a32d2d;border-color:#f5aaaa}
+.vbtn{font-size:11px;padding:4px 11px;border-radius:20px;border:1.5px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;margin-left:auto;transition:.2s}
+.vbtn.on{background:#e8f8ef;color:#1e7d45;border-color:#7ecfa0}
+
+/* 체크 */
+.chkbar{display:flex;gap:8px;margin-bottom:12px}
+.chkbar input{flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
+.chkbar input:focus{border-color:var(--rose);background:#fff}
+.chkbar button{padding:10px 14px;background:var(--rose);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Pretendard',sans-serif}
+.chki{display:flex;align-items:center;gap:11px;padding:12px 13px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;user-select:none}
+.chki.done{opacity:.5}
+.chk-c{width:21px;height:21px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.2s}
+.chki.done .chk-c{background:var(--rose);border-color:var(--rose)}
+.chk-ck{color:#fff;font-size:11px;font-weight:700;opacity:0}
+.chki.done .chk-ck{opacity:1}
+.chk-lbl{flex:1;font-size:14px}
+.chki.done .chk-lbl{text-decoration:line-through}
+.chk-del{background:none;border:none;color:var(--muted);font-size:19px;cursor:pointer;opacity:0;line-height:1;padding:0 2px}
+.chki:hover .chk-del{opacity:1}
+
+/* 통계 */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat{background:var(--blush);border-radius:13px;padding:14px;text-align:center}
+.stat-n{font-size:26px;color:var(--rose);font-family:'Nanum Myeongjo',serif}
+.stat-l{font-size:11px;color:var(--muted);margin-top:2px;font-weight:500}
+
+/* 설정 */
+.setcard{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.setsave{width:100%;padding:12px;background:var(--rose);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:6px}
+
+/* 드래그 핸들 */
+.card.dragging{opacity:.5;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.card.drag-over{border:2px dashed var(--rose);background:var(--blush)}
+.drag-handle{font-size:15px;color:var(--muted);padding:0 4px;flex-shrink:0;touch-action:none;cursor:grab;user-select:none}
+
+/* 빈/로딩 */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-i{font-size:34px;margin-bottom:8px}
+.empty-t{font-size:13px}
+.loading{text-align:center;padding:28px;color:var(--muted);font-size:13px}
+
+/* 모달 */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
+.mbg.on{display:flex}
+.modal{background:#fff;width:100%;max-width:480px;border-radius:22px 22px 0 0;padding:24px 18px 36px;max-height:92vh;overflow-y:auto;animation:mup .25s ease}
+@keyframes mup{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-ttl{font-family:'Nanum Myeongjo',serif;font-size:18px;color:var(--rose);margin-bottom:16px}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.05em;margin-bottom:5px;text-transform:uppercase}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--rose);background:#fff}
+.fg textarea{height:75px;resize:none}
+.mfoot{display:flex;gap:10px;margin-top:18px}
+.mfoot button{flex:1;padding:12px;border-radius:11px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;border:none}
+.mcancel{background:var(--sand);color:var(--muted)}
+.msave{background:var(--rose);color:#fff}
+
+/* 토스트 */
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(70px);background:#1C1A1A;color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;font-weight:500;z-index:999;transition:transform .3s ease;pointer-events:none;white-space:nowrap}
+#toast.on{transform:translateX(-50%) translateY(0)}
+@media(max-width:480px){.modal{max-height:96vh}}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="scr-login">
+  <div class="lw">
+    <span class="lheart">♡</span>
+    <h1 class="ltitle">우리 둘만의 공간</h1>
+    <p class="lsub">같은 비밀번호로 연결돼요</p>
+    <div class="lcard">
+      <label>비밀번호</label>
+      <input class="linp" type="password" id="pw" placeholder="비밀번호를 입력하세요" onkeydown="if(event.key==='Enter')doLogin()">
+      <p class="lhint">둘이 똑같은 비밀번호 → 같은 공간 연결<br>처음 입력하면 새 공간이 자동으로 만들어져요 🌸</p>
+      <button class="lbtn" id="lbtn" onclick="doLogin()">입장하기</button>
+      <div class="lerr" id="lerr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 앱 -->
+<div id="scr-app">
+  <!-- 날씨바 -->
+  <div class="wbar" id="wbar"><div class="wi"><span class="wi-ico">⏳</span><span class="wi-val">--</span><span class="wi-lbl">날씨</span></div></div>
+
+  <!-- 헤더 -->
+  <div class="hdr">
+    <div>
+      <h2 id="hdr-name">우리 둘만의 공간 ♡</h2>
+      <div class="hdr-dday" id="hdr-dday"></div>
+    </div>
+    <button class="hdr-out" onclick="doLogout()">나가기</button>
+  </div>
+
+  <!-- 탭 -->
+  <nav class="nav">
+    <button class="nb on" onclick="goPage('courses',this)"><span class="ni">🗺️</span>코스</button>
+    <button class="nb" onclick="goPage('restaurants',this)"><span class="ni">🍽️</span>맛집</button>
+    <button class="nb" onclick="goPage('cafes',this)"><span class="ni">☕</span>카페</button>
+    <button class="nb" onclick="goPage('plans',this)"><span class="ni">📅</span>일정</button>
+    <button class="nb" onclick="goPage('checklist',this)"><span class="ni">✅</span>체크</button>
+    <button class="nb" onclick="goPage('settings',this)"><span class="ni">⚙️</span>설정</button>
+  </nav>
+
+  <div class="pg on" id="pg-courses">
+    <button class="addbtn" onclick="openAdd('courses')">+ 데이트 코스 추가</button>
+    <div class="fbar" id="fb-courses"></div>
+    <div class="sec">저장된 코스</div>
+    <div id="lst-courses"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="pg" id="pg-restaurants">
+    <button class="addbtn" onclick="openAdd('restaurants')">+ 맛집 추가</button>
+    <div class="fbar" id="fb-restaurants"></div>
+    <div class="sec">우리만의 맛집 리스트</div>
+    <div id="lst-restaurants"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="pg" id="pg-cafes">
+    <button class="addbtn" onclick="openAdd('cafes')">+ 카페 추가</button>
+    <div class="fbar" id="fb-cafes"></div>
+    <div class="sec">좋아하는 카페</div>
+    <div id="lst-cafes"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="pg" id="pg-plans">
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="sn-c">0</div><div class="stat-l">저장된 코스</div></div>
+      <div class="stat"><div class="stat-n" id="sn-p">0</div><div class="stat-l">맛집·카페</div></div>
+    </div>
+    <button class="addbtn" onclick="openAdd('plans')">+ 데이트 일정 추가</button>
+    <div class="fbar" id="fb-plans"></div>
+    <div class="sec">데이트 일정</div>
+    <div id="lst-plans"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="pg" id="pg-checklist">
+    <div class="chkbar">
+      <input type="text" id="chk-inp" placeholder="할 일 입력…" onkeydown="if(event.key==='Enter')addCheck()">
+      <button onclick="addCheck()">추가</button>
+    </div>
+    <div class="sec">할 일 목록</div>
+    <div id="lst-checklist"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="pg" id="pg-settings">
+    <div class="sec">커플 정보</div>
+    <div class="setcard">
+      <div class="fg"><label>내 이름</label><input type="text" id="s1" placeholder="내 이름"></div>
+      <div class="fg"><label>상대방 이름</label><input type="text" id="s2" placeholder="상대방 이름"></div>
+      <div class="fg"><label>사귄 날짜</label><input type="date" id="sa"></div>
+      <button class="setsave" onclick="saveSet()">저장하기</button>
+    </div>
+    <div class="sec" style="margin-top:18px">연결 방식</div>
+    <div class="setcard" style="font-size:13px;color:var(--muted);line-height:1.8">
+      같은 비밀번호 입력 시 같은 공간으로 연결돼요.<br>
+      <span style="color:var(--rose);font-size:12px">⚠ 비밀번호가 다르면 다른 공간으로 연결됩니다.</span>
+    </div>
+  </div>
+</div>
+
+<!-- 모달 -->
+<div class="mbg" id="mbg" onclick="bgClick(event)">
+  <div class="modal">
+    <div class="modal-ttl" id="m-ttl">추가</div>
+    <div id="m-body"></div>
+    <div class="mfoot">
+      <button class="mcancel" onclick="closeModal()">취소</button>
+      <button class="msave" onclick="saveModal()">저장</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove, update } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+const app = initializeApp({
+  apiKey:"AIzaSyCItutGKUCET2VyDOuHcA3yemaAIlCcqBo",
+  authDomain:"text-85ec2.firebaseapp.com",
+  databaseURL:"https://text-85ec2-default-rtdb.firebaseio.com",
+  projectId:"text-85ec2",
+  storageBucket:"text-85ec2.firebasestorage.app",
+  messagingSenderId:"881067394604",
+  appId:"1:881067394604:web:5d77e68acb58cc509f3389"
+});
+window._fb = { db:getDatabase(app), ref, onValue, set, remove, update };
+window.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<script>
+// ── 상태 ──────────────────────────────────────────────
+var RK=null,UNSUBS=[],M_TYPE='',M_KEY=null;
+var DB={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
+var FILTER={courses:'전체',restaurants:'전체',cafes:'전체',plans:'전체',visit:'전체'};
+
+// ── 유틸 ──────────────────────────────────────────────
+function g(id){return document.getElementById(id)}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function toast(msg){var t=g('toast');t.textContent=msg;t.classList.add('on');setTimeout(function(){t.classList.remove('on')},2200)}
+function fb(){return window._fb}
+function rr(p){return fb().ref(fb().db,'rooms/'+RK+(p?'/'+p:''))}
+
+// ── SHA256 ────────────────────────────────────────────
+async function sha256(s){
+  var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0')}).join('');
+}
+
+// ── 로그인 ────────────────────────────────────────────
+function showErr(msg){var e=g('lerr');e.textContent=msg;e.classList.add('show');setTimeout(function(){e.classList.remove('show')},3000)}
+
+async function doLogin(){
+  var pw=g('pw').value.trim();
+  if(!pw){showErr('비밀번호를 입력해주세요');return}
+  if(!window._fb){showErr('잠시 후 다시 시도해주세요');return}
+  var btn=g('lbtn');btn.disabled=true;btn.textContent='연결 중…';
+  try{
+    RK=await sha256('couple_v1_'+pw);
+    localStorage.setItem('RK',RK);
+    enterApp();
+  }catch(e){
+    showErr('오류가 발생했어요');
+    btn.disabled=false;btn.textContent='입장하기';
+  }
+}
+
+function doLogout(){
+  if(!confirm('나갈까요?'))return;
+  UNSUBS.forEach(function(u){u()});UNSUBS=[];
+  localStorage.removeItem('RK');RK=null;
+  g('scr-app').style.display='none';
+  g('scr-login').style.display='flex';
+  g('pw').value='';
+  g('lbtn').disabled=false;g('lbtn').textContent='입장하기';
+}
+
+function enterApp(){
+  g('scr-login').style.display='none';
+  g('scr-app').style.display='block';
+  DB={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
+  subscribeAll();
+  loadWeather();
+}
+
+// ── Firebase 구독 ─────────────────────────────────────
+function subscribeAll(){
+  ['courses','restaurants','cafes','plans','checklist','settings'].forEach(function(cat){
+    var u=fb().onValue(rr(cat),function(snap){
+      DB[cat]=snap.val()||{};
+      render(cat);
+      refreshHdr();
+    });
+    UNSUBS.push(u);
+  });
+}
+
+function refreshHdr(){
+  var s=DB.settings||{};
+  if(s.name1&&s.name2)g('hdr-name').textContent=s.name1+' ♡ '+s.name2;
+  if(s.anniversary){
+    var d=Math.floor((Date.now()-new Date(s.anniversary))/864e5)+1;
+    g('hdr-dday').textContent='함께한 지 D+'+d+'일';
+  }
+  if(g('s1')&&!g('s1').value&&s.name1)g('s1').value=s.name1;
+  if(g('s2')&&!g('s2').value&&s.name2)g('s2').value=s.name2;
+  if(g('sa')&&!g('sa').value&&s.anniversary)g('sa').value=s.anniversary;
+  g('sn-c').textContent=Object.keys(DB.courses||{}).length;
+  g('sn-p').textContent=Object.keys(DB.restaurants||{}).length+Object.keys(DB.cafes||{}).length;
+}
+
+// ── 필터 ──────────────────────────────────────────────
+var CAT_OPTS={
+  courses:['전체','로맨틱','액티비티','힐링','맛집투어','야경'],
+  restaurants:['전체','한식','일식','양식','중식','분식','기타'],
+  cafes:['전체','감성카페','대형카페','디저트','루프탑','베이커리'],
+  plans:['전체','당일치기','1박2일','기념일','일상데이트']
+};
+var VISIT_OPTS=['전체','방문전','방문완료'];
+
+function renderFbar(cat){
+  var el=g('fb-'+cat);if(!el)return;
+  var catBtns=CAT_OPTS[cat].map(function(c){
+    return '<button class="fbtn'+(FILTER[cat]===c?' on':'')+'" onclick="setFcat(\''+cat+'\',\''+c+'\')">'+c+'</button>';
+  }).join('');
+  var visitBtns=VISIT_OPTS.map(function(v){
+    return '<button class="fbtn'+(FILTER.visit===v?' on':'')+'" onclick="setFvisit(\''+v+'\',\''+cat+'\')">'+(v==='방문완료'?'✅ 방문':v==='방문전'?'☑ 방문전':v)+'</button>';
+  }).join('');
+  el.innerHTML=catBtns+'<div class="fbar-div"></div>'+visitBtns;
+}
+
+function setFcat(cat,val){FILTER[cat]=val;renderFbar(cat);render(cat)}
+function setFvisit(val,cat){FILTER.visit=val;renderFbar(cat);render(cat)}
+
+// ── 렌더링 ────────────────────────────────────────────
+var EMPTY_MSG={
+  courses:['🗺️','아직 저장된 코스가 없어요'],
+  restaurants:['🍽️','가고 싶은 맛집을 추가해보세요'],
+  cafes:['☕','좋아하는 카페를 추가해보세요'],
+  plans:['📅','데이트 일정을 계획해보세요']
+};
+
+function render(cat){
+  if(cat==='settings')return;
+  if(cat==='checklist'){renderChk();return}
+  var el=g('lst-'+cat);if(!el)return;
+  renderFbar(cat);
+  var items=Object.entries(DB[cat]||{});
+  // 카테고리 필터
+  if(FILTER[cat]&&FILTER[cat]!=='전체')
+    items=items.filter(function(kv){return kv[1].category===FILTER[cat]});
+  // 방문 필터
+  if(FILTER.visit==='방문완료')items=items.filter(function(kv){return kv[1].visited});
+  else if(FILTER.visit==='방문전')items=items.filter(function(kv){return !kv[1].visited});
+  if(!items.length){
+    var e=EMPTY_MSG[cat]||['♡','비어있어요'];
+    el.innerHTML='<div class="empty"><div class="empty-i">'+e[0]+'</div><div class="empty-t">'+e[1]+'</div></div>';
+    return;
+  }
+  if(cat==='plans')items.sort(function(a,b){return(a[1].date||'').localeCompare(b[1].date||'')});
+  else items.sort(function(a,b){return((a[1].order||0)-(b[1].order||0))});
+  el.innerHTML=items.map(function(kv){return makeCard(kv[0],kv[1],cat)}).join('');
+}
+
+// ── 카드 ──────────────────────────────────────────────
+function timeBadge(ot,ct,lo,bt_s,bt_e,allday){
+  if(allday)return'<span class="tbadge open">🟢 24시간 영업</span>';
+  if(!ot||!ct)return'';
+  var now=new Date(),cur=now.getHours()*60+now.getMinutes();
+  var op=toMin(ot),cl=toMin(ct);
+  var loMin=lo?toMin(lo):null;
+  var bt_sMin=bt_s?toMin(bt_s):null,bt_eMin=bt_e?toMin(bt_e):null;
+  // 브레이크타임 중인지
+  if(bt_sMin&&bt_eMin&&cur>=bt_sMin&&cur<bt_eMin)
+    return'<span class="tbadge soon">🟠 브레이크타임 ~'+bt_e+'</span>';
+  if(cur<op-30||cur>=cl)return'<span class="tbadge closed">🔴 마감 '+ct+'</span>';
+  if(cur<op)return'<span class="tbadge soon">🟡 오픈예정 '+ot+'</span>';
+  if(loMin&&cur>=loMin)return'<span class="tbadge soon">🟡 라스트오더 '+lo+'</span>';
+  if(cur>=cl-30)return'<span class="tbadge soon">🟡 마감임박 '+ct+'</span>';
+  return'<span class="tbadge open">🟢 영업중 ~'+ct+'</span>';
+}
+function toMin(t){var p=(t||'').split(':');return parseInt(p[0]||0)*60+parseInt(p[1]||0)}
+
+function makeCard(key,item,cat){
+  var enc=encodeURIComponent(item.address||'');
+  var mapH='';
+  if(item.address){
+    var kk='https://map.kakao.com/link/search/'+enc;
+    var nv='https://map.naver.com/v5/search/'+enc;
+    mapH='<div class="mapbtns">'
+      +'<a class="mbtn kk" href="'+kk+'" target="_blank">🗺 카카오맵</a>'
+      +'<a class="mbtn nv" href="'+nv+'" target="_blank">🗺 네이버지도</a>'
+      +'<button class="mbtn na" onclick="openNavi(\''+esc(item.address||'')+'\')">🚗 길찾기</button>'
+      +'</div>';
+  }
+  var stepsH='';
+  if(cat==='courses'&&item.steps&&item.steps.length){
+    stepsH='<div class="steps">'+item.steps.map(function(s,i){
+      return'<div class="step-r"><div class="step-dot">'+(i+1)+'</div><div class="step-t">'+esc(s)+'</div></div>';
+    }).join('')+'</div>';
+  }
+  var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
+  var tagH=item.category?'<span class="card-tag">'+esc(item.category)+'</span>':'';
+  var vbadge=item.visited?'<span class="vbadge">✅ 방문</span>':'';
+  var tb=timeBadge(item.open_time,item.close_time,item.last_order,item.break_start,item.break_end,item.allday);
+  var timeDetail='';
+  if(item.allday){
+    timeDetail='<div class="card-sub">🕐 24시간 영업</div>';
+  }else if(item.open_time||item.close_time){
+    timeDetail='<div class="card-sub">🕐 '+( item.open_time||'--')+'~'+(item.close_time||'--');
+    if(item.last_order)timeDetail+=' · 라스트오더 '+item.last_order;
+    if(item.break_start&&item.break_end)timeDetail+=' · 브레이크 '+item.break_start+'~'+item.break_end;
+    timeDetail+='</div>';
+  }
+  var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
+
+  return '<div class="card" id="cd-'+key+'" draggable="true" data-key="'+key+'" data-cat="'+cat+'"'
+    +' ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="doDrop(event)" ondragend="dragEnd(event)"'
+    +' ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">'
+    +'<div class="card-hd" onclick="toggleCard(\''+key+'\')">'
+      +'<span class="drag-handle" onclick="event.stopPropagation()">⠿</span>'
+      +'<div class="card-hd-body">'+dateH+'<div class="card-hd-name">'+esc(item.name||'')+'</div>'+(tb?tb:'')+'</div>'
+      +tagH+vbadge+'<span class="arrow">▼</span>'
+    +'</div>'
+    +'<div class="card-bd">'
+      +(item.address?'<div class="card-sub">📍 '+esc(item.address)+'</div>':'')
+      +timeDetail
+      +mapH
+      +(item.memo?'<div class="card-sub">'+esc(item.memo)+'</div>':'')
+      +stepsH
+      +'<div class="card-ft">'
+        +'<button class="cbtn" onclick="openEdit(\''+key+'\',\''+cat+'\')">수정</button>'
+        +'<button class="cbtn del" onclick="delItem(\''+key+'\',\''+cat+'\')">삭제</button>'
+        +vbtnH
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+
+function toggleCard(k){var e=g('cd-'+k);if(e)e.classList.toggle('open')}
+
+async function toggleVisit(k,cat,cur,e){
+  e.stopPropagation();
+  await fb().update(rr(cat+'/'+k),{visited:!cur});
+}
+async function delItem(k,cat){
+  if(!confirm('삭제할까요?'))return;
+  await fb().remove(rr(cat+'/'+k));
+  toast('삭제했어요');
+}
+
+// ── 체크리스트 ────────────────────────────────────────
+function renderChk(){
+  var el=g('lst-checklist');
+  var items=Object.entries(DB.checklist||{});
+  if(!items.length){el.innerHTML='<div class="empty"><div class="empty-i">✅</div><div class="empty-t">할 일을 추가해보세요</div></div>';return}
+  items.sort(function(a,b){return(a[1].done?1:0)-(b[1].done?1:0)});
+  el.innerHTML=items.map(function(kv){
+    var k=kv[0],v=kv[1];
+    return'<div class="chki'+(v.done?' done':'')+'" onclick="toggleChk(\''+k+'\')">'
+      +'<div class="chk-c"><span class="chk-ck">✓</span></div>'
+      +'<div class="chk-lbl">'+esc(v.text||'')+'</div>'
+      +'<button class="chk-del" onclick="event.stopPropagation();delChk(\''+k+'\')">×</button>'
+      +'</div>';
+  }).join('');
+}
+async function addCheck(){
+  var inp=g('chk-inp'),text=inp.value.trim();if(!text)return;
+  await fb().set(rr('checklist/'+uid()),{text:text,done:false,ts:Date.now()});
+  inp.value='';
+}
+async function toggleChk(k){var c=(DB.checklist[k]||{}).done||false;await fb().update(rr('checklist/'+k),{done:!c})}
+async function delChk(k){await fb().remove(rr('checklist/'+k))}
+
+// ── 설정 ──────────────────────────────────────────────
+async function saveSet(){
+  await fb().set(rr('settings'),{name1:g('s1').value.trim(),name2:g('s2').value.trim(),anniversary:g('sa').value,ts:Date.now()});
+  toast('저장했어요 ♡');
+}
+
+// ── 날씨 (기상청) ─────────────────────────────────────
+function loadWeather(){
+  if(!navigator.geolocation){
+    g('wbar').innerHTML='<div class="wi" style="font-size:12px;opacity:.8">위치 권한을 허용하면 날씨가 표시돼요</div>';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var la=pos.coords.latitude,lo=pos.coords.longitude;
+    var PROXY='https://kakao-proxy-seven.vercel.app';
+    fetch(PROXY+'/api/weather?lat='+la+'&lon='+lo)
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.error){loadWeatherFallback(la,lo);return}
+      var rainIcon=['','🌧️','🌨️','❄️','⛈️','🌧️','🌨️'];
+      var ico=d.rainType&&d.rainType!=='0'?(rainIcon[parseInt(d.rainType)]||'🌧️'):'🌤️';
+      var tmp=d.temp?Math.round(d.temp):null;
+      var hum=d.humidity||null;
+      var wind=d.windSpeed?Math.round(d.windSpeed):null;
+      fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+la+'&longitude='+lo+'&current=pm10,pm2_5&timezone=Asia%2FSeoul')
+      .then(function(r){return r.json()})
+      .then(function(aq){
+        var pm10=Math.round((aq.current&&aq.current.pm10)||0);
+        var pm25=Math.round((aq.current&&aq.current.pm2_5)||0);
+        setWbar(ico,tmp,'--',hum,pm10,pm25,d.uv,wind,'kma');
+      }).catch(function(){
+        setWbar(ico,tmp,'--',hum,null,null,d.uv,wind,'kma');
+      });
+    })
+    .catch(function(){loadWeatherFallback(la,lo)});
+  },function(){
+    g('wbar').innerHTML='<div class="wi" style="font-size:11px;opacity:.8;white-space:nowrap">위치 권한을 허용하면 날씨가 표시돼요 🌤️</div>';
+  });
+}
+
+function loadWeatherFallback(la,lo){
+  fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature,uv_index&timezone=Asia%2FSeoul')
+  .then(function(r){return r.json()})
+  .then(function(d){
+    var c=d.current;
+    var ico=wIcon(c.weathercode);
+    var tmp=Math.round(c.temperature_2m);
+    var feel=Math.round(c.apparent_temperature);
+    var hum=c.relativehumidity_2m;
+    var uv=Math.round(c.uv_index||0);
+    var wind=Math.round(c.windspeed_10m);
+    fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+la+'&longitude='+lo+'&current=pm10,pm2_5&timezone=Asia%2FSeoul')
+    .then(function(r){return r.json()})
+    .then(function(aq){
+      var pm10=Math.round((aq.current&&aq.current.pm10)||0);
+      var pm25=Math.round((aq.current&&aq.current.pm2_5)||0);
+      setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,'openmeteo');
+    }).catch(function(){setWbar(ico,tmp,feel,hum,null,null,uv,wind,'openmeteo')});
+  }).catch(function(){
+    g('wbar').innerHTML='<div class="wi" style="font-size:11px;opacity:.8">날씨를 불러올 수 없어요</div>';
+  });
+}
+
+function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
+  var pm10g=pm10!==null?pmGrade(pm10,'pm10'):null;
+  var pm25g=pm25!==null?pmGrade(pm25,'pm25'):null;
+  var subItems=[
+    hum?'<div class="wsi"><span class="wsi-ico">💧</span>'+hum+'%</div>':'',
+    wind?'<div class="wsi"><span class="wsi-ico">💨</span>'+wind+'m/s</div>':'',
+    uv!==null?'<div class="wsi"><span class="wsi-ico">☀️</span>자외선 '+uvGrade(uv)+'</div>':'',
+    pm10g?'<div class="wsi"><span class="wsi-ico">'+pm10g.i+'</span>미세 '+pm10g.l+'</div>':'',
+    pm25g?'<div class="wsi"><span class="wsi-ico">'+pm25g.i+'</span>초미세 '+pm25g.l+'</div>':''
+  ].filter(Boolean).join('');
+  var srcTxt=src==='kma'?'📡 기상청':'📡 Open-Meteo';
+  g('wbar').innerHTML=
+    '<div class="wbar-main">'
+      +'<span class="wbar-ico">'+ico+'</span>'
+      +'<div>'
+        +'<div class="wbar-temp">'+(tmp!==null?tmp+'°':'--')+'</div>'
+        +'<div class="wbar-desc">'+(feel&&feel!=='--'?'체감 '+feel+'° · ':'')+''+'습도 '+(hum||'--')+'%</div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="wbar-sub">'+subItems+'</div>'
+    +'<div class="wbar-src">'+srcTxt+'</div>';
+}
+
+function wIcon(c){
+  if(c===0)return'☀️';if(c<=2)return'⛅';if(c<=3)return'☁️';
+  if(c<=48)return'🌫️';if(c<=67)return'🌧️';if(c<=77)return'❄️';
+  if(c<=82)return'🌧️';return'⛈️';
+}
+function pmGrade(v,t){
+  if(t==='pm10'){
+    if(v<=30)return{i:'😊',l:'좋음'};if(v<=80)return{i:'😐',l:'보통'};
+    if(v<=150)return{i:'😷',l:'나쁨'};return{i:'🤢',l:'매우나쁨'};
+  }else{
+    if(v<=15)return{i:'😊',l:'좋음'};if(v<=35)return{i:'😐',l:'보통'};
+    if(v<=75)return{i:'😷',l:'나쁨'};return{i:'🤢',l:'매우나쁨'};
+  }
+}
+function uvGrade(v){
+  if(v<=2)return'낮음';if(v<=5)return'보통';if(v<=7)return'높음';
+  if(v<=10)return'매우높음';return'위험';
+}
+
+// ── 내비 ──────────────────────────────────────────────
+function openNavi(address){
+  if(!address){toast('주소가 없어요');return}
+  navigator.clipboard.writeText(address).catch(function(){});
+  toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
+  setTimeout(function(){
+    window.location.href='https://carner.kakaomobility.com/web2app/bridge?action=kakaonavi%3A%2F%2Fstartapp';
+  },600);
+}
+
+// ── 모달 폼 ───────────────────────────────────────────
+var FORMS={
+  courses:function(d){
+    return{title:d?'코스 수정':'데이트 코스 추가',
+      html:'<div class="fg"><label>코스 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="예: 홍대 반나절 코스"></div>'
+        +'<div class="fg"><label>카테고리</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +['로맨틱','액티비티','힐링','맛집투어','야경'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="경복궁&#10;인사동&#10;광장시장">'+(d&&d.steps?d.steps.join('\n'):'')+'</textarea></div>'
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="간단한 메모"></div>'};
+  },
+  restaurants:function(d){
+    var alld=d&&d.allday;
+    return{title:d?'맛집 수정':'맛집 추가',
+      html:'<div class="fg"><label>상호명 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="맛집 이름"></div>'
+        +'<div class="fg"><label>종류</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +['한식','일식','양식','중식','분식','기타'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
+        +'<div class="fg"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:13px"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+'>24시간 영업</label></div>'
+        +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>마감</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
+            +'<div style="flex:1"><label>&nbsp;</label></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>브레이크 시작</label><input type="time" id="f-bts" value="'+(d?d.break_start||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
+          +'</div>'
+        +'</div>'
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="웨이팅 필수 등"></div>'};
+  },
+  cafes:function(d){
+    var alld=d&&d.allday;
+    return{title:d?'카페 수정':'카페 추가',
+      html:'<div class="fg"><label>카페 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="카페 이름"></div>'
+        +'<div class="fg"><label>분위기</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +['감성카페','대형카페','디저트','루프탑','베이커리'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
+        +'<div class="fg"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:13px"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+'>24시간 영업</label></div>'
+        +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>마감</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
+            +'<div style="flex:1"><label>&nbsp;</label></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>브레이크 시작</label><input type="time" id="f-bts" value="'+(d?d.break_start||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
+          +'</div>'
+        +'</div>'
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="포토존 있음 등"></div>'};
+  },
+  plans:function(d){
+    return{title:d?'일정 수정':'데이트 일정 추가',
+      html:'<div class="fg"><label>날짜</label><input type="date" id="f-date" value="'+(d?d.date||'':'')+'"></div>'
+        +'<div class="fg"><label>제목 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="예: 성수 데이트"></div>'
+        +'<div class="fg"><label>유형</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +['당일치기','1박2일','기념일','일상데이트'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>메모</label><textarea id="f-memo" placeholder="특별한 계획을 적어보세요">'+(d?esc(d.memo||''):'')+'</textarea></div>'};
+  }
+};
+
+function toggleAllday(){
+  var chk=g('f-allday'),wrap=g('f-time-wrap');
+  if(chk&&wrap)wrap.style.display=chk.checked?'none':'';
+}
+
+function openAdd(cat){M_TYPE=cat;M_KEY=null;var f=FORMS[cat](null);g('m-ttl').textContent=f.title;g('m-body').innerHTML=f.html;g('mbg').classList.add('on')}
+function openEdit(key,cat){
+  M_TYPE=cat;M_KEY=key;
+  var item=DB[cat]&&DB[cat][key];
+  if(!item){toast('항목을 찾을 수 없어요');return}
+  var f=FORMS[cat](item);g('m-ttl').textContent=f.title;g('m-body').innerHTML=f.html;g('mbg').classList.add('on');
+}
+function closeModal(){g('mbg').classList.remove('on')}
+function bgClick(e){if(e.target===g('mbg'))closeModal()}
+
+async function saveModal(){
+  var ne=g('f-name');
+  if(!ne||!ne.value.trim()){if(ne)ne.style.borderColor='#e24b4a';return}
+  var exist=(M_KEY&&DB[M_TYPE]&&DB[M_TYPE][M_KEY])||{};
+  var alldayEl=g('f-allday');
+  var item={
+    name:ne.value.trim(),
+    category:(g('f-cat')||{}).value||'',
+    memo:(g('f-memo')||{}).value||'',
+    address:(g('f-addr')||{}).value||'',
+    steps:g('f-steps')?g('f-steps').value.split('\n').map(function(s){return s.trim()}).filter(Boolean):[],
+    date:(g('f-date')||{}).value||'',
+    allday:alldayEl?alldayEl.checked:false,
+    open_time:(g('f-open')||{}).value||'',
+    close_time:(g('f-close')||{}).value||'',
+    last_order:(g('f-lo')||{}).value||'',
+    break_start:(g('f-bts')||{}).value||'',
+    break_end:(g('f-bte')||{}).value||'',
+    visited:exist.visited||false,
+    ts:Date.now()
+  };
+  var k=M_KEY||uid(),wasEdit=!!M_KEY;
+  try{
+    await fb().set(rr(M_TYPE+'/'+k),item);
+    closeModal();toast(wasEdit?'수정했어요 ♡':'추가했어요 ♡');
+  }catch(err){toast('저장 실패: '+err.message)}
+}
+
+// ── 드래그 순서 변경 ──────────────────────────────────
+var dragKey=null,dragCat=null,touchEl=null,touchClone=null,touchStartY=0;
+
+function dragStart(e){
+  dragKey=e.currentTarget.dataset.key;
+  dragCat=e.currentTarget.dataset.cat;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+function dragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.card.drag-over').forEach(function(el){el.classList.remove('drag-over')});
+  e.currentTarget.classList.add('drag-over');
+}
+function dragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.card.drag-over').forEach(function(el){el.classList.remove('drag-over')});
+}
+async function doDrop(e){
+  e.preventDefault();
+  var targetKey=e.currentTarget.dataset.key;
+  var cat=e.currentTarget.dataset.cat;
+  if(!dragKey||dragKey===targetKey||dragCat!==cat)return;
+  e.currentTarget.classList.remove('drag-over');
+  // 순서 교환 (order 필드로 저장)
+  var items=Object.entries(DB[cat]||{});
+  var keys=items.map(function(kv){return kv[0]});
+  var fromIdx=keys.indexOf(dragKey),toIdx=keys.indexOf(targetKey);
+  if(fromIdx<0||toIdx<0)return;
+  // 순서 배열 재정렬
+  keys.splice(fromIdx,1);keys.splice(toIdx,0,dragKey);
+  // Firebase에 order 저장
+  var updates={};
+  keys.forEach(function(k,i){updates[cat+'/'+k+'/order']=i});
+  await fb().update(rr(''),updates);
+  dragKey=null;dragCat=null;
+}
+
+// 터치 드래그
+function touchStart(e){
+  var handle=e.target.closest('.drag-handle');
+  if(!handle)return;
+  touchEl=e.currentTarget;
+  touchStartY=e.touches[0].clientY;
+  touchEl.classList.add('dragging');
+}
+function touchMove(e){
+  if(!touchEl)return;
+  e.preventDefault();
+  var y=e.touches[0].clientY;
+  var els=document.elementsFromPoint(e.touches[0].clientX,y);
+  var target=els.find(function(el){return el.classList&&el.classList.contains('card')&&el!==touchEl});
+  document.querySelectorAll('.card.drag-over').forEach(function(el){el.classList.remove('drag-over')});
+  if(target)target.classList.add('drag-over');
+}
+async function touchEnd(e){
+  if(!touchEl)return;
+  var over=document.querySelector('.card.drag-over');
+  if(over&&over!==touchEl){
+    var cat=touchEl.dataset.cat;
+    var fromKey=touchEl.dataset.key,toKey=over.dataset.key;
+    var keys=Object.keys(DB[cat]||{});
+    var fi=keys.indexOf(fromKey),ti=keys.indexOf(toKey);
+    if(fi>=0&&ti>=0){
+      keys.splice(fi,1);keys.splice(ti,0,fromKey);
+      var updates={};
+      keys.forEach(function(k,i){updates[cat+'/'+k+'/order']=i});
+      await fb().update(rr(''),updates);
+    }
+  }
+  touchEl.classList.remove('dragging');
+  document.querySelectorAll('.card.drag-over').forEach(function(el){el.classList.remove('drag-over')});
+  touchEl=null;
+}
+
+// ── 페이지 전환 ───────────────────────────────────────
+function goPage(page,btn){
+  document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on')});
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on')});
+  g('pg-'+page).classList.add('on');btn.classList.add('on');
+}
+
+// ── 초기화 ────────────────────────────────────────────
+window.addEventListener('fb-ready',function(){
+  var saved=localStorage.getItem('RK');
+  if(saved){RK=saved;enterApp();}
+});
+</script>
+</body>
+</html>
