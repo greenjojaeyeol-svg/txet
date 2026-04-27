@@ -140,6 +140,11 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .setcard{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
 .setsave{width:100%;padding:12px;background:var(--rose);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:6px}
 
+/* 드래그 핸들 */
+.card.dragging{opacity:.5;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.card.drag-over{border:2px dashed var(--rose);background:var(--blush)}
+.drag-handle{font-size:15px;color:var(--muted);padding:0 4px;flex-shrink:0;touch-action:none;cursor:grab;user-select:none}
+
 /* 빈/로딩 */
 .empty{text-align:center;padding:40px 20px;color:var(--muted)}
 .empty-i{font-size:34px;margin-bottom:8px}
@@ -423,6 +428,7 @@ function render(cat){
     return;
   }
   if(cat==='plans')items.sort(function(a,b){return(a[1].date||'').localeCompare(b[1].date||'')});
+  else items.sort(function(a,b){return((a[1].order||0)-(b[1].order||0))});
   el.innerHTML=items.map(function(kv){return makeCard(kv[0],kv[1],cat)}).join('');
 }
 
@@ -478,8 +484,11 @@ function makeCard(key,item,cat){
   }
   var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
 
-  return '<div class="card" id="cd-'+key+'">'
+  return '<div class="card" id="cd-'+key+'" draggable="true" data-key="'+key+'" data-cat="'+cat+'"'
+    +' ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="doDrop(event)" ondragend="dragEnd(event)"'
+    +' ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">'
     +'<div class="card-hd" onclick="toggleCard(\''+key+'\')">'
+      +'<span class="drag-handle" onclick="event.stopPropagation()">⠿</span>'
       +'<div class="card-hd-body">'+dateH+'<div class="card-hd-name">'+esc(item.name||'')+'</div>'+(tb?tb:'')+'</div>'
       +tagH+vbadge+'<span class="arrow">▼</span>'
     +'</div>'
@@ -730,6 +739,82 @@ async function saveModal(){
     await fb().set(rr(M_TYPE+'/'+k),item);
     closeModal();toast(wasEdit?'수정했어요 ♡':'추가했어요 ♡');
   }catch(err){toast('저장 실패: '+err.message)}
+}
+
+// ── 드래그 순서 변경 ──────────────────────────────────
+var dragKey=null,dragCat=null,touchEl=null,touchClone=null,touchStartY=0;
+
+function dragStart(e){
+  dragKey=e.currentTarget.dataset.key;
+  dragCat=e.currentTarget.dataset.cat;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+function dragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.card.drag-over').forEach(function(el){el.classList.remove('drag-over')});
+  e.currentTarget.classList.add('drag-over');
+}
+function dragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.card.drag-over').forEach(function(el){el.classList.remove('drag-over')});
+}
+async function doDrop(e){
+  e.preventDefault();
+  var targetKey=e.currentTarget.dataset.key;
+  var cat=e.currentTarget.dataset.cat;
+  if(!dragKey||dragKey===targetKey||dragCat!==cat)return;
+  e.currentTarget.classList.remove('drag-over');
+  // 순서 교환 (order 필드로 저장)
+  var items=Object.entries(DB[cat]||{});
+  var keys=items.map(function(kv){return kv[0]});
+  var fromIdx=keys.indexOf(dragKey),toIdx=keys.indexOf(targetKey);
+  if(fromIdx<0||toIdx<0)return;
+  // 순서 배열 재정렬
+  keys.splice(fromIdx,1);keys.splice(toIdx,0,dragKey);
+  // Firebase에 order 저장
+  var updates={};
+  keys.forEach(function(k,i){updates[cat+'/'+k+'/order']=i});
+  await fb().update(rr(''),updates);
+  dragKey=null;dragCat=null;
+}
+
+// 터치 드래그
+function touchStart(e){
+  var handle=e.target.closest('.drag-handle');
+  if(!handle)return;
+  touchEl=e.currentTarget;
+  touchStartY=e.touches[0].clientY;
+  touchEl.classList.add('dragging');
+}
+function touchMove(e){
+  if(!touchEl)return;
+  e.preventDefault();
+  var y=e.touches[0].clientY;
+  var els=document.elementsFromPoint(e.touches[0].clientX,y);
+  var target=els.find(function(el){return el.classList&&el.classList.contains('card')&&el!==touchEl});
+  document.querySelectorAll('.card.drag-over').forEach(function(el){el.classList.remove('drag-over')});
+  if(target)target.classList.add('drag-over');
+}
+async function touchEnd(e){
+  if(!touchEl)return;
+  var over=document.querySelector('.card.drag-over');
+  if(over&&over!==touchEl){
+    var cat=touchEl.dataset.cat;
+    var fromKey=touchEl.dataset.key,toKey=over.dataset.key;
+    var keys=Object.keys(DB[cat]||{});
+    var fi=keys.indexOf(fromKey),ti=keys.indexOf(toKey);
+    if(fi>=0&&ti>=0){
+      keys.splice(fi,1);keys.splice(ti,0,fromKey);
+      var updates={};
+      keys.forEach(function(k,i){updates[cat+'/'+k+'/order']=i});
+      await fb().update(rr(''),updates);
+    }
+  }
+  touchEl.classList.remove('dragging');
+  document.querySelectorAll('.card.drag-over').forEach(function(el){el.classList.remove('drag-over')});
+  touchEl=null;
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
