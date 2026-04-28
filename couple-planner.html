@@ -771,6 +771,10 @@ function loadWeather(){
     USER_LAT=la;USER_LON=lo;
     loadLocation(la,lo);
     loadRouteCache();
+    // 위치 세팅 후 카드 즉시 리렌더 (소요시간 표시)
+    ['courses','restaurants','cafes'].forEach(function(cat){
+      if(Object.keys(DB[cat]||{}).length>0)render(cat);
+    });
     fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature,uv_index&timezone=Asia%2FSeoul')
     .then(function(r){return r.json()})
     .then(function(d){
@@ -800,7 +804,7 @@ function loadWeather(){
   },function(){
     if(!localStorage.getItem('weather_cache'))
       g('wbar').innerHTML='<div class="wbar-main"><span class="wbar-desc">위치 권한을 허용하면 날씨가 표시돼요 🌤️</span></div>';
-  },{maximumAge:300000,timeout:8000}); // 5분 캐시 위치, 8초 타임아웃
+  },{maximumAge:0,timeout:8000});
 }
 
 function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
@@ -928,7 +932,7 @@ var FORMS={
         +['한식','일식','양식','중식','분식','기타'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
-        +'<div class="fg"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:13px"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+'>24시간 영업</label></div>'
+        +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 영업</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
           +'<div class="fg" style="display:flex;gap:8px">'
             +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
@@ -953,7 +957,7 @@ var FORMS={
         +['감성카페','대형카페','디저트','루프탑','베이커리'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
-        +'<div class="fg"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:13px"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+'>24시간 영업</label></div>'
+        +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 영업</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
           +'<div class="fg" style="display:flex;gap:8px">'
             +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
