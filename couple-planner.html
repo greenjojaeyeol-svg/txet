@@ -147,7 +147,11 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .setsave{width:100%;padding:12px;background:var(--rose);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:6px}
 
 /* 드라이브 뱃지 */
-.drive-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:#1a56a0;background:#e8f0fe;padding:3px 10px;border-radius:20px;margin-top:6px}
+.drive-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:#1a56a0;background:#e8f0fe;padding:3px 10px;border-radius:20px;margin-top:6px;margin-bottom:2px}
+
+/* 즐겨찾기 버튼 */
+.fav-btn{font-size:15px!important;padding:2px 8px!important}
+.fav-btn.on{color:#f5a623;border-color:#f5a623;background:#fff8ee}
 
 /* 드래그 핸들 */
 .card.dragging{opacity:.5;box-shadow:0 8px 24px rgba(0,0,0,.18)}
@@ -310,7 +314,7 @@ window.dispatchEvent(new Event('fb-ready'));
 // ── 상태 ──────────────────────────────────────────────
 var RK=null,UNSUBS=[],M_TYPE='',M_KEY=null;
 var DB={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
-var FILTER={courses:'전체',restaurants:'전체',cafes:'전체',plans:'전체',visit:'전체'};
+var FILTER={courses:'전체',restaurants:'전체',cafes:'전체',plans:'전체',visit:'전체',fav:false};
 var SORT={restaurants:'기본',cafes:'기본'}; // 기본 | 마감시간순 | 거리순
 var USER_LAT=null,USER_LON=null;
 var DIST_CACHE={}; // key -> distance in meters
@@ -361,6 +365,7 @@ function enterApp(){
   g('scr-login').style.display='none';
   g('scr-app').style.display='block';
   DB={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
+  ROUTE_CACHE={};DIST_CACHE={};
   subscribeAll();
   loadWeather();
 }
@@ -375,6 +380,8 @@ function subscribeAll(){
     });
     UNSUBS.push(u);
   });
+  // route_cache는 한 번만 로드 (새로고침시 유지)
+  loadRouteCache();
 }
 
 function refreshHdr(){
@@ -416,14 +423,17 @@ function renderFbar(cat){
         return'<button class="fbtn'+(SORT[cat]===s?' on':'')+'" onclick="setFsort(\''+cat+'\',\''+s+'\')">'+ico+s+'</button>';
       }).join('');
   }
-  el.innerHTML=catBtns+'<div class="fbar-div"></div>'+visitBtns+sortBtns;
+  var favBtn='<button class="fbtn'+(FILTER.fav?' on':'')+'" onclick="setFfav(\''+cat+'\')">'+(FILTER.fav?'⭐ 즐겨찾기':'☆ 즐겨찾기')+'</button>';
+  el.innerHTML=catBtns+'<div class="fbar-div"></div>'+visitBtns+'<div class="fbar-div"></div>'+favBtn+sortBtns;
 }
 
 function setFcat(cat,val){FILTER[cat]=val;renderFbar(cat);render(cat)}
 function setFvisit(val,cat){FILTER.visit=val;renderFbar(cat);render(cat)}
+function setFfav(cat){FILTER.fav=!FILTER.fav;renderFbar(cat);render(cat)}
 function setFsort(cat,val){
   SORT[cat]=val;
   if(val==='거리순'&&USER_LAT){
+    // 주소 → 좌표 변환 후 거리 계산
     var items=Object.entries(DB[cat]||{});
     var pending=items.filter(function(kv){return kv[1].address&&DIST_CACHE[kv[0]]===undefined});
     if(pending.length===0){renderFbar(cat);render(cat);return;}
@@ -450,32 +460,49 @@ function geocodeAddr(addr,cb){
   }).catch(function(){cb(null,null);});
 }
 
-// Haversine 거리 (m) - 거리순 정렬용
+// Haversine 거리 (m)
 function haversine(la1,lo1,la2,lo2){
   var R=6371000,dLat=(la2-la1)*Math.PI/180,dLon=(lo2-lo1)*Math.PI/180;
   var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-// 카카오 Directions API로 실제 자차 소요시간
-var ROUTE_CACHE={}; // key -> {duration(sec), distance(m)}
+// 자차 소요시간 - Firebase 캐시로 새로고침해도 유지
+var ROUTE_CACHE={};
+
+function loadRouteCache(){
+  fb().onValue(fb().ref(fb().db,'rooms/'+RK+'/route_cache'),function(snap){
+    var data=snap.val()||{};
+    var now=Date.now();
+    Object.entries(data).forEach(function(kv){
+      // 6시간 이내 캐시 사용
+      if(kv[1]&&kv[1].ts&&(now-kv[1].ts)<21600000){
+        ROUTE_CACHE[kv[0]]=kv[1];
+        if(kv[1].dist!==undefined)DIST_CACHE[kv[0]]=kv[1].dist;
+      }
+    });
+    ['restaurants','cafes'].forEach(function(cat){render(cat)});
+  },{onlyOnce:true});
+}
+
 function fetchRoute(key,addr,cb){
   if(ROUTE_CACHE[key]){cb(ROUTE_CACHE[key]);return}
   if(!USER_LAT||!addr){cb(null);return}
-  // 주소 → 좌표 변환 후 Directions 호출
   geocodeAddr(addr,function(lat,lon){
     if(!lat||!lon){cb(null);return}
-    // 직선거리도 캐시
-    DIST_CACHE[key]=haversine(USER_LAT,USER_LON,lat,lon);
-    // Directions API 호출
+    var dist=haversine(USER_LAT,USER_LON,lat,lon);
+    DIST_CACHE[key]=dist;
     fetch('https://kakao-proxy-seven.vercel.app/api/directions?ox='+USER_LON+'&oy='+USER_LAT+'&dx='+lon+'&dy='+lat)
     .then(function(r){return r.json()})
     .then(function(d){
       if(d.duration){
-        ROUTE_CACHE[key]={duration:d.duration,distance:d.distance};
-        cb(ROUTE_CACHE[key]);
-      }else{cb(null)}
-    }).catch(function(){cb(null)});
+        var rv={duration:d.duration,distance:d.distance,dist:dist,ts:Date.now()};
+        ROUTE_CACHE[key]=rv;
+        // Firebase에 저장
+        fb().set(fb().ref(fb().db,'rooms/'+RK+'/route_cache/'+key),rv).catch(function(){});
+        cb(rv);
+      }else{cb({dist:dist})}
+    }).catch(function(){cb({dist:dist})});
   });
 }
 
@@ -487,7 +514,7 @@ function formatDuration(sec){
   return Math.floor(m/60)+'시간'+(m%60?' '+(m%60)+'분':'');
 }
 function formatDist(m){
-  if(!m)return null;
+  if(!m&&m!==0)return null;
   return m>=1000?(m/1000).toFixed(1)+'km':Math.round(m)+'m';
 }
 
@@ -511,6 +538,8 @@ function render(cat){
   // 방문 필터
   if(FILTER.visit==='방문완료')items=items.filter(function(kv){return kv[1].visited});
   else if(FILTER.visit==='방문전')items=items.filter(function(kv){return !kv[1].visited});
+  // 즐겨찾기 필터
+  if(FILTER.fav)items=items.filter(function(kv){return kv[1].fav});
   if(!items.length){
     var e=EMPTY_MSG[cat]||['♡','비어있어요'];
     el.innerHTML='<div class="empty"><div class="empty-i">'+e[0]+'</div><div class="empty-t">'+e[1]+'</div></div>';
@@ -555,73 +584,97 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday){
 function toMin(t){var p=(t||'').split(':');return parseInt(p[0]||0)*60+parseInt(p[1]||0)}
 
 function makeCard(key,item,cat){
-  var enc=encodeURIComponent(item.address||'');
+  var encName=encodeURIComponent(item.name||'');
+  var encAddr=encodeURIComponent(item.address||'');
   var mapH='';
-  // 거리 및 소요시간 (캐시 있으면 즉시, 없으면 비동기)
+
+  // 소요시간 표시
   var distH='';
   if(USER_LAT&&item.address){
     var rc=ROUTE_CACHE[key];
-    if(rc){
+    if(rc&&rc.duration){
       var dStr=formatDist(rc.distance);
       var tStr=formatDuration(rc.duration);
-      distH='<div class="drive-badge">🚗 '+( dStr?dStr+' · ':'')+( tStr?tStr:'')+'</div>';
+      distH='<div class="drive-badge">🚗 '+(dStr?dStr+' · ':'')+tStr+'</div>';
+    }else if(rc&&rc.dist){
+      var dStr2=formatDist(rc.dist);
+      distH='<div class="drive-badge">📍 '+dStr2+' (직선거리)</div>';
+      // 백그라운드로 실제 소요시간 로드
+      (function(k,addr){
+        fetchRoute(k,addr,function(r){
+          var el=g('drv-'+k);if(!el)return;
+          if(r&&r.duration){
+            var ds=formatDist(r.distance),ts=formatDuration(r.duration);
+            el.innerHTML='🚗 '+(ds?ds+' · ':'')+ts;
+          }
+        });
+      })(key,item.address);
     }else{
-      // 비동기로 로드 후 해당 카드만 업데이트
       distH='<div class="drive-badge" id="drv-'+key+'">🚗 <span style="opacity:.5">계산 중…</span></div>';
       (function(k,addr){
         fetchRoute(k,addr,function(r){
-          var el=document.getElementById('drv-'+k);
-          if(!el)return;
-          if(r){
-            var dStr=formatDist(r.distance);
-            var tStr=formatDuration(r.duration);
-            el.innerHTML='🚗 '+(dStr?dStr+' · ':'')+tStr;
+          var el=g('drv-'+k);if(!el)return;
+          if(r&&r.duration){
+            var ds=formatDist(r.distance),ts=formatDuration(r.duration);
+            el.innerHTML='🚗 '+(ds?ds+' · ':'')+ts;
+            el.id='';
+          }else if(r&&r.dist){
+            el.innerHTML='📍 '+formatDist(r.dist)+' (직선거리)';
+            el.id='';
           }else{el.style.display='none'}
         });
       })(key,item.address);
     }
   }
-  if(item.address){
-    var kk='https://map.kakao.com/link/search/'+enc;
-    var nv='https://map.naver.com/v5/search/'+enc;
+
+  // 지도 버튼 - 이름으로 검색
+  if(item.name||item.address){
+    var searchQ=encodeURIComponent((item.name||'')+(item.address?' '+item.address:''));
+    var kk='https://map.kakao.com/link/search/'+encName;
+    var nv='https://map.naver.com/v5/search/'+encName;
     mapH='<div class="mapbtns">'
       +'<a class="mbtn kk" href="'+kk+'" target="_blank">🗺 카카오맵</a>'
       +'<a class="mbtn nv" href="'+nv+'" target="_blank">🗺 네이버지도</a>'
-      +'<button class="mbtn na" onclick="openNavi(\''+esc(item.address||'')+'\')">🚗 길찾기</button>'
+      +'<button class="mbtn na" onclick="openNavi(\''+esc(item.name||'')+'\',\''+esc(item.address||'')+'\')">🚗 길찾기</button>'
+      +'<button class="mbtn" style="background:#f1efe8;color:var(--ink)" onclick="copyAddr(\''+esc(item.name||'')+'\',\''+esc(item.address||'')+'\')">📋 복사</button>'
       +'</div>';
   }
+
   var stepsH='';
   if(cat==='courses'&&item.steps&&item.steps.length){
     stepsH='<div class="steps">'+item.steps.map(function(s,i){
       return'<div class="step-r"><div class="step-dot">'+(i+1)+'</div><div class="step-t">'+esc(s)+'</div></div>';
     }).join('')+'</div>';
   }
+
   var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
   var tagH=item.category?'<span class="card-tag">'+esc(item.category)+'</span>':'';
   var vbadge=item.visited?'<span class="vbadge">✅ 방문</span>':'';
+  var favbadge=item.fav?'<span style="font-size:14px">⭐</span>':'';
   var tb=timeBadge(item.open_time,item.close_time,item.last_order,item.break_start,item.break_end,item.allday);
   var timeDetail='';
   if(item.allday){
     timeDetail='<div class="card-sub">🕐 24시간 영업</div>';
   }else if(item.open_time||item.close_time){
-    timeDetail='<div class="card-sub">🕐 '+( item.open_time||'--')+'~'+(item.close_time||'--');
+    timeDetail='<div class="card-sub">🕐 '+(item.open_time||'--')+'~'+(item.close_time||'--');
     if(item.last_order)timeDetail+=' · 라스트오더 '+item.last_order;
     if(item.break_start&&item.break_end)timeDetail+=' · 브레이크 '+item.break_start+'~'+item.break_end;
     timeDetail+='</div>';
   }
   var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
+  var favbtnH='<button class="cbtn fav-btn'+(item.fav?' on':'')+'" onclick="toggleFav(\''+key+'\',\''+cat+'\','+!!item.fav+',event)" title="즐겨찾기">'+(item.fav?'⭐':'☆')+'</button>';
 
   return '<div class="card" id="cd-'+key+'" draggable="true" data-key="'+key+'" data-cat="'+cat+'"'
     +' ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="doDrop(event)" ondragend="dragEnd(event)"'
     +' ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">'
     +'<div class="card-hd" onclick="toggleCard(\''+key+'\')">'
       +'<span class="drag-handle" onclick="event.stopPropagation()">⠿</span>'
-      +'<div class="card-hd-body">'+dateH+'<div class="card-hd-name">'+esc(item.name||'')+'</div>'+(tb?tb:'')+'</div>'
+      +'<div class="card-hd-body">'+dateH+'<div class="card-hd-name">'+favbadge+esc(item.name||'')+'</div>'+(tb?tb:'')+'</div>'
       +tagH+vbadge+'<span class="arrow">▼</span>'
     +'</div>'
     +'<div class="card-bd">'
       +(item.address?'<div class="card-sub">📍 '+esc(item.address)+'</div>':'')
-      +distH
+      +(distH?distH:'')
       +timeDetail
       +mapH
       +(item.memo?'<div class="card-sub">'+esc(item.memo)+'</div>':'')
@@ -629,10 +682,26 @@ function makeCard(key,item,cat){
       +'<div class="card-ft">'
         +'<button class="cbtn" onclick="openEdit(\''+key+'\',\''+cat+'\')">수정</button>'
         +'<button class="cbtn del" onclick="delItem(\''+key+'\',\''+cat+'\')">삭제</button>'
+        +favbtnH
         +vbtnH
       +'</div>'
     +'</div>'
   +'</div>';
+}
+
+async function toggleFav(k,cat,cur,e){
+  e.stopPropagation();
+  await fb().update(rr(cat+'/'+k),{fav:!cur});
+  toast(!cur?'⭐ 즐겨찾기 추가':'즐겨찾기 해제');
+}
+
+function copyAddr(name,addr){
+  var text=(name?name:'')+(addr?'\n'+addr:'');
+  navigator.clipboard.writeText(text).then(function(){
+    toast('📋 복사됐어요!');
+  }).catch(function(){
+    toast('복사 실패. 직접 선택해주세요.');
+  });
 }
 
 function toggleCard(k){var e=g('cd-'+k);if(e)e.classList.toggle('open')}
@@ -806,10 +875,12 @@ function loadLocation(lat,lon){
 }
 
 // ── 내비 ──────────────────────────────────────────────
-function openNavi(address){
-  if(!address){toast('주소가 없어요');return}
-  navigator.clipboard.writeText(address).catch(function(){});
-  toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
+function openNavi(name,address){
+  var copyText=name||address||'';
+  if(copyText){
+    navigator.clipboard.writeText(copyText).catch(function(){});
+    toast('📋 이름 복사됨! 앱에서 붙여넣기 하세요');
+  }
   setTimeout(function(){
     window.location.href='https://carner.kakaomobility.com/web2app/bridge?action=kakaonavi%3A%2F%2Fstartapp';
   },600);
@@ -834,7 +905,7 @@ var FORMS={
         +['한식','일식','양식','중식','분식','기타'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
-        +'<div class="fg" style="margin-bottom:8px"><label style="display:inline-flex;align-items:center;gap:6px;text-transform:none;font-size:13px;white-space:nowrap"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+' style="flex-shrink:0;width:16px;height:16px;accent-color:var(--rose)">24시간 영업</label></div>'
+        +'<div class="fg"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:13px"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+'>24시간 영업</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
           +'<div class="fg" style="display:flex;gap:8px">'
             +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
@@ -859,7 +930,7 @@ var FORMS={
         +['감성카페','대형카페','디저트','루프탑','베이커리'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
-        +'<div class="fg" style="margin-bottom:8px"><label style="display:inline-flex;align-items:center;gap:6px;text-transform:none;font-size:13px;white-space:nowrap"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+' style="flex-shrink:0;width:16px;height:16px;accent-color:var(--rose)">24시간 영업</label></div>'
+        +'<div class="fg"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:13px"><input type="checkbox" id="f-allday" onchange="toggleAllday()" '+(alld?'checked':'')+'>24시간 영업</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
           +'<div class="fg" style="display:flex;gap:8px">'
             +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
