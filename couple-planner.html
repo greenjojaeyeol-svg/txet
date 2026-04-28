@@ -527,7 +527,10 @@ function callDirections(key,lat,lon,dist,cb){
   .then(function(r){return r.json()})
   .then(function(d){
     if(d.duration){
-      var rv={duration:d.duration,distance:d.distance,dist:dist,ts:Date.now()};
+      var now=new Date();
+      var hh=String(now.getHours()).padStart(2,'0');
+      var mm=String(now.getMinutes()).padStart(2,'0');
+      var rv={duration:d.duration,distance:d.distance,dist:dist,ts:Date.now(),updatedAt:hh+':'+mm};
       ROUTE_CACHE[key]=rv;
       cb(rv);
     }else{cb({dist:dist})}
@@ -630,7 +633,8 @@ function makeCard(key,item,cat){
       fetchRoute(k,addr,function(r){
         var el=g('drv-'+k);if(!el)return;
         if(r&&r.duration){
-          el.innerHTML='🚗 '+(formatDist(r.distance)?formatDist(r.distance)+' · ':'')+formatDuration(r.duration);
+          var timeStr=r.updatedAt?' <span style="opacity:.45;font-size:10px">'+r.updatedAt+' 기준</span>':'';
+          el.innerHTML='🚗 '+(formatDist(r.distance)?formatDist(r.distance)+' · ':'')+formatDuration(r.duration)+timeStr;
         }else if(r&&r.dist){
           el.innerHTML='📍 '+formatDist(r.dist)+' (직선거리)';
         }else{el.style.display='none'}
