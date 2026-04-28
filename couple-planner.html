@@ -487,25 +487,51 @@ function loadRouteCache(){
   },{onlyOnce:true});
 }
 
+// 주소 좌표 캐시 (좌표 변환만 캐시, 소요시간은 매번 새로 계산)
+var GEOCODE_CACHE={};
+
+function loadRouteCache(){
+  // 좌표 캐시만 Firebase에서 로드 (소요시간은 현재 위치로 새로 계산)
+  fb().onValue(fb().ref(fb().db,'rooms/'+RK+'/geocode_cache'),function(snap){
+    var data=snap.val()||{};
+    Object.entries(data).forEach(function(kv){
+      if(kv[1]&&kv[1].lat)GEOCODE_CACHE[kv[0]]=kv[1];
+    });
+  },{onlyOnce:true});
+}
+
 function fetchRoute(key,addr,cb){
-  if(ROUTE_CACHE[key]){cb(ROUTE_CACHE[key]);return}
   if(!USER_LAT||!addr){cb(null);return}
-  geocodeAddr(addr,function(lat,lon){
-    if(!lat||!lon){cb(null);return}
+  // 좌표 캐시 있으면 바로 Directions 호출
+  if(GEOCODE_CACHE[key]&&GEOCODE_CACHE[key].lat){
+    var lat=GEOCODE_CACHE[key].lat,lon=GEOCODE_CACHE[key].lon;
     var dist=haversine(USER_LAT,USER_LON,lat,lon);
     DIST_CACHE[key]=dist;
-    fetch('https://kakao-proxy-seven.vercel.app/api/directions?ox='+USER_LON+'&oy='+USER_LAT+'&dx='+lon+'&dy='+lat)
-    .then(function(r){return r.json()})
-    .then(function(d){
-      if(d.duration){
-        var rv={duration:d.duration,distance:d.distance,dist:dist,ts:Date.now()};
-        ROUTE_CACHE[key]=rv;
-        // Firebase에 저장
-        fb().set(fb().ref(fb().db,'rooms/'+RK+'/route_cache/'+key),rv).catch(function(){});
-        cb(rv);
-      }else{cb({dist:dist})}
-    }).catch(function(){cb({dist:dist})});
-  });
+    callDirections(key,lat,lon,dist,cb);
+  }else{
+    // 좌표 변환 후 캐시 저장
+    geocodeAddr(addr,function(lat,lon){
+      if(!lat||!lon){cb(null);return}
+      GEOCODE_CACHE[key]={lat:lat,lon:lon};
+      // Firebase에 좌표만 저장
+      fb().set(fb().ref(fb().db,'rooms/'+RK+'/geocode_cache/'+key),{lat:lat,lon:lon}).catch(function(){});
+      var dist=haversine(USER_LAT,USER_LON,lat,lon);
+      DIST_CACHE[key]=dist;
+      callDirections(key,lat,lon,dist,cb);
+    });
+  }
+}
+
+function callDirections(key,lat,lon,dist,cb){
+  fetch('https://kakao-proxy-seven.vercel.app/api/directions?ox='+USER_LON+'&oy='+USER_LAT+'&dx='+lon+'&dy='+lat)
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.duration){
+      var rv={duration:d.duration,distance:d.distance,dist:dist,ts:Date.now()};
+      ROUTE_CACHE[key]=rv;
+      cb(rv);
+    }else{cb({dist:dist})}
+  }).catch(function(){cb({dist:dist})});
 }
 
 function formatDuration(sec){
@@ -590,43 +616,26 @@ function makeCard(key,item,cat){
   var encAddr=encodeURIComponent(item.address||'');
   var mapH='';
 
-  // 소요시간 표시
+  // 소요시간 - 매번 현재 위치로 새로 계산
   var distH='';
   if(USER_LAT&&item.address){
-    var rc=ROUTE_CACHE[key];
-    if(rc&&rc.duration){
-      var dStr=formatDist(rc.distance);
-      var tStr=formatDuration(rc.duration);
-      distH='<div class="drive-badge">🚗 '+(dStr?dStr+' · ':'')+tStr+'</div>';
-    }else if(rc&&rc.dist){
-      var dStr2=formatDist(rc.dist);
-      distH='<div class="drive-badge">📍 '+dStr2+' (직선거리)</div>';
-      // 백그라운드로 실제 소요시간 로드
-      (function(k,addr){
-        fetchRoute(k,addr,function(r){
-          var el=g('drv-'+k);if(!el)return;
-          if(r&&r.duration){
-            var ds=formatDist(r.distance),ts=formatDuration(r.duration);
-            el.innerHTML='🚗 '+(ds?ds+' · ':'')+ts;
-          }
-        });
-      })(key,item.address);
+    var gc=GEOCODE_CACHE[key];
+    if(gc&&gc.lat){
+      var quickDist=formatDist(haversine(USER_LAT,USER_LON,gc.lat,gc.lon));
+      distH='<div class="drive-badge" id="drv-'+key+'">🚗 <span style="opacity:.6">'+quickDist+' 계산중…</span></div>';
     }else{
       distH='<div class="drive-badge" id="drv-'+key+'">🚗 <span style="opacity:.5">계산 중…</span></div>';
-      (function(k,addr){
-        fetchRoute(k,addr,function(r){
-          var el=g('drv-'+k);if(!el)return;
-          if(r&&r.duration){
-            var ds=formatDist(r.distance),ts=formatDuration(r.duration);
-            el.innerHTML='🚗 '+(ds?ds+' · ':'')+ts;
-            el.id='';
-          }else if(r&&r.dist){
-            el.innerHTML='📍 '+formatDist(r.dist)+' (직선거리)';
-            el.id='';
-          }else{el.style.display='none'}
-        });
-      })(key,item.address);
     }
+    (function(k,addr){
+      fetchRoute(k,addr,function(r){
+        var el=g('drv-'+k);if(!el)return;
+        if(r&&r.duration){
+          el.innerHTML='🚗 '+(formatDist(r.distance)?formatDist(r.distance)+' · ':'')+formatDuration(r.duration);
+        }else if(r&&r.dist){
+          el.innerHTML='📍 '+formatDist(r.dist)+' (직선거리)';
+        }else{el.style.display='none'}
+      });
+    })(key,item.address);
   }
 
   // 지도 버튼 - 이름으로 검색
