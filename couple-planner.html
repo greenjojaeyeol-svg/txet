@@ -126,9 +126,6 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .chkbar input:focus{border-color:var(--rose);background:#fff}
 .chkbar button{padding:10px 14px;background:var(--rose);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Pretendard',sans-serif}
 .chki{display:flex;align-items:center;gap:11px;padding:12px 13px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;user-select:none}
-.chki.dragging{opacity:.5;box-shadow:0 6px 20px rgba(0,0,0,.15)}
-.chki.drag-over{border:2px dashed var(--rose);background:var(--blush)}
-.chk-handle{font-size:14px;color:var(--muted);padding:0 2px;flex-shrink:0;touch-action:none;cursor:grab;user-select:none}
 .chki.done{opacity:.5}
 .chk-c{width:21px;height:21px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.2s}
 .chki.done .chk-c{background:var(--rose);border-color:var(--rose)}
@@ -148,12 +145,6 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 /* 설정 */
 .setcard{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
 .setsave{width:100%;padding:12px;background:var(--rose);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:6px}
-
-/* 휴무일 선택 */
-.days-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-.day-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'Pretendard',sans-serif;transition:.15s;flex-shrink:0}
-.day-btn.on{background:var(--rose);color:#fff;border-color:var(--rose)}
-.tbadge.holiday{background:#fceaea;color:#a32d2d}
 
 /* 드라이브 뱃지 */
 .drive-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:#1a56a0;background:#e8f0fe;padding:3px 10px;border-radius:20px;margin-top:6px;margin-bottom:2px}
@@ -324,11 +315,7 @@ window.dispatchEvent(new Event('fb-ready'));
 var RK=null,UNSUBS=[],M_TYPE='',M_KEY=null;
 var DB={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
 var FILTER={courses:'전체',restaurants:'전체',cafes:'전체',plans:'전체',visit:'전체',fav:false};
-var SORT={restaurants:'거리순',cafes:'거리순'}; // 기본 | 마감시간순 | 거리순
-// localStorage에서 정렬 상태 복원
-try{var _sv=JSON.parse(localStorage.getItem('couple_sort')||'{}');if(_sv.restaurants)SORT.restaurants=_sv.restaurants;if(_sv.cafes)SORT.cafes=_sv.cafes;}catch(e){}
-
-function saveSortState(){try{localStorage.setItem('couple_sort',JSON.stringify(SORT));}catch(e){}}
+var SORT={restaurants:'기본',cafes:'기본'}; // 기본 | 마감시간순 | 거리순
 var USER_LAT=null,USER_LON=null;
 var DIST_CACHE={}; // key -> distance in meters
 
@@ -445,7 +432,6 @@ function setFvisit(val,cat){FILTER.visit=val;renderFbar(cat);render(cat)}
 function setFfav(cat){FILTER.fav=!FILTER.fav;renderFbar(cat);render(cat)}
 function setFsort(cat,val){
   SORT[cat]=val;
-  saveSortState();
   if(val==='거리순'&&USER_LAT){
     // 주소 → 좌표 변환 후 거리 계산
     var items=Object.entries(DB[cat]||{});
@@ -600,41 +586,57 @@ function render(cat){
       return ta-tb;
     });
   }else if(SORT[cat]==='거리순'){
+    // GEOCODE_CACHE로 즉시 거리 계산 후 정렬
     items.sort(function(a,b){
-      // ROUTE_CACHE에 카카오 실소요시간 있으면 우선, 없으면 직선거리
-      var ra=ROUTE_CACHE[a[0]],rb=ROUTE_CACHE[b[0]];
-      var da=ra&&ra.duration?ra.duration:(DIST_CACHE[a[0]]!==undefined?DIST_CACHE[a[0]]*10:Infinity);
-      var db=rb&&rb.duration?rb.duration:(DIST_CACHE[b[0]]!==undefined?DIST_CACHE[b[0]]*10:Infinity);
+      var la=GEOCODE_CACHE[a[0]],lb=GEOCODE_CACHE[b[0]];
+      var da=la&&USER_LAT?haversine(USER_LAT,USER_LON,la.lat,la.lon):Infinity;
+      var db=lb&&USER_LAT?haversine(USER_LAT,USER_LON,lb.lat,lb.lon):Infinity;
+      // DIST_CACHE도 함께 업데이트
+      if(da!==Infinity)DIST_CACHE[a[0]]=da;
+      if(db!==Infinity)DIST_CACHE[b[0]]=db;
       return da-db;
     });
+    // 좌표 없는 항목은 비동기로 geocode 후 재정렬
+    var noCoord=items.filter(function(kv){return kv[1].address&&!GEOCODE_CACHE[kv[0]]});
+    if(noCoord.length>0){
+      var done=0;
+      noCoord.forEach(function(kv){
+        geocodeAddr(kv[1].address,function(lat,lon){
+          if(lat&&lon){
+            GEOCODE_CACHE[kv[0]]={lat:lat,lon:lon};
+            fb().set(fb().ref(fb().db,'rooms/'+RK+'/geocode_cache/'+kv[0]),{lat:lat,lon:lon}).catch(function(){});
+            DIST_CACHE[kv[0]]=haversine(USER_LAT,USER_LON,lat,lon);
+          }
+          if(++done>=noCoord.length)render(cat);
+        });
+      });
+    }
   }else items.sort(function(a,b){return((a[1].order||0)-(b[1].order||0))});
   el.innerHTML=items.map(function(kv){return makeCard(kv[0],kv[1],cat)}).join('');
 }
 
 // ── 카드 ──────────────────────────────────────────────
-function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
-  // 오늘 휴무일인지 먼저 체크
-  if(closed_days&&closed_days.length){
-    var todayIdx=new Date().getDay(); // 0=일,1=월,...
-    if(closed_days.indexOf(todayIdx)>=0){
-      var dayNames=['일','월','화','수','목','금','토'];
-      var closedStr=closed_days.map(function(d){return dayNames[d]}).join('·');
-      return'<span class="tbadge holiday">🔴 정기휴무 ('+closedStr+')</span>';
-    }
-  }
+function timeBadge(ot,ct,lo,bt_s,bt_e,allday){
   if(allday)return'<span class="tbadge open">🟢 24시간 영업</span>';
   if(!ot||!ct)return'';
   var now=new Date(),cur=now.getHours()*60+now.getMinutes();
   var op=toMin(ot),cl=toMin(ct);
   var loMin=lo?toMin(lo):null;
   var bt_sMin=bt_s?toMin(bt_s):null,bt_eMin=bt_e?toMin(bt_e):null;
-  // 브레이크타임 중인지
+  // 마감 (영업 종료 후)
+  if(cur>=cl)return'<span class="tbadge closed">🔴 마감 '+ct+'</span>';
+  // 오픈 전 (영업 시작 전)
+  if(cur<op)return'<span class="tbadge closed" style="background:#f0f0f0;color:#666">⚫ 오픈 전 '+ot+'</span>';
+  // 브레이크타임
   if(bt_sMin&&bt_eMin&&cur>=bt_sMin&&cur<bt_eMin)
     return'<span class="tbadge soon">🟠 브레이크타임 ~'+bt_e+'</span>';
-  if(cur<op-30||cur>=cl)return'<span class="tbadge closed">🔴 마감 '+ct+'</span>';
-  if(cur<op)return'<span class="tbadge soon">🟡 오픈예정 '+ot+'</span>';
+  // 라스트오더
   if(loMin&&cur>=loMin)return'<span class="tbadge soon">🟡 라스트오더 '+lo+'</span>';
-  if(cur>=cl-30)return'<span class="tbadge soon">🟡 마감임박 '+ct+'</span>';
+  // 마감임박 (30분 전)
+  if(cur>=cl-30)return'<span class="tbadge soon">🟡 마감임박 ~'+ct+'</span>';
+  // 오픈 예정 (30분 전)
+  if(cur>=op-30&&cur<op)return'<span class="tbadge soon">🟡 오픈예정 '+ot+'</span>';
+  // 영업중
   return'<span class="tbadge open">🟢 영업중 ~'+ct+'</span>';
 }
 function toMin(t){var p=(t||'').split(':');return parseInt(p[0]||0)*60+parseInt(p[1]||0)}
@@ -690,7 +692,7 @@ function makeCard(key,item,cat){
   var tagH=item.category?'<span class="card-tag">'+esc(item.category)+'</span>':'';
   var vbadge=item.visited?'<span class="vbadge">✅ 방문</span>':'';
   var favbadge=item.fav?'<span style="font-size:14px">⭐</span>':'';
-  var tb=timeBadge(item.open_time,item.close_time,item.last_order,item.break_start,item.break_end,item.allday,item.closed_days);
+  var tb=timeBadge(item.open_time,item.close_time,item.last_order,item.break_start,item.break_end,item.allday);
   var timeDetail='';
   if(item.allday){
     timeDetail='<div class="card-sub">🕐 24시간 영업</div>';
@@ -699,10 +701,6 @@ function makeCard(key,item,cat){
     if(item.last_order)timeDetail+=' · 라스트오더 '+item.last_order;
     if(item.break_start&&item.break_end)timeDetail+=' · 브레이크 '+item.break_start+'~'+item.break_end;
     timeDetail+='</div>';
-  }
-  if(item.closed_days&&item.closed_days.length){
-    var _dn=['일','월','화','수','목','금','토'];
-    timeDetail+='<div class="card-sub">🚫 정기휴무 '+item.closed_days.map(function(d){return _dn[d]+'요일'}).join(', ')+'</div>';
   }
   var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
   var favbtnH='<button class="cbtn fav-btn'+(item.fav?' on':'')+'" onclick="toggleFav(\''+key+'\',\''+cat+'\','+!!item.fav+',event)" title="즐겨찾기">'+(item.fav?'⭐':'☆')+'</button>';
@@ -760,97 +758,19 @@ async function delItem(k,cat){
 }
 
 // ── 체크리스트 ────────────────────────────────────────
-var chkDragKey=null,chkTouchEl=null;
-
 function renderChk(){
   var el=g('lst-checklist');
   var items=Object.entries(DB.checklist||{});
   if(!items.length){el.innerHTML='<div class="empty"><div class="empty-i">✅</div><div class="empty-t">할 일을 추가해보세요</div></div>';return}
-  // order 기준 정렬, order 없으면 done 상태로
-  items.sort(function(a,b){
-    var ao=a[1].order!==undefined?a[1].order:99999+(a[1].done?1:0);
-    var bo=b[1].order!==undefined?b[1].order:99999+(b[1].done?1:0);
-    return ao-bo;
-  });
+  items.sort(function(a,b){return(a[1].done?1:0)-(b[1].done?1:0)});
   el.innerHTML=items.map(function(kv){
     var k=kv[0],v=kv[1];
-    return'<div class="chki'+(v.done?' done':'')+'" id="chki-'+k+'" data-key="'+k+'"'
-      +' draggable="true"'
-      +' ondragstart="chkDragStart(event)" ondragover="chkDragOver(event)" ondrop="chkDrop(event)" ondragend="chkDragEnd(event)"'
-      +' ontouchstart="chkTouchStart(event)" ontouchmove="chkTouchMove(event)" ontouchend="chkTouchEnd(event)"'
-      +' onclick="toggleChk(\''+k+'\')">'
-      +'<span class="chk-handle" onclick="event.stopPropagation()">⠿</span>'
+    return'<div class="chki'+(v.done?' done':'')+'" onclick="toggleChk(\''+k+'\')">'
       +'<div class="chk-c"><span class="chk-ck">✓</span></div>'
       +'<div class="chk-lbl">'+esc(v.text||'')+'</div>'
       +'<button class="chk-del" onclick="event.stopPropagation();delChk(\''+k+'\')">×</button>'
       +'</div>';
   }).join('');
-}
-
-// 체크리스트 드래그
-function chkDragStart(e){
-  chkDragKey=e.currentTarget.dataset.key;
-  e.currentTarget.classList.add('dragging');
-  e.dataTransfer.effectAllowed='move';
-}
-function chkDragOver(e){
-  e.preventDefault();
-  document.querySelectorAll('.chki.drag-over').forEach(function(el){el.classList.remove('drag-over')});
-  e.currentTarget.classList.add('drag-over');
-}
-function chkDragEnd(e){
-  e.currentTarget.classList.remove('dragging');
-  document.querySelectorAll('.chki.drag-over').forEach(function(el){el.classList.remove('drag-over')});
-}
-async function chkDrop(e){
-  e.preventDefault();
-  var toKey=e.currentTarget.dataset.key;
-  if(!chkDragKey||chkDragKey===toKey)return;
-  e.currentTarget.classList.remove('drag-over');
-  var container=g('lst-checklist');
-  var domItems=Array.from(container.querySelectorAll('.chki[data-key]'));
-  var keys=domItems.map(function(el){return el.dataset.key});
-  var fi=keys.indexOf(chkDragKey),ti=keys.indexOf(toKey);
-  if(fi<0||ti<0)return;
-  keys.splice(fi,1);keys.splice(ti,0,chkDragKey);
-  var updates={};
-  keys.forEach(function(k,i){updates['checklist/'+k+'/order']=i});
-  await fb().update(rr(''),updates);
-  chkDragKey=null;
-}
-// 체크리스트 터치 드래그
-function chkTouchStart(e){
-  var h=e.target.closest('.chk-handle');if(!h)return;
-  chkTouchEl=e.currentTarget;chkTouchEl.classList.add('dragging');
-}
-function chkTouchMove(e){
-  if(!chkTouchEl)return;
-  e.preventDefault();
-  var y=e.touches[0].clientY,x=e.touches[0].clientX;
-  var els=document.elementsFromPoint(x,y);
-  var target=els.find(function(el){return el.classList&&el.classList.contains('chki')&&el!==chkTouchEl});
-  document.querySelectorAll('.chki.drag-over').forEach(function(el){el.classList.remove('drag-over')});
-  if(target)target.classList.add('drag-over');
-}
-async function chkTouchEnd(e){
-  if(!chkTouchEl)return;
-  var over=document.querySelector('.chki.drag-over');
-  if(over&&over!==chkTouchEl){
-    var fromKey=chkTouchEl.dataset.key,toKey=over.dataset.key;
-    var container=g('lst-checklist');
-    var domItems=Array.from(container.querySelectorAll('.chki[data-key]'));
-    var keys=domItems.map(function(el){return el.dataset.key});
-    var fi=keys.indexOf(fromKey),ti=keys.indexOf(toKey);
-    if(fi>=0&&ti>=0){
-      keys.splice(fi,1);keys.splice(ti,0,fromKey);
-      var updates={};
-      keys.forEach(function(k,i){updates['checklist/'+k+'/order']=i});
-      await fb().update(rr(''),updates);
-    }
-  }
-  chkTouchEl.classList.remove('dragging');
-  document.querySelectorAll('.chki.drag-over').forEach(function(el){el.classList.remove('drag-over')});
-  chkTouchEl=null;
 }
 async function addCheck(){
   var inp=g('chk-inp'),text=inp.value.trim();if(!text)return;
@@ -1067,13 +987,7 @@ var FORMS={
             +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
           +'</div>'
         +'</div>'
-        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="웨이팅 필수 등"></div>'
-        +'<div class="fg"><label>정기 휴무일</label><div class="days-wrap" id="f-days-wrap">'
-        +['일','월','화','수','목','금','토'].map(function(day,i){
-          var on=d&&d.closed_days&&d.closed_days.indexOf(i)>=0;
-          return'<button type="button" class="day-btn'+(on?' on':'')+'" data-day="'+i+'" onclick="toggleDay(this)">'+day+'</button>';
-        }).join('')
-        +'</div></div>'};
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="웨이팅 필수 등"></div>'};
   },
   cafes:function(d){
     var alld=d&&d.allday;
@@ -1098,13 +1012,7 @@ var FORMS={
             +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
           +'</div>'
         +'</div>'
-        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="포토존 있음 등"></div>'
-        +'<div class="fg"><label>정기 휴무일</label><div class="days-wrap" id="f-days-wrap">'
-        +['일','월','화','수','목','금','토'].map(function(day,i){
-          var on=d&&d.closed_days&&d.closed_days.indexOf(i)>=0;
-          return'<button type="button" class="day-btn'+(on?' on':'')+'" data-day="'+i+'" onclick="toggleDay(this)">'+day+'</button>';
-        }).join('')
-        +'</div></div>'};
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="포토존 있음 등"></div>'};
   },
   plans:function(d){
     return{title:d?'일정 수정':'데이트 일정 추가',
@@ -1116,8 +1024,6 @@ var FORMS={
         +'<div class="fg"><label>메모</label><textarea id="f-memo" placeholder="특별한 계획을 적어보세요">'+(d?esc(d.memo||''):'')+'</textarea></div>'};
   }
 };
-
-function toggleDay(btn){btn.classList.toggle('on')}
 
 function toggleAllday(){
   var chk=g('f-allday'),wrap=g('f-time-wrap');
@@ -1142,8 +1048,6 @@ async function saveModal(){
   if(!ne||!ne.value.trim()){if(ne)ne.style.borderColor='#e24b4a';return}
   var exist=(M_KEY&&DB[M_TYPE]&&DB[M_TYPE][M_KEY])||{};
   var alldayEl=g('f-allday');
-  var daysWrap=g('f-days-wrap');
-  var closedDays=daysWrap?Array.from(daysWrap.querySelectorAll('.day-btn.on')).map(function(b){return parseInt(b.dataset.day)}).sort():exist.closed_days||[];
   var item={
     name:ne.value.trim(),
     category:(g('f-cat')||{}).value||'',
@@ -1157,9 +1061,7 @@ async function saveModal(){
     last_order:(g('f-lo')||{}).value||'',
     break_start:(g('f-bts')||{}).value||'',
     break_end:(g('f-bte')||{}).value||'',
-    closed_days:closedDays,
     visited:exist.visited||false,
-    fav:exist.fav||false,
     ts:Date.now()
   };
   var k=M_KEY||uid(),wasEdit=!!M_KEY;
@@ -1194,13 +1096,14 @@ async function doDrop(e){
   var cat=e.currentTarget.dataset.cat;
   if(!dragKey||dragKey===targetKey||dragCat!==cat)return;
   e.currentTarget.classList.remove('drag-over');
-  // 화면(DOM) 순서로 keys 배열 구성 - DB 객체 순서 아님!
-  var container=g('lst-'+cat);
-  var domCards=container?Array.from(container.querySelectorAll('.card[data-cat="'+cat+'"]')):[];
-  var keys=domCards.map(function(el){return el.dataset.key});
+  // 순서 교환 (order 필드로 저장)
+  var items=Object.entries(DB[cat]||{});
+  var keys=items.map(function(kv){return kv[0]});
   var fromIdx=keys.indexOf(dragKey),toIdx=keys.indexOf(targetKey);
   if(fromIdx<0||toIdx<0)return;
+  // 순서 배열 재정렬
   keys.splice(fromIdx,1);keys.splice(toIdx,0,dragKey);
+  // Firebase에 order 저장
   var updates={};
   keys.forEach(function(k,i){updates[cat+'/'+k+'/order']=i});
   await fb().update(rr(''),updates);
@@ -1230,10 +1133,7 @@ async function touchEnd(e){
   if(over&&over!==touchEl){
     var cat=touchEl.dataset.cat;
     var fromKey=touchEl.dataset.key,toKey=over.dataset.key;
-    // DOM 순서 기반으로 keys 구성
-    var container=g('lst-'+cat);
-    var domCards=container?Array.from(container.querySelectorAll('.card[data-cat="'+cat+'"]')):[];
-    var keys=domCards.map(function(el){return el.dataset.key});
+    var keys=Object.keys(DB[cat]||{});
     var fi=keys.indexOf(fromKey),ti=keys.indexOf(toKey);
     if(fi>=0&&ti>=0){
       keys.splice(fi,1);keys.splice(ti,0,fromKey);
