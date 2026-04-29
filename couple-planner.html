@@ -1091,7 +1091,7 @@ var FORMS={
         +'</div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="웨이팅 필수 등"></div>'
         +'<div class="fg"><label>정기 휴무일</label><div class="days-wrap" id="f-days-wrap">'
-        +['일','월','화','수','목','금','토'].map(function(day,i){
+        +['월','화','수','목','금','토','일'].map(function(day,i){
           var on=d&&d.closed_days&&d.closed_days.indexOf(i)>=0;
           return'<button type="button" class="day-btn'+(on?' on':'')+'" data-day="'+i+'" onclick="toggleDay(this)">'+day+'</button>';
         }).join('')
