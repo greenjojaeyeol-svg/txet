@@ -303,9 +303,6 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 </div>
 <div id="toast"></div>
 
-<!-- 카카오맵 JS SDK (Directions 서비스용) -->
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=2fc31a383f6d190a8f058919d1623966&libraries=services"></script>
-
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
@@ -554,6 +551,8 @@ function fetchRoute(key,addr,cb){
     });
   }
 }
+
+function formatDuration(sec){
   if(!sec)return null;
   var m=Math.round(sec/60);
   if(m<1)return'1분 미만';
@@ -1278,10 +1277,13 @@ function goPage(page,btn){
 }
 
 // ── 초기화 ────────────────────────────────────────────
-window.addEventListener('fb-ready',function(){
+function onFbReady(){
   var saved=localStorage.getItem('RK');
   if(saved){RK=saved;enterApp();}
-});
+}
+// fb-ready를 이미 놓쳤을 경우 대비 (module 비동기 타이밍)
+if(window._fb){onFbReady();}
+else{window.addEventListener('fb-ready',onFbReady);}
 </script>
 </body>
 </html>
