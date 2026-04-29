@@ -629,7 +629,7 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
   var loMin=lo?toMin(lo):null;
   var bt_sMin=bt_s?toMin(bt_s):null,bt_eMin=bt_e?toMin(bt_e):null;
   // 마감 이후
-  if(cur>=cl)return'<span class="tbadge closed">🔴 영업 종료 '+ct+'</span>';
+  if(cur>=cl)return'<span class="tbadge closed">🔴 영업마감 '+ct+'</span>';
   // 오픈 30분 이내 (오픈예정)
   if(cur<op&&cur>=op-30)return'<span class="tbadge soon">🟡 오픈예정 '+ot+'</span>';
   // 오픈 전 (30분 초과)
