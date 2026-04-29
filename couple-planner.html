@@ -629,7 +629,7 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
   var loMin=lo?toMin(lo):null;
   var bt_sMin=bt_s?toMin(bt_s):null,bt_eMin=bt_e?toMin(bt_e):null;
   // 마감 이후
-  if(cur>=cl)return'<span class="tbadge closed">🔴 영업마감 '+ct+'</span>';
+  if(cur>=cl)return'<span class="tbadge closed">🔴 마감 '+ct+'</span>';
   // 오픈 30분 이내 (오픈예정)
   if(cur<op&&cur>=op-30)return'<span class="tbadge soon">🟡 오픈예정 '+ot+'</span>';
   // 오픈 전 (30분 초과)
@@ -637,8 +637,8 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
   // 브레이크타임
   if(bt_sMin&&bt_eMin&&cur>=bt_sMin&&cur<bt_eMin)
     return'<span class="tbadge soon">🟠 브레이크타임 ~'+bt_e+'</span>';
-  // 라스트오더 지남 → 주문마감
-  if(loMin&&cur>=loMin)return'<span class="tbadge lo">🟠 주문마감 (라스트오더 '+fmt12(lo)+')</span>';
+  // 라스트오더 지남
+  if(loMin&&cur>=loMin)return'<span class="tbadge soon">🟡 라스트오더 '+lo+'</span>';
   // 마감 30분 이내
   if(cur>=cl-30)return'<span class="tbadge soon">🟡 마감임박 ~'+ct+'</span>';
   // 영업 중
