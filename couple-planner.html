@@ -637,8 +637,8 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
   // 브레이크타임
   if(bt_sMin&&bt_eMin&&cur>=bt_sMin&&cur<bt_eMin)
     return'<span class="tbadge soon">🟠 브레이크타임 ~'+bt_e+'</span>';
-  // 라스트오더 지남
-  if(loMin&&cur>=loMin)return'<span class="tbadge soon">🟡 라스트오더 '+lo+'</span>';
+  // 라스트오더 지남 → 주문마감
+  if(loMin&&cur>=loMin)return'<span class="tbadge soon">🟠 주문마감 (라스트오더 '+lo+'</span>';
   // 마감 30분 이내
   if(cur>=cl-30)return'<span class="tbadge soon">🟡 마감임박 ~'+ct+'</span>';
   // 영업 중
