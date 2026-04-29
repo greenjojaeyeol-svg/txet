@@ -303,6 +303,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 </div>
 <div id="toast"></div>
 
+<!-- 카카오맵 JS SDK (Directions 서비스용) -->
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=2fc31a383f6d190a8f058919d1623966&libraries=services"></script>
+
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
@@ -465,31 +468,70 @@ function setFsort(cat,val){
   }else{renderFbar(cat);render(cat);}
 }
 
-// 카카오 주소 → 좌표
+// 카카오 주소 → 좌표 (JS키로 Geocoder SDK 사용)
+var KAKAO_REST='b67c5d797ab1def425ed459c1c7c42c1';
+
 function geocodeAddr(addr,cb){
+  // 1차: 주소 검색
   fetch('https://dapi.kakao.com/v2/local/search/address.json?query='+encodeURIComponent(addr),{
-    headers:{'Authorization':'KakaoAK b67c5d797ab1def425ed459c1c7c42c1'}
+    headers:{'Authorization':'KakaoAK '+KAKAO_REST}
   }).then(function(r){return r.json()})
   .then(function(d){
     var doc=d.documents&&d.documents[0];
-    if(doc)cb(parseFloat(doc.y),parseFloat(doc.x));
-    else cb(null,null);
+    if(doc){cb(parseFloat(doc.y),parseFloat(doc.x));return;}
+    // 2차: 키워드 검색 (상호명으로 등록된 경우)
+    fetch('https://dapi.kakao.com/v2/local/search/keyword.json?query='+encodeURIComponent(addr)+'&size=1',{
+      headers:{'Authorization':'KakaoAK '+KAKAO_REST}
+    }).then(function(r){return r.json()})
+    .then(function(d2){
+      var doc2=d2.documents&&d2.documents[0];
+      if(doc2)cb(parseFloat(doc2.y),parseFloat(doc2.x));
+      else cb(null,null);
+    }).catch(function(){cb(null,null);});
   }).catch(function(){cb(null,null);});
 }
 
-// Haversine 거리 (m)
+function callDirections(key,lat,lon,dist,cb){
+  // 카카오 모빌리티 Directions — Vercel 프록시 경유 (CORS 우회)
+  var url='https://kakao-proxy-seven.vercel.app/api/directions'
+    +'?ox='+USER_LON+'&oy='+USER_LAT
+    +'&dx='+lon+'&dy='+lat
+    +'&priority=RECOMMEND';
+  var now=new Date();
+  fetch(url)
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.duration!=null){
+      var rv={
+        duration:d.duration,   // 초
+        distance:d.distance,   // m
+        dist:dist,
+        ts:Date.now(),
+        updatedAt:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')
+      };
+      ROUTE_CACHE[key]=rv; cb(rv);
+    }else{
+      var rv={dist:dist,duration:null,distance:null,ts:Date.now()};
+      ROUTE_CACHE[key]=rv; cb(rv);
+    }
+  }).catch(function(){
+    var rv={dist:dist,duration:null,distance:null,ts:Date.now()};
+    ROUTE_CACHE[key]=rv; cb(rv);
+  });
+}
+
+// Haversine 직선거리 (m)
 function haversine(la1,lo1,la2,lo2){
   var R=6371000,dLat=(la2-la1)*Math.PI/180,dLon=(lo2-lo1)*Math.PI/180;
   var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-// ── 경로 캐시 (Firebase 저장, 새로고침 유지) ─────────────
+// ── 경로 캐시 ─────────────────────────────────────────
 var ROUTE_CACHE={};
 var GEOCODE_CACHE={};
 
 function loadRouteCache(){
-  // geocode 좌표 캐시만 Firebase에서 로드
   fb().onValue(fb().ref(fb().db,'rooms/'+RK+'/geocode_cache'),function(snap){
     var data=snap.val()||{};
     Object.entries(data).forEach(function(kv){
@@ -499,62 +541,19 @@ function loadRouteCache(){
 }
 
 function fetchRoute(key,addr,cb){
-  if(!USER_LAT||!addr){cb(null);return}
-  // 좌표 캐시 있으면 바로 Directions 호출
+  if(!USER_LAT||!addr){if(cb)cb(null);return}
   if(GEOCODE_CACHE[key]&&GEOCODE_CACHE[key].lat){
     var lat=GEOCODE_CACHE[key].lat,lon=GEOCODE_CACHE[key].lon;
-    var dist=haversine(USER_LAT,USER_LON,lat,lon);
-    DIST_CACHE[key]=dist;
-    callDirections(key,lat,lon,dist,cb);
+    callDirections(key,lat,lon,haversine(USER_LAT,USER_LON,lat,lon),cb);
   }else{
-    // 좌표 변환 후 캐시 저장
     geocodeAddr(addr,function(lat,lon){
-      if(!lat||!lon){cb(null);return}
+      if(!lat||!lon){if(cb)cb(null);return}
       GEOCODE_CACHE[key]={lat:lat,lon:lon};
-      // Firebase에 좌표만 저장
       fb().set(fb().ref(fb().db,'rooms/'+RK+'/geocode_cache/'+key),{lat:lat,lon:lon}).catch(function(){});
-      var dist=haversine(USER_LAT,USER_LON,lat,lon);
-      DIST_CACHE[key]=dist;
-      callDirections(key,lat,lon,dist,cb);
+      callDirections(key,lat,lon,haversine(USER_LAT,USER_LON,lat,lon),cb);
     });
   }
 }
-
-function callDirections(key,lat,lon,dist,cb){
-  // 카카오 모빌리티 Directions API 직접 호출
-  var url='https://apis-navi.kakaomobility.com/v1/directions'
-    +'?origin='+USER_LON+','+USER_LAT
-    +'&destination='+lon+','+lat
-    +'&priority=RECOMMEND&car_type=1&car_fuel=GASOLINE';
-  fetch(url,{headers:{'Authorization':'KakaoAK b67c5d797ab1def425ed459c1c7c42c1'}})
-  .then(function(r){return r.json()})
-  .then(function(d){
-    var route=d.routes&&d.routes[0];
-    if(route&&route.result_code===0&&route.summary){
-      var now=new Date();
-      var rv={
-        duration:route.summary.duration,
-        distance:route.summary.distance,
-        dist:dist,
-        ts:Date.now(),
-        updatedAt:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')
-      };
-      ROUTE_CACHE[key]=rv;
-      cb(rv);
-    }else{
-      // Directions 실패 → 직선거리로 폴백 (정렬에도 사용)
-      var rv={dist:dist,duration:null,distance:null,ts:Date.now()};
-      ROUTE_CACHE[key]=rv;
-      cb(rv);
-    }
-  }).catch(function(){
-    var rv={dist:dist,duration:null,distance:null,ts:Date.now()};
-    ROUTE_CACHE[key]=rv;
-    cb(rv);
-  });
-}
-
-function formatDuration(sec){
   if(!sec)return null;
   var m=Math.round(sec/60);
   if(m<1)return'1분 미만';
@@ -1023,7 +1022,7 @@ function startClock(){
 // ── 위치 표시 ─────────────────────────────────────────
 function loadLocation(lat,lon){
   fetch('https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x='+lon+'&y='+lat,{
-    headers:{'Authorization':'KakaoAK b67c5d797ab1def425ed459c1c7c42c1'}
+    headers:{'Authorization':'KakaoAK '+KAKAO_REST}
   })
   .then(function(r){return r.json()})
   .then(function(d){
