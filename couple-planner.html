@@ -617,7 +617,7 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
   if(closed_days&&closed_days.length){
     var todayIdx=new Date().getDay();
     if(closed_days.indexOf(todayIdx)>=0){
-      var dayNames=['일','월','화','수','목','금','토'];
+      var dayNames=['월','화','수','목','금','토','일'];
       var closedStr=closed_days.map(function(d){return dayNames[d]}).join('·');
       return'<span class="tbadge holiday">🔴 정기휴무 ('+closedStr+')</span>';
     }
@@ -708,7 +708,7 @@ function makeCard(key,item,cat){
     timeDetail+='</div>';
   }
   if(item.closed_days&&item.closed_days.length){
-    var _dn=['일','월','화','수','목','금','토'];
+    var _dn=['월','화','수','목','금','토','일'];
     timeDetail+='<div class="card-sub">🚫 정기휴무 '+item.closed_days.map(function(d){return _dn[d]+'요일'}).join(', ')+'</div>';
   }
   var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
@@ -1122,7 +1122,7 @@ var FORMS={
         +'</div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="포토존 있음 등"></div>'
         +'<div class="fg"><label>정기 휴무일</label><div class="days-wrap" id="f-days-wrap">'
-        +['일','월','화','수','목','금','토'].map(function(day,i){
+        +['월','화','수','목','금','토','일'].map(function(day,i){
           var on=d&&d.closed_days&&d.closed_days.indexOf(i)>=0;
           return'<button type="button" class="day-btn'+(on?' on':'')+'" data-day="'+i+'" onclick="toggleDay(this)">'+day+'</button>';
         }).join('')
