@@ -129,7 +129,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .chki{display:flex;align-items:center;gap:11px;padding:12px 13px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;user-select:none}
 .chki.dragging{opacity:.5;box-shadow:0 6px 20px rgba(0,0,0,.15)}
 .chki.drag-over{border:2px dashed var(--rose);background:var(--blush)}
-.chk-handle{font-size:14px;color:var(--muted);padding:0 2px;flex-shrink:0;touch-action:none;cursor:grab;user-select:none}
+.chk-edit{background:none;border:none;font-size:13px;padding:2px 4px;cursor:pointer;opacity:0;transition:opacity .15s;flex-shrink:0}
+.chki:hover .chk-edit{opacity:.6}
+.chk-edit-inp{flex:1;border:1.5px solid var(--rose);border-radius:6px;padding:3px 7px;font-size:14px;font-family:inherit;outline:none;width:100%}
 .chki.done{opacity:.5}
 .chk-c{width:21px;height:21px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.2s}
 .chki.done .chk-c{background:var(--rose);border-color:var(--rose)}
@@ -661,30 +663,29 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
   var loMin=lo?toMin(lo):null;
   var bt_sMin=bt_s?toMin(bt_s):null,bt_eMin=bt_e?toMin(bt_e):null;
   // 마감 이후
-  if(cur>=cl)return'<span class="tbadge closed">🔴 마감 '+fmt12(ct)+'</span>';
+  if(cur>=cl)return'<span class="tbadge closed">🔴 마감 '+fmt24(ct)+'</span>';
   // 오픈 30분 이내 (오픈예정)
-  if(cur<op&&cur>=op-30)return'<span class="tbadge soon">🟡 오픈예정 '+fmt12(ot)+'</span>';
+  if(cur<op&&cur>=op-30)return'<span class="tbadge soon">🟡 오픈예정 '+fmt24(ot)+'</span>';
   // 오픈 전 (30분 초과)
-  if(cur<op)return'<span class="tbadge before">⚫ 오픈 전 '+fmt12(ot)+' 영업 시작</span>';
+  if(cur<op)return'<span class="tbadge before">⚫ 오픈 전 '+fmt24(ot)+' 영업 시작</span>';
   // 브레이크타임
   if(bt_sMin&&bt_eMin&&cur>=bt_sMin&&cur<bt_eMin)
-    return'<span class="tbadge soon">🟠 브레이크타임 ~'+fmt12(bt_e)+'</span>';
+    return'<span class="tbadge soon">🟠 브레이크타임 ~'+fmt24(bt_e)+'</span>';
   // 라스트오더 지남 → 주문마감
-  if(loMin&&cur>=loMin)return'<span class="tbadge lo">🟠 주문마감 (라스트오더 '+fmt12(lo)+')</span>';
+  if(loMin&&cur>=loMin)return'<span class="tbadge lo">🟠 주문마감 (라스트오더 '+fmt24(lo)+')</span>';
   // 마감 30분 이내
-  if(cur>=cl-30)return'<span class="tbadge soon">🟡 마감임박 ~'+fmt12(ct)+'</span>';
+  if(cur>=cl-30)return'<span class="tbadge soon">🟡 마감임박 ~'+fmt24(ct)+'</span>';
   // 영업 중
-  return'<span class="tbadge open">🟢 영업중 ~'+fmt12(ct)+'</span>';
+  return'<span class="tbadge open">🟢 영업중 ~'+fmt24(ct)+'</span>';
 }
 function toMin(t){var p=(t||'').split(':');return parseInt(p[0]||0)*60+parseInt(p[1]||0)}
 
-// 24h → 오전/오후 12h 변환 (18:30 → 오후 6:30)
-function fmt12(t){
+// 시간 표시: 21:00 형식 (00분이면 분 생략)
+function fmt24(t){
   if(!t)return t;
-  var p=t.split(':');var h=parseInt(p[0]),m=parseInt(p[1]||0);
-  var ampm=h<12?'오전':'오후';
-  var h12=h%12||12;
-  return ampm+' '+h12+(m>0?':'+String(m).padStart(2,'0'):'')+'시';
+  var p=t.split(':');
+  var h=p[0],m=parseInt(p[1]||0);
+  return h+(m>0?':'+String(m).padStart(2,'0'):'');
 }
 
 function makeCard(key,item,cat){
@@ -743,9 +744,9 @@ function makeCard(key,item,cat){
   if(item.allday){
     timeDetail='<div class="card-sub">🕐 24시간 영업</div>';
   }else if(item.open_time||item.close_time){
-    timeDetail='<div class="card-sub">🕐 '+(item.open_time?fmt12(item.open_time):'--')+' ~ '+(item.close_time?fmt12(item.close_time):'--');
-    if(item.last_order)timeDetail+=' · 라스트오더 '+fmt12(item.last_order);
-    if(item.break_start&&item.break_end)timeDetail+=' · 브레이크 '+fmt12(item.break_start)+'~'+fmt12(item.break_end);
+    timeDetail='<div class="card-sub">🕐 '+(item.open_time?fmt24(item.open_time):'--')+' ~ '+(item.close_time?fmt24(item.close_time):'--');
+    if(item.last_order)timeDetail+=' · 라스트오더 '+fmt24(item.last_order);
+    if(item.break_start&&item.break_end)timeDetail+=' · 브레이크 '+fmt24(item.break_start)+'~'+fmt24(item.break_end);
     timeDetail+='</div>';
   }
   if(item.closed_days&&item.closed_days.length){
@@ -829,7 +830,8 @@ function renderChk(){
       +' onclick="toggleChk(\''+k+'\')">'
       +'<span class="chk-handle" onclick="event.stopPropagation()">⠿</span>'
       +'<div class="chk-c"><span class="chk-ck">✓</span></div>'
-      +'<div class="chk-lbl">'+esc(v.text||'')+'</div>'
+      +'<div class="chk-lbl" id="chklbl-'+k+'">'+esc(v.text||'')+'</div>'
+      +'<button class="chk-edit" onclick="event.stopPropagation();startEditChk(\''+k+'\')">✏️</button>'
       +'<button class="chk-del" onclick="event.stopPropagation();delChk(\''+k+'\')">×</button>'
       +'</div>';
   }).join('');
@@ -907,6 +909,30 @@ async function addCheck(){
 }
 async function toggleChk(k){var c=(DB.checklist[k]||{}).done||false;await fb().update(rr('checklist/'+k),{done:!c})}
 async function delChk(k){await fb().remove(rr('checklist/'+k))}
+
+function startEditChk(k){
+  var lbl=g('chklbl-'+k);
+  var item=DB.checklist[k];
+  if(!lbl||!item)return;
+  var cur=item.text||'';
+  lbl.innerHTML='<input class="chk-edit-inp" id="chkedit-'+k+'" type="text" value="'+esc(cur)+'"'
+    +' onclick="event.stopPropagation()"'
+    +' onkeydown="if(event.key===\'Enter\')saveEditChk(\''+k+'\');else if(event.key===\'Escape\')cancelEditChk(\''+k+'\',\''+esc(cur)+'\')"'
+    +' onblur="saveEditChk(\''+k+'\')">';
+  var inp=g('chkedit-'+k);
+  if(inp){inp.focus();inp.select();}
+}
+async function saveEditChk(k){
+  var inp=g('chkedit-'+k);
+  if(!inp)return;
+  var val=inp.value.trim();
+  if(!val){cancelEditChk(k,(DB.checklist[k]||{}).text||'');return;}
+  await fb().update(rr('checklist/'+k),{text:val});
+}
+function cancelEditChk(k,orig){
+  var lbl=g('chklbl-'+k);
+  if(lbl)lbl.textContent=orig;
+}
 
 // ── 설정 ──────────────────────────────────────────────
 async function saveSet(){
