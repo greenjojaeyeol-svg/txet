@@ -680,12 +680,11 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
 }
 function toMin(t){var p=(t||'').split(':');return parseInt(p[0]||0)*60+parseInt(p[1]||0)}
 
-// 시간 표시: 21:00 형식 (00분이면 분 생략)
+// 시간 표시: 21:00 형식 (항상 분 표시)
 function fmt24(t){
   if(!t)return t;
   var p=t.split(':');
-  var h=p[0],m=parseInt(p[1]||0);
-  return h+(m>0?':'+String(m).padStart(2,'0'):'');
+  return p[0]+':'+(p[1]?String(parseInt(p[1])).padStart(2,'0'):'00');
 }
 
 function makeCard(key,item,cat){
