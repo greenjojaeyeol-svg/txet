@@ -474,6 +474,7 @@ function startRouteProgress(cat,total){
   el.textContent='⏳ 거리 계산 중…';
   el.classList.add('on');
 }
+function setFcat(cat,val){FILTER[cat]=val;renderFbar(cat);render(cat)}
 function setFvisit(val,cat){FILTER.visit=val;renderFbar(cat);render(cat)}
 function setFfav(cat){FILTER.fav=!FILTER.fav;renderFbar(cat);render(cat)}
 function setFsort(cat,val){
