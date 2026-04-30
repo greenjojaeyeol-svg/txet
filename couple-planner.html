@@ -146,7 +146,8 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .stat-n{font-size:26px;color:var(--rose);font-family:'Nanum Myeongjo',serif}
 .stat-l{font-size:11px;color:var(--muted);margin-top:2px;font-weight:500}
 
-/* 설정 */
+.sec-upd{font-size:11px;font-weight:500;color:#1e7d45;background:#e8f8ef;padding:2px 8px;border-radius:20px;margin-left:6px;vertical-align:middle;opacity:0;transition:opacity .4s}
+.sec-upd.on{opacity:1}
 .setcard{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
 .setsave{width:100%;padding:12px;background:var(--rose);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:600;font-family:'Pretendard',sans-serif;cursor:pointer;margin-top:6px}
 
@@ -154,7 +155,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .days-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .day-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'Pretendard',sans-serif;transition:.15s;flex-shrink:0}
 .day-btn.on{background:var(--rose);color:#fff;border-color:var(--rose)}
-.tbadge.holiday{background:#fceaea;color:#a32d2d}
+.sec-upd{font-size:10px;font-family:'Pretendard',sans-serif;font-weight:500;color:#1e7d45;background:#e8f8ef;padding:2px 7px;border-radius:20px;vertical-align:middle;opacity:0;transition:opacity .4s}
+.sec-upd.on{opacity:1}
+.tbadge.lo{background:#fff0e0;color:#c05000}
 
 /* 드라이브 뱃지 */
 .drive-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:#1a56a0;background:#e8f0fe;padding:3px 10px;border-radius:20px;margin-top:6px;margin-bottom:2px}
@@ -247,13 +250,13 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
   <div class="pg" id="pg-restaurants">
     <button class="addbtn" onclick="openAdd('restaurants')">+ 맛집 추가</button>
     <div class="fbar" id="fb-restaurants"></div>
-    <div class="sec">우리만의 맛집 리스트</div>
+    <div class="sec">우리만의 맛집 리스트 <span id="sec-upd-restaurants" class="sec-upd"></span></div>
     <div id="lst-restaurants"><div class="loading">불러오는 중…</div></div>
   </div>
   <div class="pg" id="pg-cafes">
     <button class="addbtn" onclick="openAdd('cafes')">+ 카페 추가</button>
     <div class="fbar" id="fb-cafes"></div>
-    <div class="sec">좋아하는 카페</div>
+    <div class="sec">좋아하는 카페 <span id="sec-upd-cafes" class="sec-upd"></span></div>
     <div id="lst-cafes"><div class="loading">불러오는 중…</div></div>
   </div>
   <div class="pg" id="pg-plans">
@@ -441,7 +444,34 @@ function renderFbar(cat){
   el.innerHTML=catBtns+'<div class="fbar-div"></div>'+visitBtns+'<div class="fbar-div"></div>'+favBtn+sortBtns;
 }
 
-function setFcat(cat,val){FILTER[cat]=val;renderFbar(cat);render(cat)}
+// 카테고리별 소요시간 업데이트 진행 추적
+var ROUTE_PROGRESS={restaurants:{total:0,done:0},cafes:{total:0,done:0}};
+
+function markRouteProgress(cat){
+  var p=ROUTE_PROGRESS[cat];
+  if(!p)return;
+  p.done++;
+  var el=g('sec-upd-'+cat);
+  if(!el)return;
+  if(p.done>=p.total&&p.total>0){
+    var now=new Date();
+    var hh=String(now.getHours()).padStart(2,'0'),mm=String(now.getMinutes()).padStart(2,'0');
+    el.textContent='✓ '+hh+':'+mm+' 업데이트 완료';
+    el.classList.add('on');
+  }else{
+    el.textContent='⏳ '+p.done+'/'+p.total+' 계산 중…';
+    el.classList.add('on');
+  }
+}
+
+function startRouteProgress(cat,total){
+  ROUTE_PROGRESS[cat]={total:total,done:0};
+  var el=g('sec-upd-'+cat);
+  if(!el)return;
+  if(total===0){el.classList.remove('on');return;}
+  el.textContent='⏳ 거리 계산 중…';
+  el.classList.add('on');
+}
 function setFvisit(val,cat){FILTER.visit=val;renderFbar(cat);render(cat)}
 function setFfav(cat){FILTER.fav=!FILTER.fav;renderFbar(cat);render(cat)}
 function setFsort(cat,val){
@@ -454,9 +484,11 @@ function setFsort(cat,val){
     var pending=items.filter(function(kv){return ROUTE_CACHE[kv[0]]===undefined});
     if(pending.length===0){renderFbar(cat);render(cat);return;}
     toast('🚗 거리 계산 중…');
+    startRouteProgress(cat,pending.length);
     var done=0;
     pending.forEach(function(kv){
       fetchRoute(kv[0],kv[1].address,function(){
+        markRouteProgress(cat);
         if(++done>=pending.length){renderFbar(cat);render(cat);}
       });
     });
@@ -629,22 +661,31 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
   var loMin=lo?toMin(lo):null;
   var bt_sMin=bt_s?toMin(bt_s):null,bt_eMin=bt_e?toMin(bt_e):null;
   // 마감 이후
-  if(cur>=cl)return'<span class="tbadge closed">🔴 마감 '+ct+'</span>';
+  if(cur>=cl)return'<span class="tbadge closed">🔴 마감 '+fmt12(ct)+'</span>';
   // 오픈 30분 이내 (오픈예정)
-  if(cur<op&&cur>=op-30)return'<span class="tbadge soon">🟡 오픈예정 '+ot+'</span>';
+  if(cur<op&&cur>=op-30)return'<span class="tbadge soon">🟡 오픈예정 '+fmt12(ot)+'</span>';
   // 오픈 전 (30분 초과)
-  if(cur<op)return'<span class="tbadge before">⚫ 오픈 전 '+ot+' 영업 시작</span>';
+  if(cur<op)return'<span class="tbadge before">⚫ 오픈 전 '+fmt12(ot)+' 영업 시작</span>';
   // 브레이크타임
   if(bt_sMin&&bt_eMin&&cur>=bt_sMin&&cur<bt_eMin)
-    return'<span class="tbadge soon">🟠 브레이크타임 ~'+bt_e+'</span>';
+    return'<span class="tbadge soon">🟠 브레이크타임 ~'+fmt12(bt_e)+'</span>';
   // 라스트오더 지남 → 주문마감
-  if(loMin&&cur>=loMin)return'<span class="tbadge soon">🟠 주문마감 (라스트오더 '+lo+')</span>';
+  if(loMin&&cur>=loMin)return'<span class="tbadge lo">🟠 주문마감 (라스트오더 '+fmt12(lo)+')</span>';
   // 마감 30분 이내
-  if(cur>=cl-30)return'<span class="tbadge soon">🟡 마감임박 ~'+ct+'</span>';
+  if(cur>=cl-30)return'<span class="tbadge soon">🟡 마감임박 ~'+fmt12(ct)+'</span>';
   // 영업 중
-  return'<span class="tbadge open">🟢 영업중 ~'+ct+'</span>';
+  return'<span class="tbadge open">🟢 영업중 ~'+fmt12(ct)+'</span>';
 }
 function toMin(t){var p=(t||'').split(':');return parseInt(p[0]||0)*60+parseInt(p[1]||0)}
+
+// 24h → 오전/오후 12h 변환 (18:30 → 오후 6:30)
+function fmt12(t){
+  if(!t)return t;
+  var p=t.split(':');var h=parseInt(p[0]),m=parseInt(p[1]||0);
+  var ampm=h<12?'오전':'오후';
+  var h12=h%12||12;
+  return ampm+' '+h12+(m>0?':'+String(m).padStart(2,'0'):'')+'시';
+}
 
 function makeCard(key,item,cat){
   var encName=encodeURIComponent(item.name||'');
@@ -702,9 +743,9 @@ function makeCard(key,item,cat){
   if(item.allday){
     timeDetail='<div class="card-sub">🕐 24시간 영업</div>';
   }else if(item.open_time||item.close_time){
-    timeDetail='<div class="card-sub">🕐 '+(item.open_time||'--')+'~'+(item.close_time||'--');
-    if(item.last_order)timeDetail+=' · 라스트오더 '+item.last_order;
-    if(item.break_start&&item.break_end)timeDetail+=' · 브레이크 '+item.break_start+'~'+item.break_end;
+    timeDetail='<div class="card-sub">🕐 '+(item.open_time?fmt12(item.open_time):'--')+' ~ '+(item.close_time?fmt12(item.close_time):'--');
+    if(item.last_order)timeDetail+=' · 라스트오더 '+fmt12(item.last_order);
+    if(item.break_start&&item.break_end)timeDetail+=' · 브레이크 '+fmt12(item.break_start)+'~'+fmt12(item.break_end);
     timeDetail+='</div>';
   }
   if(item.closed_days&&item.closed_days.length){
@@ -907,10 +948,16 @@ function loadWeather(){
       ['restaurants','cafes'].forEach(function(cat){
         if(SORT[cat]==='거리순'){
           var toFetch=Object.entries(DB[cat]||{}).filter(function(kv){return kv[1].address&&ROUTE_CACHE[kv[0]]===undefined});
-          if(!toFetch.length)return;
+          if(!toFetch.length){
+            // 이미 캐시 있으면 바로 완료 표시
+            startRouteProgress(cat,1);markRouteProgress(cat);
+            return;
+          }
+          startRouteProgress(cat,toFetch.length);
           var done=0,total=toFetch.length;
           toFetch.forEach(function(kv){
             fetchRoute(kv[0],kv[1].address,function(){
+              markRouteProgress(cat);
               if(++done>=total){render(cat);}
             });
           });
@@ -1081,12 +1128,12 @@ var FORMS={
             +'<div style="flex:1"><label>마감</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
           +'</div>'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
-            +'<div style="flex:1"><label>&nbsp;</label></div>'
-          +'</div>'
-          +'<div class="fg" style="display:flex;gap:8px">'
             +'<div style="flex:1"><label>브레이크 시작</label><input type="time" id="f-bts" value="'+(d?d.break_start||'':'')+'"></div>'
             +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
+            +'<div style="flex:1"><label>&nbsp;</label></div>'
           +'</div>'
         +'</div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="웨이팅 필수 등"></div>'
@@ -1112,12 +1159,12 @@ var FORMS={
             +'<div style="flex:1"><label>마감</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
           +'</div>'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
-            +'<div style="flex:1"><label>&nbsp;</label></div>'
-          +'</div>'
-          +'<div class="fg" style="display:flex;gap:8px">'
             +'<div style="flex:1"><label>브레이크 시작</label><input type="time" id="f-bts" value="'+(d?d.break_start||'':'')+'"></div>'
             +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
+            +'<div style="flex:1"><label>&nbsp;</label></div>'
           +'</div>'
         +'</div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="포토존 있음 등"></div>'
