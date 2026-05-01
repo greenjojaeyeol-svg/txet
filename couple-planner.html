@@ -168,6 +168,23 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .fav-btn{font-size:15px!important;padding:2px 8px!important}
 .fav-btn.on{color:#f5a623;border-color:#f5a623;background:#fff8ee}
 
+/* 주차 */
+.park-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.park-btn{padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:'Pretendard',sans-serif;transition:.15s}
+.park-btn.on{background:var(--rose);color:#fff;border-color:var(--rose)}
+.park-tag{font-size:12px;font-weight:500;display:inline-block}
+.park-가능{color:#1e7d45}.park-유료{color:#854F0B}.park-불가{color:#a32d2d}
+.map-filter-bar{display:flex;gap:6px;flex-wrap:wrap;padding:10px 0 8px;align-items:center}
+.map-fbtn{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:'Pretendard',sans-serif;color:var(--txt);transition:.15s}
+.map-fbtn.on{background:var(--rose);color:#fff;border-color:var(--rose)}
+.map-fbar-div{flex:1}
+.map-my-loc{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:12px;cursor:pointer;font-family:'Pretendard',sans-serif;white-space:nowrap}
+.map-iw{min-width:180px;max-width:240px;padding:10px 12px;font-family:'Pretendard',sans-serif}
+.map-iw-name{font-size:14px;font-weight:600;color:#222;margin-bottom:4px}
+.map-iw-sub{font-size:12px;color:#666;margin-bottom:3px}
+.map-iw-badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:12px;margin:3px 0 6px}
+.map-iw-btn{display:block;margin-top:6px;padding:6px 0;background:var(--rose);color:#fff;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:'Pretendard',sans-serif;width:100%;text-align:center}
+
 /* 드래그 핸들 */
 .card.dragging{opacity:.5;box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .card.drag-over{border:2px dashed var(--rose);background:var(--blush)}
@@ -238,6 +255,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
     <button class="nb on" onclick="goPage('courses',this)"><span class="ni">🗺️</span>코스</button>
     <button class="nb" onclick="goPage('restaurants',this)"><span class="ni">🍽️</span>맛집</button>
     <button class="nb" onclick="goPage('cafes',this)"><span class="ni">☕</span>카페</button>
+    <button class="nb" onclick="goPage('map',this);initMap()"><span class="ni">📍</span>지도</button>
     <button class="nb" onclick="goPage('plans',this)"><span class="ni">📅</span>일정</button>
     <button class="nb" onclick="goPage('checklist',this)"><span class="ni">✅</span>체크</button>
     <button class="nb" onclick="goPage('settings',this)"><span class="ni">⚙️</span>설정</button>
@@ -261,7 +279,21 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
     <div class="sec">좋아하는 카페 <span id="sec-upd-cafes" class="sec-upd"></span></div>
     <div id="lst-cafes"><div class="loading">불러오는 중…</div></div>
   </div>
-  <div class="pg" id="pg-plans">
+  <div class="pg" id="pg-map">
+    <div class="map-filter-bar" id="map-fbar">
+      <button class="map-fbtn on" data-type="all"   onclick="setMapFilter('all',this)">전체</button>
+      <button class="map-fbtn"   data-type="restaurants" onclick="setMapFilter('restaurants',this)">🍽️ 맛집</button>
+      <button class="map-fbtn"   data-type="cafes"  onclick="setMapFilter('cafes',this)">☕ 카페</button>
+      <button class="map-fbtn"   data-type="unvisited" onclick="setMapFilter('unvisited',this)">☑ 방문전</button>
+      <div class="map-fbar-div"></div>
+      <button class="map-my-loc" onclick="moveToMyLoc()">📍 내 위치</button>
+    </div>
+    <div id="kakao-map" style="width:100%;height:calc(100vh - 200px);border-radius:12px;overflow:hidden;background:#f3f3f3;"></div>
+    <div id="map-empty" style="display:none;text-align:center;padding:40px 0;color:var(--muted)">
+      <div style="font-size:32px;margin-bottom:8px">📍</div>
+      <div style="font-size:14px">주소가 등록된 장소가 없어요</div>
+    </div>
+  </div>
     <div class="stats">
       <div class="stat"><div class="stat-n" id="sn-c">0</div><div class="stat-l">저장된 코스</div></div>
       <div class="stat"><div class="stat-n" id="sn-p">0</div><div class="stat-l">맛집·카페</div></div>
@@ -767,6 +799,7 @@ function makeCard(key,item,cat){
     +'<div class="card-bd">'
       +(item.address?'<div class="card-sub">📍 '+esc(item.address)+'</div>':'')
       +(distH?distH:'')
+      +(item.parking?'<div class="card-sub park-tag park-'+item.parking+'">'+(item.parking==='가능'?'🅿️ 주차 가능':item.parking==='유료'?'💰 주차 유료':'🚫 주차 불가')+'</div>':'')
       +timeDetail
       +mapH
       +(item.memo?'<div class="card-sub">'+esc(item.memo)+'</div>':'')
@@ -1163,6 +1196,12 @@ var FORMS={
           +'</div>'
         +'</div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="웨이팅 필수 등"></div>'
+        +'<div class="fg"><label>주차</label><div class="park-wrap">'
+        +[{v:'',l:'선택 안 함'},{v:'가능',l:'🅿️ 가능'},{v:'유료',l:'💰 유료'},{v:'불가',l:'🚫 불가'}].map(function(o){
+          var on=d&&d.parking===o.v||(o.v===''&&!d);
+          return'<button type="button" class="park-btn'+(d&&d.parking===o.v?' on':o.v===''&&!(d&&d.parking)?' on':'')+'" data-val="'+o.v+'" onclick="setPark(this)">'+o.l+'</button>';
+        }).join('')
+        +'</div></div>'
         +'<div class="fg"><label>정기 휴무일</label><div class="days-wrap" id="f-days-wrap">'
         +['일','월','화','수','목','금','토'].map(function(day,i){
           var on=d&&d.closed_days&&d.closed_days.indexOf(i)>=0;
@@ -1194,6 +1233,11 @@ var FORMS={
           +'</div>'
         +'</div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="포토존 있음 등"></div>'
+        +'<div class="fg"><label>주차</label><div class="park-wrap">'
+        +[{v:'',l:'선택 안 함'},{v:'가능',l:'🅿️ 가능'},{v:'유료',l:'💰 유료'},{v:'불가',l:'🚫 불가'}].map(function(o){
+          return'<button type="button" class="park-btn'+(d&&d.parking===o.v?' on':o.v===''&&!(d&&d.parking)?' on':'')+'" data-val="'+o.v+'" onclick="setPark(this)">'+o.l+'</button>';
+        }).join('')
+        +'</div></div>'
         +'<div class="fg"><label>정기 휴무일</label><div class="days-wrap" id="f-days-wrap">'
         +['일','월','화','수','목','금','토'].map(function(day,i){
           var on=d&&d.closed_days&&d.closed_days.indexOf(i)>=0;
@@ -1213,6 +1257,12 @@ var FORMS={
 };
 
 function toggleDay(btn){btn.classList.toggle('on')}
+function setPark(btn){
+  var wrap=btn.closest('.park-wrap');
+  if(!wrap)return;
+  wrap.querySelectorAll('.park-btn').forEach(function(b){b.classList.remove('on')});
+  btn.classList.add('on');
+}
 
 function toggleAllday(){
   var chk=g('f-allday'),wrap=g('f-time-wrap');
@@ -1239,6 +1289,9 @@ async function saveModal(){
   var alldayEl=g('f-allday');
   var daysWrap=g('f-days-wrap');
   var closedDays=daysWrap?Array.from(daysWrap.querySelectorAll('.day-btn.on')).map(function(b){return parseInt(b.dataset.day)}).sort():exist.closed_days||[];
+  var parkWrap=g('f-park-wrap')||document.querySelector('.park-wrap');
+  var parkBtn=parkWrap?parkWrap.querySelector('.park-btn.on'):null;
+  var parking=parkBtn?parkBtn.dataset.val:(exist.parking||'');
   var item={
     name:ne.value.trim(),
     category:(g('f-cat')||{}).value||'',
@@ -1253,6 +1306,7 @@ async function saveModal(){
     break_start:(g('f-bts')||{}).value||'',
     break_end:(g('f-bte')||{}).value||'',
     closed_days:closedDays,
+    parking:parking,
     visited:exist.visited||false,
     fav:exist.fav||false,
     ts:Date.now()
@@ -1350,6 +1404,148 @@ function goPage(page,btn){
 }
 
 // ── 초기화 ────────────────────────────────────────────
+// ── 지도 ──────────────────────────────────────────────
+var kakaoMap=null,mapMarkers=[],mapFilter='all',mapIw=null,kakaoSdkReady=false;
+
+function loadKakaoSdk(cb){
+  if(kakaoSdkReady){cb();return;}
+  if(window.kakao&&kakao.maps){kakaoSdkReady=true;cb();return;}
+  var s=document.createElement('script');
+  s.src='https://dapi.kakao.com/v2/maps/sdk.js?appkey=2fc31a383f6d190a8f058919d1623966&autoload=false';
+  s.onload=function(){kakao.maps.load(function(){kakaoSdkReady=true;cb();});};
+  s.onerror=function(){toast('카카오맵 SDK 로드 실패');};
+  document.head.appendChild(s);
+}
+
+function initMap(){
+  loadKakaoSdk(function(){
+    var container=g('kakao-map');
+    if(!container)return;
+    var center=new kakao.maps.LatLng(
+      USER_LAT||37.5665, USER_LON||126.9780
+    );
+    if(!kakaoMap){
+      kakaoMap=new kakao.maps.Map(container,{center:center,level:7});
+      mapIw=new kakao.maps.InfoWindow({removable:true});
+    }
+    renderMapMarkers();
+  });
+}
+
+function setMapFilter(type,btn){
+  mapFilter=type;
+  document.querySelectorAll('.map-fbtn').forEach(function(b){b.classList.remove('on')});
+  btn.classList.add('on');
+  renderMapMarkers();
+}
+
+function moveToMyLoc(){
+  if(!kakaoMap||!USER_LAT)return;
+  kakaoMap.setCenter(new kakao.maps.LatLng(USER_LAT,USER_LON));
+  kakaoMap.setLevel(5);
+}
+
+function renderMapMarkers(){
+  if(!kakaoMap)return;
+  // 기존 마커 제거
+  mapMarkers.forEach(function(m){m.setMap(null)});
+  mapMarkers=[];
+  if(mapIw)mapIw.close();
+
+  // 데이터 수집
+  var items=[];
+  ['restaurants','cafes'].forEach(function(cat){
+    Object.entries(DB[cat]||{}).forEach(function(kv){
+      var item=kv[1];
+      if(!item.address)return;
+      if(mapFilter===cat){}
+      else if(mapFilter==='restaurants'&&cat!=='restaurants')return;
+      else if(mapFilter==='cafes'&&cat!=='cafes')return;
+      else if(mapFilter==='unvisited'&&item.visited)return;
+      items.push({key:kv[0],item:item,cat:cat});
+    });
+  });
+
+  if(!items.length){
+    g('map-empty').style.display='block';
+    g('kakao-map').style.display='none';
+    return;
+  }
+  g('map-empty').style.display='none';
+  g('kakao-map').style.display='block';
+
+  var bounds=new kakao.maps.LatLngBounds();
+  var placed=0,total=items.length;
+
+  items.forEach(function(d){
+    var key=d.key,item=d.item,cat=d.cat;
+    function placeMarker(lat,lon){
+      var pos=new kakao.maps.LatLng(lat,lon);
+      bounds.extend(pos);
+
+      // 커스텀 마커 이미지
+      var isRest=cat==='restaurants';
+      var color=isRest?'#e85d5d':'#5b9cf6';
+      var emoji=isRest?'🍽️':'☕';
+      var visited=item.visited;
+      var svg=encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="38" height="46">'
+        +'<ellipse cx="19" cy="43" rx="8" ry="3" fill="rgba(0,0,0,.18)"/>'
+        +'<path d="M19 2C12.4 2 7 7.4 7 14c0 9 12 28 12 28s12-19 12-28C31 7.4 25.6 2 19 2z" fill="'+(visited?'#aaa':color)+'"/>'
+        +'<circle cx="19" cy="14" r="9" fill="white" opacity=".92"/>'
+        +'<text x="19" y="19" text-anchor="middle" font-size="11">'+(visited?'✓':emoji)+'</text>'
+        +'</svg>'
+      );
+      var markerImg=new kakao.maps.MarkerImage(
+        'data:image/svg+xml,'+svg,
+        new kakao.maps.Size(38,46),
+        {offset:new kakao.maps.Point(19,46)}
+      );
+      var marker=new kakao.maps.Marker({position:pos,map:kakaoMap,image:markerImg,title:item.name});
+      mapMarkers.push(marker);
+
+      // 인포윈도우 클릭
+      kakao.maps.event.addListener(marker,'click',function(){
+        var rc=ROUTE_CACHE[key];
+        var distStr=rc?(rc.distance!=null?formatDist(rc.distance):''):'';
+        var durStr=rc?(rc.duration!=null?'🚗 '+formatDuration(rc.duration):''):'';
+        var tb=timeBadge(item.open_time,item.close_time,item.last_order,item.break_start,item.break_end,item.allday,item.closed_days);
+        var iwHtml=
+          '<div class="map-iw">'
+          +'<div class="map-iw-name">'+(isRest?'🍽️ ':'☕ ')+esc(item.name||'')+'</div>'
+          +(item.category?'<div class="map-iw-sub">'+esc(item.category)+'</div>':'')
+          +(tb?'<div class="map-iw-sub" style="margin:3px 0">'+tb+'</div>':'')
+          +(distStr||durStr?'<div class="map-iw-sub">'+(distStr?'📍 '+distStr+' ':'')+durStr+'</div>':'')
+          +(item.memo?'<div class="map-iw-sub" style="color:#999">'+esc(item.memo)+'</div>':'')
+          +(item.parking?'<div class="map-iw-sub">'+(item.parking==='가능'?'🅿️ 주차 가능':item.parking==='유료'?'💰 주차 유료':'🚫 주차 불가')+'</div>':'')
+          +(item.visited?'<div class="map-iw-sub" style="color:#1e7d45">✅ 방문완료</div>':'')
+          +(item.address?'<button class="map-iw-btn" onclick="openNavi(\''+esc(item.name||'')+'\',\''+esc(item.address||'')+'\')">🚗 카카오내비 열기</button>':'')
+          +'</div>';
+        mapIw.setContent(iwHtml);
+        mapIw.open(kakaoMap,marker);
+      });
+
+      placed++;
+      if(placed>=total&&total>0){
+        if(total===1)kakaoMap.setCenter(new kakao.maps.LatLng(lat,lon));
+        else kakaoMap.setBounds(bounds,60);
+      }
+    }
+
+    // 이미 좌표 캐시 있으면 즉시
+    if(GEOCODE_CACHE[key]&&GEOCODE_CACHE[key].lat){
+      placeMarker(GEOCODE_CACHE[key].lat,GEOCODE_CACHE[key].lon);
+    }else{
+      geocodeAddr(item.address,function(lat,lon){
+        if(lat&&lon){
+          GEOCODE_CACHE[key]={lat:lat,lon:lon};
+          placeMarker(lat,lon);
+        }else{placed++;} // 실패해도 카운트
+      });
+    }
+  });
+}
+
 function onFbReady(){
   var saved=localStorage.getItem('RK');
   if(saved){RK=saved;enterApp();}
