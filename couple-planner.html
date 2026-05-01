@@ -999,6 +999,8 @@ function loadWeather(){
     USER_LAT=la;USER_LON=lo;
     loadLocation(la,lo);
     loadRouteCache();
+    // 지도 열려있으면 내 위치 마커 즉시 업데이트
+    if(kakaoMap)placeMyLocMarker();
     // 위치 세팅 후 카드 즉시 리렌더 (소요시간 표시)
     ['courses','restaurants','cafes'].forEach(function(cat){
       if(Object.keys(DB[cat]||{}).length>0)render(cat);
@@ -1418,6 +1420,47 @@ function loadKakaoSdk(cb){
   document.head.appendChild(s);
 }
 
+var myLocMarker=null,myLocCircle=null;
+
+function placeMyLocMarker(){
+  if(!kakaoMap||!USER_LAT)return;
+  var pos=new kakao.maps.LatLng(USER_LAT,USER_LON);
+
+  // 기존 마커/원 제거
+  if(myLocMarker)myLocMarker.setMap(null);
+  if(myLocCircle)myLocCircle.setMap(null);
+
+  // 카카오맵 스타일 파란 점 마커 (SVG)
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28">'
+    +'<circle cx="14" cy="14" r="13" fill="rgba(66,133,244,.18)"/>'
+    +'<circle cx="14" cy="14" r="7" fill="#4285F4" stroke="#fff" stroke-width="2.5"/>'
+    +'</svg>';
+  var markerImg=new kakao.maps.MarkerImage(
+    'data:image/svg+xml,'+encodeURIComponent(svg),
+    new kakao.maps.Size(28,28),
+    {offset:new kakao.maps.Point(14,14)}
+  );
+  myLocMarker=new kakao.maps.Marker({
+    position:pos,
+    map:kakaoMap,
+    image:markerImg,
+    title:'현재 위치',
+    zIndex:10
+  });
+
+  // 정확도 반경 원 (반투명 파란 원)
+  myLocCircle=new kakao.maps.Circle({
+    center:pos,
+    radius:80,
+    strokeWeight:1,
+    strokeColor:'#4285F4',
+    strokeOpacity:.4,
+    fillColor:'#4285F4',
+    fillOpacity:.08,
+    map:kakaoMap
+  });
+}
+
 function initMap(){
   loadKakaoSdk(function(){
     var container=g('kakao-map');
@@ -1429,6 +1472,7 @@ function initMap(){
       kakaoMap=new kakao.maps.Map(container,{center:center,level:7});
       mapIw=new kakao.maps.InfoWindow({removable:true});
     }
+    placeMyLocMarker();
     renderMapMarkers();
   });
 }
@@ -1442,8 +1486,9 @@ function setMapFilter(type,btn){
 
 function moveToMyLoc(){
   if(!kakaoMap||!USER_LAT)return;
+  placeMyLocMarker();
   kakaoMap.setCenter(new kakao.maps.LatLng(USER_LAT,USER_LON));
-  kakaoMap.setLevel(5);
+  kakaoMap.setLevel(4);
 }
 
 function renderMapMarkers(){
