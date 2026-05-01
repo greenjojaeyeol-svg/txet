@@ -770,7 +770,7 @@ function makeCard(key,item,cat){
 
   var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
   var tagH=item.category?'<span class="card-tag">'+esc(item.category)+'</span>':'';
-  var vbadge=item.visited?'<span class="vbadge">✅ 방문</span>':'';
+  var vbadge=item.visited?'<span class="vbadge">✅ 방문'+(item.visited_date?' · '+item.visited_date:'')+'</span>':'';
   var favbadge=item.fav?'<span style="font-size:14px">⭐</span>':'';
   var tb=timeBadge(item.open_time,item.close_time,item.last_order,item.break_start,item.break_end,item.allday,item.closed_days);
   var timeDetail='';
@@ -786,7 +786,7 @@ function makeCard(key,item,cat){
     var _dn=['일','월','화','수','목','금','토'];
     timeDetail+='<div class="card-sub">🚫 정기휴무 '+item.closed_days.map(function(d){return _dn[d]+'요일'}).join(', ')+'</div>';
   }
-  var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
+  var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ '+(item.visited_date||'방문완료'):'☑ 방문전')+'</button>';
   var favbtnH='<button class="cbtn fav-btn'+(item.fav?' on':'')+'" onclick="toggleFav(\''+key+'\',\''+cat+'\','+!!item.fav+',event)" title="즐겨찾기">'+(item.fav?'⭐':'☆')+'</button>';
 
   return '<div class="card" id="cd-'+key+'" draggable="true" data-key="'+key+'" data-cat="'+cat+'"'
@@ -834,7 +834,14 @@ function toggleCard(k){var e=g('cd-'+k);if(e)e.classList.toggle('open')}
 
 async function toggleVisit(k,cat,cur,e){
   e.stopPropagation();
-  await fb().update(rr(cat+'/'+k),{visited:!cur});
+  var now=new Date();
+  var dateStr=now.getFullYear()+'.'
+    +String(now.getMonth()+1).padStart(2,'0')+'.'
+    +String(now.getDate()).padStart(2,'0');
+  await fb().update(rr(cat+'/'+k),{
+    visited:!cur,
+    visited_date:!cur?dateStr:null
+  });
 }
 async function delItem(k,cat){
   if(!confirm('삭제할까요?'))return;
@@ -1519,7 +1526,7 @@ function renderMapMarkers(){
           +(distStr||durStr?'<div class="map-iw-sub">'+(distStr?'📍 '+distStr+' ':'')+durStr+'</div>':'')
           +(item.memo?'<div class="map-iw-sub" style="color:#999">'+esc(item.memo)+'</div>':'')
           +(item.parking?'<div class="map-iw-sub">'+(item.parking==='가능'?'🅿️ 주차 가능':item.parking==='유료'?'💰 주차 유료':'🚫 주차 불가')+'</div>':'')
-          +(item.visited?'<div class="map-iw-sub" style="color:#1e7d45">✅ 방문완료</div>':'')
+          +(item.visited?'<div class="map-iw-sub" style="color:#1e7d45">✅ 방문완료'+(item.visited_date?' · '+item.visited_date:'')+'</div>':'')
           +(item.address?'<button class="map-iw-btn" onclick="openNavi(\''+esc(item.name||'')+'\',\''+esc(item.address||'')+'\')">🚗 카카오내비 열기</button>':'')
           +'</div>';
         mapIw.setContent(iwHtml);
