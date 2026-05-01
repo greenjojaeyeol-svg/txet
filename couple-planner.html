@@ -183,7 +183,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .map-iw-name{font-size:14px;font-weight:600;color:#222;margin-bottom:4px}
 .map-iw-sub{font-size:12px;color:#666;margin-bottom:3px}
 .map-iw-badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:12px;margin:3px 0 6px}
-.map-iw-btn{display:block;margin-top:6px;padding:6px 0;background:var(--rose);color:#fff;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:'Pretendard',sans-serif;width:100%;text-align:center}
+.map-iw-btn{display:block;padding:6px 0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:'Pretendard',sans-serif;flex:1;text-align:center}
 
 /* 드래그 핸들 */
 .card.dragging{opacity:.5;box-shadow:0 8px 24px rgba(0,0,0,.18)}
@@ -1565,7 +1565,11 @@ function renderMapMarkers(){
           +(item.memo?'<div class="map-iw-sub" style="color:#999">'+esc(item.memo)+'</div>':'')
           +(item.parking?'<div class="map-iw-sub">'+(item.parking==='가능'?'🅿️ 주차 가능':item.parking==='유료'?'💰 주차 유료':'🚫 주차 불가')+'</div>':'')
           +(item.visited?'<div class="map-iw-sub" style="color:#1e7d45">✅ 방문완료</div>':'')
-          +(item.address?'<button class="map-iw-btn" onclick="openNavi(\''+esc(item.name||'')+'\',\''+esc(item.address||'')+'\')">🚗 카카오내비 열기</button>':'')
+          +'<div style="display:flex;gap:6px;margin-top:6px">'
+          +(item.name?'<button class="map-iw-btn" style="background:#FAE100;color:#3C1E1E" onclick="openKakaoSearch(\''+esc(item.name||'')+'\')">🗺 카카오맵</button>':'')
+          +(item.name?'<button class="map-iw-btn" style="background:#03C75A;color:#fff" onclick="openNaverSearch(\''+esc(item.name||'')+'\')">🗺 네이버지도</button>':'')
+          +'</div>'
+          +(item.address?'<button class="map-iw-btn" style="background:#FF6B35;color:#fff;width:100%;margin-top:5px" onclick="openNavi(\''+esc(item.name||'')+'\',\''+esc(item.address||'')+'\')">🚗 카카오내비</button>':'')
           +'</div>';
         mapIw.setContent(iwHtml);
         mapIw.open(kakaoMap,marker);
@@ -1590,6 +1594,13 @@ function renderMapMarkers(){
       });
     }
   });
+}
+
+function openKakaoSearch(name){
+  window.open('https://map.kakao.com/link/search/'+encodeURIComponent(name),'_blank');
+}
+function openNaverSearch(name){
+  window.open('https://map.naver.com/v5/search/'+encodeURIComponent(name),'_blank');
 }
 
 function onFbReady(){
