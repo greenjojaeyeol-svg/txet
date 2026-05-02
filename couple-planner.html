@@ -471,11 +471,11 @@ function refreshHdr(){
 
 // ── 필터 ──────────────────────────────────────────────
 var CAT_OPTS={
-  courses:['전체','로맨틱','액티비티','힐링','맛집투어','야경'],
-  restaurants:['전체','한식','일식','양식','중식','분식','기타'],
-  cafes:['전체','감성카페','대형카페','디저트','루프탑','베이커리'],
-  spots:['전체','🎡 테마파크','🌸 꽃·자연','🌃 야경','🎭 문화·전시','🏖 나들이','🛍 쇼핑','기타'],
-  plans:['전체','당일치기','1박2일','기념일','일상데이트']
+  courses:['전체','💑 로맨틱','🏃 액티비티','🌿 힐링','🍴 맛집투어','🌃 야경'],
+  restaurants:['전체','🍚 한식','🍣 일식','🍝 양식','🥢 중식','🥪 분식','🍽️ 기타'],
+  cafes:['전체','📷 감성카페','🏢 대형카페','🍰 디저트','🌇 루프탑','🥐 베이커리'],
+  spots:['전체','🎡 테마파크','🌸 꽃·자연','🌃 야경','🎭 문화·전시','🏖 나들이','🛍 쇼핑','📍 기타'],
+  plans:['전체','🌅 당일치기','🏨 1박2일','🎉 기념일','☀️ 일상데이트']
 };
 var VISIT_OPTS=['전체','방문전','방문완료'];
 
@@ -1419,7 +1419,7 @@ var FORMS={
     return{title:d?'코스 수정':'데이트 코스 추가',
       html:'<div class="fg"><label>코스 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="예: 홍대 반나절 코스"></div>'
         +'<div class="fg"><label>카테고리</label><select id="f-cat"><option value="">선택 안 함</option>'
-        +['로맨틱','액티비티','힐링','맛집투어','야경'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +['💑 로맨틱','🏃 액티비티','🌿 힐링','🍴 맛집투어','🌃 야경'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="경복궁&#10;인사동&#10;광장시장">'+(d&&d.steps?d.steps.join('\n'):'')+'</textarea></div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="간단한 메모"></div>'};
@@ -1429,7 +1429,7 @@ var FORMS={
     return{title:d?'맛집 수정':'맛집 추가',
       html:'<div class="fg"><label>상호명 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="맛집 이름"></div>'
         +'<div class="fg"><label>종류</label><select id="f-cat"><option value="">선택 안 함</option>'
-        +['한식','일식','양식','중식','분식','기타'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +['🍚 한식','🍣 일식','🍝 양식','🥢 중식','🥪 분식','🍽️ 기타'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
         +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 영업</label></div>'
@@ -1466,7 +1466,7 @@ var FORMS={
     return{title:d?'카페 수정':'카페 추가',
       html:'<div class="fg"><label>카페 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="카페 이름"></div>'
         +'<div class="fg"><label>분위기</label><select id="f-cat"><option value="">선택 안 함</option>'
-        +['감성카페','대형카페','디저트','루프탑','베이커리'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +['📷 감성카페','🏢 대형카페','🍰 디저트','🌇 루프탑','🥐 베이커리'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
         +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 영업</label></div>'
@@ -1539,7 +1539,7 @@ var FORMS={
       html:'<div class="fg"><label>날짜</label><input type="date" id="f-date" value="'+(d?d.date||'':'')+'"></div>'
         +'<div class="fg"><label>제목 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="예: 성수 데이트"></div>'
         +'<div class="fg"><label>유형</label><select id="f-cat"><option value="">선택 안 함</option>'
-        +['당일치기','1박2일','기념일','일상데이트'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +['🌅 당일치기','🏨 1박2일','🎉 기념일','☀️ 일상데이트'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
         +'<div class="fg"><label>메모</label><textarea id="f-memo" placeholder="특별한 계획을 적어보세요">'+(d?esc(d.memo||''):'')+'</textarea></div>'};
   }
