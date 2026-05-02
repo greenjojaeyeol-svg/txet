@@ -236,7 +236,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 <body>
 
 <!-- 로그인 -->
-<div id="scr-login">
+<div id="scr-login" style="display:none">
   <div class="lw">
     <span class="lheart">♡</span>
     <h1 class="ltitle">우리 둘만의 공간</h1>
@@ -1854,7 +1854,13 @@ function openNaverSearch(name){
 
 function onFbReady(){
   var saved=localStorage.getItem('RK');
-  if(saved){RK=saved;enterApp();}
+  if(saved){RK=saved;enterApp();return;}
+  // 비밀번호 없이 자동 진입 (고정 비밀번호)
+  sha256('couple_v1_1234').then(function(rk){
+    RK=rk;
+    localStorage.setItem('RK',RK);
+    enterApp();
+  });
 }
 // fb-ready를 이미 놓쳤을 경우 대비 (module 비동기 타이밍)
 if(window._fb){onFbReady();}
