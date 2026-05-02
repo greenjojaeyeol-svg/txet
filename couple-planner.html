@@ -269,6 +269,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
     <button class="nb on" onclick="goPage('courses',this)"><span class="ni">🗺️</span>코스</button>
     <button class="nb" onclick="goPage('restaurants',this)"><span class="ni">🍽️</span>맛집</button>
     <button class="nb" onclick="goPage('cafes',this)"><span class="ni">☕</span>카페</button>
+    <button class="nb" onclick="goPage('spots',this)"><span class="ni">🎡</span>명소</button>
     <button class="nb" onclick="goPage('map',this);initMap()"><span class="ni">📍</span>지도</button>
     <button class="nb" onclick="goPage('plans',this)"><span class="ni">📅</span>일정</button>
     <button class="nb" onclick="goPage('checklist',this)"><span class="ni">✅</span>체크</button>
@@ -293,11 +294,18 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
     <div class="sec">좋아하는 카페 <span id="sec-upd-cafes" class="sec-upd"></span></div>
     <div id="lst-cafes"><div class="loading">불러오는 중…</div></div>
   </div>
+  <div class="pg" id="pg-spots">
+    <button class="addbtn" onclick="openAdd('spots')">+ 명소 추가</button>
+    <div class="fbar" id="fb-spots"></div>
+    <div class="sec">가고 싶은 명소 <span id="sec-upd-spots" class="sec-upd"></span></div>
+    <div id="lst-spots"><div class="loading">불러오는 중…</div></div>
+  </div>
   <div class="pg" id="pg-map">
     <div class="map-filter-bar" id="map-fbar">
       <button class="map-fbtn on" data-type="all"   onclick="setMapFilter('all',this)">전체</button>
       <button class="map-fbtn"   data-type="restaurants" onclick="setMapFilter('restaurants',this)">🍽️ 맛집</button>
       <button class="map-fbtn"   data-type="cafes"  onclick="setMapFilter('cafes',this)">☕ 카페</button>
+      <button class="map-fbtn"   data-type="spots"  onclick="setMapFilter('spots',this)">🎡 명소</button>
       <button class="map-fbtn"   data-type="unvisited" onclick="setMapFilter('unvisited',this)">☑ 방문전</button>
       <div class="map-fbar-div"></div>
       <button class="map-my-loc" onclick="moveToMyLoc()">📍 내 위치</button>
@@ -373,9 +381,9 @@ window.dispatchEvent(new Event('fb-ready'));
 <script>
 // ── 상태 ──────────────────────────────────────────────
 var RK=null,UNSUBS=[],M_TYPE='',M_KEY=null;
-var DB={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
-var FILTER={courses:'전체',restaurants:'전체',cafes:'전체',plans:'전체',visit:'전체',fav:false};
-var SORT={restaurants:'거리순',cafes:'거리순'}; // 기본 | 마감시간순 | 거리순
+var DB={courses:{},restaurants:{},cafes:{},spots:{},plans:{},checklist:{},settings:{}};
+var FILTER={courses:'전체',restaurants:'전체',cafes:'전체',spots:'전체',plans:'전체',visit:'전체',fav:false};
+var SORT={restaurants:'거리순',cafes:'거리순',spots:'거리순'}; // 기본 | 마감시간순 | 거리순
 // localStorage에서 정렬 상태 복원
 try{var _sv=JSON.parse(localStorage.getItem('couple_sort')||'{}');if(_sv.restaurants)SORT.restaurants=_sv.restaurants;if(_sv.cafes)SORT.cafes=_sv.cafes;}catch(e){}
 
@@ -428,7 +436,7 @@ function doLogout(){
 function enterApp(){
   g('scr-login').style.display='none';
   g('scr-app').style.display='block';
-  DB={courses:{},restaurants:{},cafes:{},plans:{},checklist:{},settings:{}};
+  DB={courses:{},restaurants:{},cafes:{},spots:{},plans:{},checklist:{},settings:{}};
   ROUTE_CACHE={};DIST_CACHE={};
   subscribeAll();
   loadWeather(); // 날씨 로드 시 USER_LAT/LON 세팅 + 이후 loadRouteCache 재호출
@@ -436,7 +444,7 @@ function enterApp(){
 
 // ── Firebase 구독 ─────────────────────────────────────
 function subscribeAll(){
-  ['courses','restaurants','cafes','plans','checklist','chk_cats','settings'].forEach(function(cat){
+  ['courses','restaurants','cafes','spots','plans','checklist','chk_cats','settings'].forEach(function(cat){
     var u=fb().onValue(rr(cat),function(snap){
       DB[cat]=snap.val()||{};
       render(cat);
@@ -466,6 +474,7 @@ var CAT_OPTS={
   courses:['전체','로맨틱','액티비티','힐링','맛집투어','야경'],
   restaurants:['전체','한식','일식','양식','중식','분식','기타'],
   cafes:['전체','감성카페','대형카페','디저트','루프탑','베이커리'],
+  spots:['전체','🎡 테마파크','🌸 꽃·자연','🌃 야경','🎭 문화·전시','🏖 나들이','🛍 쇼핑','기타'],
   plans:['전체','당일치기','1박2일','기념일','일상데이트']
 };
 var VISIT_OPTS=['전체','방문전','방문완료'];
@@ -811,6 +820,7 @@ function makeCard(key,item,cat){
     +'<div class="card-bd">'
       +(item.address?'<div class="card-sub">📍 '+esc(item.address)+'</div>':'')
       +(distH?distH:'')
+      +(item.price?'<div class="card-sub">🎟 '+esc(item.price)+'</div>':'')
       +(item.parking?'<div class="card-sub park-tag park-'+item.parking+'">'+(item.parking==='가능'?'🅿️ 주차 가능':item.parking==='유료'?'💰 주차 유료':'🚫 주차 불가')+'</div>':'')
       +timeDetail
       +mapH
@@ -1246,7 +1256,7 @@ function loadWeather(){
     });
     // 거리순 정렬 항목 자동 계산 (위치 확보 후 800ms 대기, DB 로드 여유)
     setTimeout(function(){
-      ['restaurants','cafes'].forEach(function(cat){
+      ['restaurants','cafes','spots'].forEach(function(cat){
         if(SORT[cat]==='거리순'){
           var toFetch=Object.entries(DB[cat]||{}).filter(function(kv){return kv[1].address&&ROUTE_CACHE[kv[0]]===undefined});
           if(!toFetch.length){
@@ -1487,6 +1497,43 @@ var FORMS={
         }).join('')
         +'</div></div>'};
   },
+  spots:function(d){
+    var alld=d&&d.allday;
+    return{title:d?'명소 수정':'명소 추가',
+      html:'<div class="fg"><label>명소 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="명소 이름"></div>'
+        +'<div class="fg"><label>카테고리</label><select id="f-cat"><option value="">선택 안 함</option>'
+        +['🎡 테마파크','🌸 꽃·자연','🌃 야경','🎭 문화·전시','🏖 나들이','🛍 쇼핑','기타'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select></div>'
+        +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
+        +'<div class="fg"><label>입장료</label><input type="text" id="f-price" value="'+esc(d?d.price||'':'')+'" placeholder="예: 무료 / 성인 15,000원"></div>'
+        +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 / 상시 개방</label></div>'
+        +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>마감</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>브레이크 시작</label><input type="time" id="f-bts" value="'+(d?d.break_start||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
+          +'</div>'
+          +'<div class="fg" style="display:flex;gap:8px">'
+            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
+            +'<div style="flex:1"><label>&nbsp;</label></div>'
+          +'</div>'
+        +'</div>'
+        +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="야경 명소, 포토존 등"></div>'
+        +'<div class="fg"><label>주차</label><div class="park-wrap">'
+        +[{v:'',l:'선택 안 함'},{v:'가능',l:'🅿️ 가능'},{v:'유료',l:'💰 유료'},{v:'불가',l:'🚫 불가'}].map(function(o){
+          return'<button type="button" class="park-btn'+(d&&d.parking===o.v?' on':o.v===''&&!(d&&d.parking)?' on':'')+'" data-val="'+o.v+'" onclick="setPark(this)">'+o.l+'</button>';
+        }).join('')
+        +'</div></div>'
+        +'<div class="fg"><label>정기 휴무일</label><div class="days-wrap" id="f-days-wrap">'
+        +['일','월','화','수','목','금','토'].map(function(day,i){
+          var on=d&&d.closed_days&&d.closed_days.indexOf(i)>=0;
+          return'<button type="button" class="day-btn'+(on?' on':'')+'" data-day="'+i+'" onclick="toggleDay(this)">'+day+'</button>';
+        }).join('')
+        +'</div></div>'};
+  },
   plans:function(d){
     return{title:d?'일정 수정':'데이트 일정 추가',
       html:'<div class="fg"><label>날짜</label><input type="date" id="f-date" value="'+(d?d.date||'':'')+'"></div>'
@@ -1542,6 +1589,7 @@ async function saveModal(){
     name:ne.value.trim(),
     category:(g('f-cat')||{}).value||'',
     memo:(g('f-memo')||{}).value||'',
+    price:(g('f-price')||{}).value||'',
     address:(g('f-addr')||{}).value||'',
     steps:g('f-steps')?g('f-steps').value.split('\n').map(function(s){return s.trim()}).filter(Boolean):[],
     date:(g('f-date')||{}).value||'',
@@ -1743,14 +1791,14 @@ function renderMapMarkers(){
 
   // 데이터 수집
   var items=[];
-  ['restaurants','cafes'].forEach(function(cat){
+  ['restaurants','cafes','spots'].forEach(function(cat){
     Object.entries(DB[cat]||{}).forEach(function(kv){
       var item=kv[1];
       if(!item.address)return;
-      if(mapFilter===cat){}
-      else if(mapFilter==='restaurants'&&cat!=='restaurants')return;
-      else if(mapFilter==='cafes'&&cat!=='cafes')return;
-      else if(mapFilter==='unvisited'&&item.visited)return;
+      if(mapFilter==='restaurants'&&cat!=='restaurants')return;
+      if(mapFilter==='cafes'&&cat!=='cafes')return;
+      if(mapFilter==='spots'&&cat!=='spots')return;
+      if(mapFilter==='unvisited'&&item.visited)return;
       items.push({key:kv[0],item:item,cat:cat});
     });
   });
@@ -1773,9 +1821,9 @@ function renderMapMarkers(){
       bounds.extend(pos);
 
       // 커스텀 마커 이미지
-      var isRest=cat==='restaurants';
-      var color=isRest?'#e85d5d':'#5b9cf6';
-      var emoji=isRest?'🍽️':'☕';
+      var isRest=cat==='restaurants',isSpot=cat==='spots';
+      var color=isRest?'#e85d5d':isSpot?'#2ecc71':'#5b9cf6';
+      var emoji=isRest?'🍽️':isSpot?'🎡':'☕';
       var visited=item.visited;
       var svg=encodeURIComponent(
         '<svg xmlns="http://www.w3.org/2000/svg" width="38" height="46">'
@@ -1801,7 +1849,7 @@ function renderMapMarkers(){
         var tb=timeBadge(item.open_time,item.close_time,item.last_order,item.break_start,item.break_end,item.allday,item.closed_days);
         var iwHtml=
           '<div class="map-iw">'
-          +'<div class="map-iw-name">'+(isRest?'🍽️ ':'☕ ')+esc(item.name||'')+'</div>'
+          +'<div class="map-iw-name">'+(isRest?'🍽️ ':isSpot?'🎡 ':'☕ ')+esc(item.name||'')+'</div>'
           +(item.category?'<div class="map-iw-sub">'+esc(item.category)+'</div>':'')
           +(tb?'<div class="map-iw-sub" style="margin:3px 0">'+tb+'</div>':'')
           +(distStr||durStr?'<div class="map-iw-sub">'+(distStr?'📍 '+distStr+' ':'')+durStr+'</div>':'')
