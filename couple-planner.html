@@ -135,6 +135,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .chk-date-group{margin-bottom:14px}
 .chk-date-hdr{font-size:12px;font-weight:600;color:var(--rose);margin:10px 0 6px;display:flex;align-items:center;gap:6px}
 .chk-date-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
+.chk-cat-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;flex-shrink:0;border:1.5px solid rgba(255,255,255,.5)}
+.chk-cattab.on .chk-cat-dot{border-color:rgba(255,255,255,.8)}
+.cat-edit-btn{font-size:12px;margin-left:4px;opacity:.6;vertical-align:middle}
 .chk-cattab.cat-dragging{opacity:.45;transform:scale(.95)}
 .chk-cattab.cat-drag-over{border-color:var(--rose)!important;transform:scale(1.06);box-shadow:0 0 0 2px var(--rose)}
 .chk-cat-lbl{font-size:11px;color:var(--muted);margin-left:2px}
@@ -1086,7 +1089,7 @@ function renderChk(){
     html+='<div class="chk-date-group"><div class="chk-date-hdr">'+label+'</div>';
     html+=groups[dk].map(function(kv){
       var k=kv[0],v=kv[1];
-      var dot='<span class="chk-cat-dot" style="background:'+(v.cat?getCatColor(v.cat):'transparent')+'"></span>';
+      var dot=v.cat?'<span class="chk-cat-dot" style="background:'+getCatColor(v.cat)+';border-color:rgba(0,0,0,.1)"></span>':'';
       var catLbl=v.cat?'<span class="chk-cat-lbl">'+esc(v.cat)+'</span>':'';
       return'<div class="chki'+(v.done?' done':'')+'" id="chki-'+k+'" data-key="'+k+'"'
         +' draggable="true"'
