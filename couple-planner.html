@@ -874,9 +874,86 @@ function renderChkCatbar(){
   var cats=getChkCats();
   el.innerHTML=cats.map(function(c){
     var dot=c!=='전체'?'<span class="chk-cat-dot" style="background:'+getCatColor(c)+'"></span>':'';
-    return'<button class="chk-cattab'+(chkActiveCat===c?' on':'')+'" onclick="setChkCat(\''+esc(c)+'\')">'+dot+esc(c)+'</button>';
+    var editBtn=c!=='전체'?'<span class="cat-edit-btn" onclick="event.stopPropagation();editChkCat(\''+esc(c)+'\')">⋯</span>':'';
+    return'<button class="chk-cattab'+(chkActiveCat===c?' on':'')+'" onclick="setChkCat(\''+esc(c)+'\')">'
+      +dot+esc(c)+editBtn+'</button>';
   }).join('')+'<button class="chk-cattab add" onclick="addChkCat()">＋ 카테고리</button>';
   renderChkCatSelect();
+}
+
+function editChkCat(name){
+  // 해당 카테고리 Firebase key 찾기
+  var entry=Object.entries(DB.chk_cats||{}).find(function(kv){return kv[1].name===name});
+  if(!entry)return;
+  var key=entry[0],cat=entry[1];
+
+  // 수정/삭제 모달
+  var html=''
+    +'<div class="fg"><label>카테고리 이름</label>'
+    +'<input type="text" id="catedit-name" value="'+esc(name)+'" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:\'Pretendard\',sans-serif;outline:none;box-sizing:border-box">'
+    +'</div>'
+    +'<div class="fg"><label>색상</label>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">'
+    +CHK_CAT_COLORS.map(function(c){
+      return'<button type="button" onclick="selectCatColor(this,\''+c+'\')" style="width:28px;height:28px;border-radius:50%;background:'+c+';border:'+(cat.color===c?'3px solid #333':'2px solid transparent')+';cursor:pointer"></button>';
+    }).join('')
+    +'</div></div>'
+    +'<button type="button" onclick="delChkCat(\''+key+'\',\''+esc(name)+'\')" style="width:100%;padding:10px;margin-top:4px;border:1.5px solid #e85d5d;background:#fff;color:#e85d5d;border-radius:10px;font-size:14px;font-weight:600;font-family:\'Pretendard\',sans-serif;cursor:pointer">🗑 카테고리 삭제</button>';
+
+  g('m-ttl').textContent='카테고리 수정';
+  g('m-body').innerHTML=html;
+  g('mbg').classList.add('on');
+
+  var saveBtn=document.querySelector('.msave');
+  saveBtn.onclick=function(){saveChkCat(key,name);};
+  setTimeout(function(){var t=g('catedit-name');if(t){t.focus();t.select();}},100);
+}
+
+function selectCatColor(btn,color){
+  document.querySelectorAll('#m-body button[style*="border-radius:50%"]').forEach(function(b){
+    b.style.border='2px solid transparent';
+  });
+  btn.style.border='3px solid #333';
+  btn.dataset.selected=color;
+}
+
+async function saveChkCat(key,oldName){
+  var nameEl=g('catedit-name');
+  var newName=nameEl?nameEl.value.trim():'';
+  if(!newName){toast('이름을 입력해주세요');return;}
+  // 선택된 색상
+  var colorBtn=document.querySelector('#m-body button[data-selected]');
+  var newColor=colorBtn?colorBtn.dataset.selected:(DB.chk_cats[key]||{}).color;
+  // 이름 변경 시 할일 항목들도 일괄 업데이트
+  var updates={};
+  updates['chk_cats/'+key+'/name']=newName;
+  updates['chk_cats/'+key+'/color']=newColor;
+  if(newName!==oldName){
+    Object.entries(DB.checklist||{}).forEach(function(kv){
+      if(kv[1].cat===oldName)updates['checklist/'+kv[0]+'/cat']=newName;
+    });
+    if(chkActiveCat===oldName)chkActiveCat=newName;
+  }
+  await fb().update(rr(''),updates);
+  var saveBtn=document.querySelector('.msave');
+  if(saveBtn)saveBtn.onclick=saveModal;
+  closeModal();
+  toast('카테고리 수정됐어요 ✓');
+}
+
+async function delChkCat(key,name){
+  if(!confirm('\"'+name+'\" 카테고리를 삭제할까요?\n해당 카테고리의 할 일은 카테고리 없음으로 변경돼요.'))return;
+  var updates={};
+  updates['chk_cats/'+key]=null;
+  Object.entries(DB.checklist||{}).forEach(function(kv){
+    if(kv[1].cat===name)updates['checklist/'+kv[0]+'/cat']='';
+  });
+  await fb().update(rr(''),updates);
+  if(chkActiveCat===name)chkActiveCat='전체';
+  var saveBtn=document.querySelector('.msave');
+  if(saveBtn)saveBtn.onclick=saveModal;
+  closeModal();
+  toast(name+' 카테고리 삭제됐어요');
 }
 function renderChkCatSelect(){
   var old=g('chk-cat-sel');if(old)old.remove();
