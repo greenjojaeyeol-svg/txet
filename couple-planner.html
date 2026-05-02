@@ -135,7 +135,8 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .chk-date-group{margin-bottom:14px}
 .chk-date-hdr{font-size:12px;font-weight:600;color:var(--rose);margin:10px 0 6px;display:flex;align-items:center;gap:6px}
 .chk-date-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
-.chk-cat-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle;flex-shrink:0}
+.chk-cattab.cat-dragging{opacity:.45;transform:scale(.95)}
+.chk-cattab.cat-drag-over{border-color:var(--rose)!important;transform:scale(1.06);box-shadow:0 0 0 2px var(--rose)}
 .chk-cat-lbl{font-size:11px;color:var(--muted);margin-left:2px}
 .chki{display:flex;align-items:center;gap:11px;padding:12px 13px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;user-select:none}
 .chki.dragging{opacity:.5;box-shadow:0 6px 20px rgba(0,0,0,.15)}
@@ -869,16 +870,92 @@ function getCatColor(name){
   var found=Object.values(DB.chk_cats||{}).find(function(c){return c.name===name});
   return found?found.color:'#ccc';
 }
+var catDragName=null,catTouchDragName=null,catTouchBtn=null;
+
 function renderChkCatbar(){
   var el=g('chk-catbar');if(!el)return;
   var cats=getChkCats();
   el.innerHTML=cats.map(function(c){
-    var dot=c!=='전체'?'<span class="chk-cat-dot" style="background:'+getCatColor(c)+'"></span>':'';
-    var editBtn=c!=='전체'?'<span class="cat-edit-btn" onclick="event.stopPropagation();editChkCat(\''+esc(c)+'\')">⋯</span>':'';
-    return'<button class="chk-cattab'+(chkActiveCat===c?' on':'')+'" onclick="setChkCat(\''+esc(c)+'\')">'
-      +dot+esc(c)+editBtn+'</button>';
+    var isDraggable=c!=='전체';
+    var dot=isDraggable?'<span class="chk-cat-dot" style="background:'+getCatColor(c)+'"></span>':'';
+    var editBtn=isDraggable?'<span class="cat-edit-btn" onclick="event.stopPropagation();editChkCat(\''+esc(c)+'\')">⋯</span>':'';
+    return'<button class="chk-cattab'+(chkActiveCat===c?' on':'')+'"'
+      +(isDraggable
+        ?' draggable="true"'
+        +' data-catname="'+esc(c)+'"'
+        +' ondragstart="catDragStart(event)"'
+        +' ondragover="catDragOver(event)"'
+        +' ondrop="catDrop(event)"'
+        +' ondragend="catDragEnd(event)"'
+        +' ontouchstart="catTouchStart(event)"'
+        +' ontouchmove="catTouchMove(event)"'
+        +' ontouchend="catTouchEnd(event)"'
+        :'')
+      +' onclick="setChkCat(\''+esc(c)+'\')">'
+      +dot+esc(c)+editBtn
+      +'</button>';
   }).join('')+'<button class="chk-cattab add" onclick="addChkCat()">＋ 카테고리</button>';
   renderChkCatSelect();
+}
+
+function catDragStart(e){
+  catDragName=e.currentTarget.dataset.catname;
+  e.currentTarget.classList.add('cat-dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+function catDragOver(e){
+  e.preventDefault();
+  document.querySelectorAll('.chk-cattab.cat-drag-over').forEach(function(b){b.classList.remove('cat-drag-over')});
+  if(e.currentTarget.dataset.catname)e.currentTarget.classList.add('cat-drag-over');
+}
+function catDragEnd(e){
+  e.currentTarget.classList.remove('cat-dragging');
+  document.querySelectorAll('.chk-cattab.cat-drag-over').forEach(function(b){b.classList.remove('cat-drag-over')});
+}
+async function catDrop(e){
+  e.preventDefault();
+  var toName=e.currentTarget.dataset.catname;
+  if(!catDragName||!toName||catDragName===toName)return;
+  e.currentTarget.classList.remove('cat-drag-over');
+  await reorderCats(catDragName,toName);
+  catDragName=null;
+}
+function catTouchStart(e){
+  catTouchDragName=e.currentTarget.dataset.catname;
+  catTouchBtn=e.currentTarget;
+  catTouchBtn.classList.add('cat-dragging');
+}
+function catTouchMove(e){
+  if(!catTouchBtn)return;
+  e.preventDefault();
+  var x=e.touches[0].clientX,y=e.touches[0].clientY;
+  document.querySelectorAll('.chk-cattab.cat-drag-over').forEach(function(b){b.classList.remove('cat-drag-over')});
+  var els=document.elementsFromPoint(x,y);
+  var target=els.find(function(el){return el.classList&&el.classList.contains('chk-cattab')&&el!==catTouchBtn&&el.dataset.catname});
+  if(target)target.classList.add('cat-drag-over');
+}
+async function catTouchEnd(e){
+  if(!catTouchBtn)return;
+  var over=document.querySelector('.chk-cattab.cat-drag-over');
+  if(over&&over.dataset.catname&&over.dataset.catname!==catTouchDragName){
+    await reorderCats(catTouchDragName,over.dataset.catname);
+  }
+  catTouchBtn.classList.remove('cat-dragging');
+  document.querySelectorAll('.chk-cattab.cat-drag-over').forEach(function(b){b.classList.remove('cat-drag-over')});
+  catTouchBtn=null;catTouchDragName=null;
+}
+async function reorderCats(fromName,toName){
+  var sorted=Object.entries(DB.chk_cats||{}).sort(function(a,b){return(a[1].order||0)-(b[1].order||0)});
+  var names=sorted.map(function(kv){return kv[1].name});
+  var fi=names.indexOf(fromName),ti=names.indexOf(toName);
+  if(fi<0||ti<0)return;
+  names.splice(fi,1);names.splice(ti,0,fromName);
+  var updates={};
+  names.forEach(function(n,i){
+    var entry=sorted.find(function(kv){return kv[1].name===n});
+    if(entry)updates['chk_cats/'+entry[0]+'/order']=i;
+  });
+  await fb().update(rr(''),updates);
 }
 
 function editChkCat(name){
