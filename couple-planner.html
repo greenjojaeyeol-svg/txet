@@ -158,10 +158,10 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .chki:hover .chk-del{opacity:1}
 
 /* 통계 */
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.stat{background:var(--blush);border-radius:13px;padding:14px;text-align:center}
-.stat-n{font-size:26px;color:var(--rose);font-family:'Nanum Myeongjo',serif}
-.stat-l{font-size:11px;color:var(--muted);margin-top:2px;font-weight:500}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px 10px;text-align:center}
+.stat-n{font-size:24px;font-weight:700;color:var(--rose);line-height:1.1}
+.stat-l{font-size:10px;color:var(--muted);margin-top:4px;font-weight:500}
 
 .sec-upd{font-size:11px;font-weight:500;color:#1e7d45;background:#e8f8ef;padding:2px 8px;border-radius:20px;margin-left:6px;vertical-align:middle;opacity:0;transition:opacity .4s}
 .sec-upd.on{opacity:1}
@@ -351,8 +351,10 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
   </div>
   <div class="pg" id="pg-plans">
     <div class="stats">
-      <div class="stat"><div class="stat-n" id="sn-c">0</div><div class="stat-l">저장된 코스</div></div>
-      <div class="stat"><div class="stat-n" id="sn-p">0</div><div class="stat-l">맛집·카페</div></div>
+      <div class="stat"><div class="stat-n" id="sn-c">0</div><div class="stat-l">🗺️ 코스</div></div>
+      <div class="stat"><div class="stat-n" id="sn-r">0</div><div class="stat-l">🍽️ 맛집</div></div>
+      <div class="stat"><div class="stat-n" id="sn-ca">0</div><div class="stat-l">☕ 카페</div></div>
+      <div class="stat"><div class="stat-n" id="sn-s">0</div><div class="stat-l">🎡 명소</div></div>
     </div>
     <button class="addbtn" onclick="openAdd('plans')">+ 데이트 일정 추가</button>
     <div class="fbar" id="fb-plans"></div>
@@ -501,8 +503,11 @@ function refreshHdr(){
   if(g('s1')&&!g('s1').value&&s.name1)g('s1').value=s.name1;
   if(g('s2')&&!g('s2').value&&s.name2)g('s2').value=s.name2;
   if(g('sa')&&!g('sa').value&&s.anniversary)g('sa').value=s.anniversary;
-  g('sn-c').textContent=Object.keys(DB.courses||{}).length;
-  g('sn-p').textContent=Object.keys(DB.restaurants||{}).length+Object.keys(DB.cafes||{}).length;
+  var snc=g('sn-c'),snr=g('sn-r'),snca=g('sn-ca'),sns=g('sn-s');
+  if(snc)snc.textContent=Object.keys(DB.courses||{}).length;
+  if(snr)snr.textContent=Object.keys(DB.restaurants||{}).length;
+  if(snca)snca.textContent=Object.keys(DB.cafes||{}).length;
+  if(sns)sns.textContent=Object.keys(DB.spots||{}).length;
 }
 
 // ── 필터 ──────────────────────────────────────────────
