@@ -208,6 +208,28 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .month-cnt{font-size:11px;font-weight:600;color:var(--rose)}
 .stats-empty{text-align:center;padding:32px 0;color:var(--muted);font-size:13px}
 .rating-avg{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#f5a623;font-weight:600}
+/* 방문 현황 카드 */
+.visit-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.visit-card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.visit-card-title{font-size:14px;font-weight:600;color:var(--ink)}
+.visit-pct-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--blush);color:var(--rose)}
+.visit-nums{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;margin-bottom:10px;text-align:center}
+.visit-num-item{padding:4px 0}
+.visit-num{font-size:22px;font-weight:700;line-height:1.1}
+.visit-num.visited{color:#1e7d45}
+.visit-num.unvisited{color:#aaa}
+.visit-num.total{color:var(--rose)}
+.visit-num-lbl{font-size:10px;color:var(--muted);margin-top:3px}
+.visit-divider{width:1px;height:32px;background:var(--border);margin:0 8px}
+.visit-bar-wrap{height:7px;background:var(--blush);border-radius:10px;overflow:hidden;margin-bottom:10px}
+.visit-bar-visited{height:100%;background:var(--rose);border-radius:10px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.visit-sub-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;border-top:1px solid var(--border);padding-top:10px}
+.visit-sub-item{background:var(--blush);border-radius:8px;padding:8px 10px}
+.visit-sub-name{font-size:11px;color:var(--muted);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.visit-sub-nums{font-size:13px;font-weight:600;margin-bottom:4px}
+.vsn-v{color:#1e7d45}.vsn-sep{color:var(--muted);margin:0 2px}.vsn-t{color:var(--ink)}
+.visit-sub-bar{height:4px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+
 .rating-badge{display:inline-flex;align-items:center;gap:1px;margin-top:3px}
 .rating-wrap{display:flex;align-items:center;gap:4px;padding:8px 0 4px;border-top:1px solid var(--border);margin-top:6px}
 .rating-lbl{font-size:11px;color:var(--muted);margin-right:4px;white-space:nowrap}
@@ -1796,19 +1818,16 @@ function renderStats(){
     +'<div class="stat-card"><div class="stat-card-n">'+(totalRated?avgRating:'–')+'</div><div class="stat-card-l">평균 별점</div></div>'
     +'</div>';
 
-  // ── 2. 카테고리별 방문률 ──
-  html+='<div class="stats-sec">카테고리별 방문률</div>';
+  // ── 2. 카테고리별 방문 현황 ──
+  html+='<div class="stats-sec">카테고리별 방문 현황</div>';
   cats.forEach(function(cat){
     var items=Object.values(DB[cat]||{});
     if(!items.length)return;
     var total=items.length;
     var visited=items.filter(function(i){return i.visited}).length;
+    var unvisited=total-visited;
     var pct=Math.round(visited/total*100);
-    html+='<div class="bar-row">'
-      +'<div class="bar-label">'+catEmoji[cat]+' '+catNames[cat]+'</div>'
-      +'<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%"></div></div>'
-      +'<div class="bar-pct">'+visited+'/'+total+'</div>'
-      +'</div>';
+
     // 카테고리 세부
     var subCats={};
     items.forEach(function(item){
@@ -1817,14 +1836,52 @@ function renderStats(){
       subCats[c].total++;
       if(item.visited)subCats[c].visited++;
     });
-    Object.entries(subCats).sort(function(a,b){return b[1].total-a[1].total}).forEach(function(kv){
-      var sp=Math.round(kv[1].visited/kv[1].total*100);
-      html+='<div class="bar-row" style="margin-left:16px;opacity:.85">'
-        +'<div class="bar-label" style="font-size:11px;color:var(--muted)">'+esc(kv[0])+'</div>'
-        +'<div class="bar-track" style="height:7px"><div class="bar-fill" style="width:'+sp+'%;opacity:.7"></div></div>'
-        +'<div class="bar-pct">'+kv[1].visited+'/'+kv[1].total+'</div>'
-        +'</div>';
-    });
+
+    html+='<div class="visit-card">'
+      // 헤더
+      +'<div class="visit-card-hd">'
+        +'<span class="visit-card-title">'+catEmoji[cat]+' '+catNames[cat]+'</span>'
+        +'<span class="visit-pct-badge">'+pct+'%</span>'
+      +'</div>'
+      // 방문/미방문 큰 숫자
+      +'<div class="visit-nums">'
+        +'<div class="visit-num-item">'
+          +'<div class="visit-num visited">'+visited+'</div>'
+          +'<div class="visit-num-lbl">✅ 방문완료</div>'
+        +'</div>'
+        +'<div class="visit-divider"></div>'
+        +'<div class="visit-num-item">'
+          +'<div class="visit-num unvisited">'+unvisited+'</div>'
+          +'<div class="visit-num-lbl">☑ 방문전</div>'
+        +'</div>'
+        +'<div class="visit-divider"></div>'
+        +'<div class="visit-num-item">'
+          +'<div class="visit-num total">'+total+'</div>'
+          +'<div class="visit-num-lbl">전체</div>'
+        +'</div>'
+      +'</div>'
+      // 진행바
+      +'<div class="visit-bar-wrap">'
+        +'<div class="visit-bar-visited" style="width:'+pct+'%"></div>'
+      +'</div>'
+      // 세부 카테고리
+      +(Object.keys(subCats).length>1
+        ?'<div class="visit-sub-grid">'
+          +Object.entries(subCats).sort(function(a,b){return b[1].total-a[1].total}).map(function(kv){
+            var sp=Math.round(kv[1].visited/kv[1].total*100);
+            return'<div class="visit-sub-item">'
+              +'<div class="visit-sub-name">'+esc(kv[0])+'</div>'
+              +'<div class="visit-sub-nums">'
+                +'<span class="vsn-v">'+kv[1].visited+'</span>'
+                +'<span class="vsn-sep">/</span>'
+                +'<span class="vsn-t">'+kv[1].total+'</span>'
+              +'</div>'
+              +'<div class="visit-sub-bar"><div style="width:'+sp+'%;height:100%;background:var(--rose);border-radius:4px;opacity:.7"></div></div>'
+              +'</div>';
+          }).join('')
+          +'</div>'
+        :'')
+      +'</div>';
   });
 
   // ── 3. 별점 분포 ──
@@ -2035,7 +2092,17 @@ function renderMapMarkers(){
       // 커스텀 마커 이미지
       var isRest=cat==='restaurants',isSpot=cat==='spots';
       var color=isRest?'#e85d5d':isSpot?'#2ecc71':'#5b9cf6';
-      var emoji=isRest?'🍽️':isSpot?'🎡':'☕';
+      // 세부 카테고리 이모지 매핑
+      var CAT_EMOJI_MAP={
+        // 맛집
+        '🍚 한식':'🍚','🍣 일식':'🍣','🍝 양식':'🍝','🥢 중식':'🥢','🥪 분식':'🥪','🍽️ 기타':'🍽️',
+        // 카페
+        '📷 감성카페':'📷','🏢 대형카페':'🏢','🍰 디저트':'🍰','🌇 루프탑':'🌇','🥐 베이커리':'🥐',
+        // 명소
+        '🎡 테마파크':'🎡','🌸 꽃·자연':'🌸','🌃 야경':'🌃','🎭 문화·전시':'🎭','🏖 나들이':'🏖','🛍 쇼핑':'🛍','📍 기타':'📍'
+      };
+      var defaultEmoji=isRest?'🍽️':isSpot?'🎡':'☕';
+      var emoji=(item.category&&CAT_EMOJI_MAP[item.category])||defaultEmoji;
       var visited=item.visited;
       var svg=encodeURIComponent(
         '<svg xmlns="http://www.w3.org/2000/svg" width="38" height="46">'
