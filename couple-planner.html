@@ -254,7 +254,18 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .map-iw-badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:12px;margin:3px 0 6px}
 .map-iw-btn{display:block;padding:6px 0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:'Pretendard',sans-serif;flex:1;text-align:center}
 
-/* 드래그 핸들 */
+/* 집 소요시간 바 */
+.home-route-bar{display:flex;align-items:center;background:#fff;border-bottom:1px solid var(--border);padding:0}
+.home-route-item{display:flex;align-items:center;gap:10px;flex:1;padding:10px 14px;cursor:pointer;transition:background .15s}
+.home-route-item:active{background:var(--blush)}
+.home-route-ico{font-size:18px;flex-shrink:0}
+.home-route-info{display:flex;flex-direction:column;flex:1;min-width:0}
+.home-route-name{font-size:11px;color:var(--muted);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-route-time{font-size:14px;font-weight:700;color:var(--ink);line-height:1.3}
+.home-route-navi{font-size:16px;flex-shrink:0;opacity:.6}
+.home-route-div{width:1px;height:36px;background:var(--border);flex-shrink:0}
+
+
 .card.dragging{opacity:.5;box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .card.drag-over{border:2px dashed var(--rose);background:var(--blush)}
 .drag-handle{font-size:15px;color:var(--muted);padding:0 4px;flex-shrink:0;touch-action:none;cursor:grab;user-select:none}
@@ -309,6 +320,25 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 <div id="scr-app">
   <!-- 날씨바 -->
   <div class="wbar" id="wbar"><div class="wi"><span class="wi-ico">⏳</span><span class="wi-val">--</span><span class="wi-lbl">날씨</span></div></div>
+  <div class="home-route-bar" id="home-route-bar" style="display:none">
+    <div class="home-route-item" id="home-route-1" onclick="openHomeNavi(1)">
+      <span class="home-route-ico">🏠</span>
+      <div class="home-route-info">
+        <span class="home-route-name" id="home-route-name1">내 집</span>
+        <span class="home-route-time" id="home-route-time1">계산 중…</span>
+      </div>
+      <span class="home-route-navi">🚗</span>
+    </div>
+    <div class="home-route-div"></div>
+    <div class="home-route-item" id="home-route-2" onclick="openHomeNavi(2)">
+      <span class="home-route-ico">💑</span>
+      <div class="home-route-info">
+        <span class="home-route-name" id="home-route-name2">여자친구 집</span>
+        <span class="home-route-time" id="home-route-time2">계산 중…</span>
+      </div>
+      <span class="home-route-navi">🚗</span>
+    </div>
+  </div>
 
   <!-- 헤더 -->
   <div class="hdr">
@@ -401,6 +431,12 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
       <div class="fg"><label>상대방 이름</label><input type="text" id="s2" placeholder="상대방 이름"></div>
       <div class="fg"><label>사귄 날짜</label><input type="date" id="sa"></div>
       <button class="setsave" onclick="saveSet()">저장하기</button>
+    </div>
+    <div class="sec" style="margin-top:16px">집 주소</div>
+    <div class="setcard">
+      <div class="fg"><label>내 집 주소</label><input type="text" id="s-home1" placeholder="예: 서울 강서구 화곡동"></div>
+      <div class="fg"><label>여자친구 집 주소</label><input type="text" id="s-home2" placeholder="예: 서울 마포구 합정동"></div>
+      <button class="setsave" onclick="saveHome()">저장하기</button>
     </div>
   </div>
   <div class="pg" id="pg-stats">
@@ -525,6 +561,10 @@ function refreshHdr(){
   if(g('s1')&&!g('s1').value&&s.name1)g('s1').value=s.name1;
   if(g('s2')&&!g('s2').value&&s.name2)g('s2').value=s.name2;
   if(g('sa')&&!g('sa').value&&s.anniversary)g('sa').value=s.anniversary;
+  if(g('s-home1')&&s.home1)g('s-home1').value=s.home1;
+  if(g('s-home2')&&s.home2)g('s-home2').value=s.home2;
+  // 집 주소 등록 시 소요시간 바 표시
+  if(s.home1||s.home2)calcHomeRoutes();
   var snc=g('sn-c'),snr=g('sn-r'),snca=g('sn-ca'),sns=g('sn-s');
   if(snc)snc.textContent=Object.keys(DB.courses||{}).length;
   if(snr)snr.textContent=Object.keys(DB.restaurants||{}).length;
@@ -1313,6 +1353,73 @@ async function saveSet(){
   toast('저장했어요 ♡');
 }
 
+async function saveHome(){
+  var addr1=(g('s-home1')||{}).value||'';
+  var addr2=(g('s-home2')||{}).value||'';
+  await fb().update(rr('settings'),{home1:addr1.trim(),home2:addr2.trim()});
+  toast('집 주소 저장됐어요 🏠');
+  calcHomeRoutes();
+}
+
+function loadHomeSettings(){
+  var s=DB.settings||{};
+  if(g('s-home1')&&s.home1)g('s-home1').value=s.home1;
+  if(g('s-home2')&&s.home2)g('s-home2').value=s.home2;
+}
+
+var HOME_COORDS=[null,null];
+
+function calcHomeRoutes(){
+  var s=DB.settings||{};
+  var addrs=[s.home1||'',s.home2||''];
+  var names=[
+    (s.name1?s.name1+' 집':'내 집'),
+    (s.name2?s.name2+' 집':'여자친구 집')
+  ];
+  var bar=g('home-route-bar');
+  if(!addrs[0]&&!addrs[1]){if(bar)bar.style.display='none';return;}
+  if(bar)bar.style.display='flex';
+  addrs.forEach(function(addr,i){
+    var nameEl=g('home-route-name'+(i+1));
+    var timeEl=g('home-route-time'+(i+1));
+    if(nameEl)nameEl.textContent=names[i];
+    if(!addr){if(timeEl)timeEl.textContent='주소 미등록';return;}
+    if(!USER_LAT){if(timeEl)timeEl.textContent='위치 확인 중…';return;}
+    if(timeEl)timeEl.textContent='계산 중…';
+    geocodeAddr(addr,function(lat,lon){
+      if(!lat){if(timeEl)timeEl.textContent='주소를 찾을 수 없어요';return;}
+      HOME_COORDS[i]={lat:lat,lon:lon,addr:addr};
+      var dist=haversine(USER_LAT,USER_LON,lat,lon);
+      fetch('https://kakao-proxy-seven.vercel.app/api/directions'
+        +'?ox='+USER_LON+'&oy='+USER_LAT+'&dx='+lon+'&dy='+lat+'&priority=RECOMMEND')
+      .then(function(r){return r.json()})
+      .then(function(d){
+        var distStr=dist>=1000?(dist/1000).toFixed(1)+'km':Math.round(dist)+'m';
+        if(d.duration!=null){
+          var m=Math.round(d.duration/60);
+          var t=m<60?m+'분':(Math.floor(m/60)+'시간'+(m%60?' '+m%60+'분':''));
+          if(timeEl)timeEl.textContent='🚗 '+t+' · '+distStr;
+        }else{
+          var m2=Math.round(dist/1000/25*60);
+          if(timeEl)timeEl.textContent='약 '+m2+'분 · '+distStr;
+        }
+      }).catch(function(){
+        var m=Math.round(dist/1000/25*60);
+        var distStr=dist>=1000?(dist/1000).toFixed(1)+'km':Math.round(dist)+'m';
+        if(timeEl)timeEl.textContent='약 '+m+'분 · '+distStr;
+      });
+    });
+  });
+}
+
+function openHomeNavi(idx){
+  var s=DB.settings||{};
+  var addr=idx===1?s.home1:s.home2;
+  var name=idx===1?(s.name1?s.name1+' 집':'내 집'):(s.name2?s.name2+' 집':'여자친구 집');
+  if(addr)openNavi(name,addr);
+  else toast('주소를 먼저 설정해주세요');
+}
+
 // ── 날씨 (Open-Meteo) ────────────────────────────────
 function loadWeather(){
   if(!navigator.geolocation){
@@ -1338,8 +1445,8 @@ function loadWeather(){
     USER_LAT=la;USER_LON=lo;
     loadLocation(la,lo);
     loadRouteCache();
-    // 지도 열려있으면 내 위치 마커 즉시 업데이트
     if(kakaoMap)placeMyLocMarker();
+    if((DB.settings||{}).home1||(DB.settings||{}).home2)calcHomeRoutes();
     // 위치 세팅 후 카드 즉시 리렌더 (소요시간 표시)
     ['courses','restaurants','cafes'].forEach(function(cat){
       if(Object.keys(DB[cat]||{}).length>0)render(cat);
