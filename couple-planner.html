@@ -1621,10 +1621,10 @@ function loadLocation(lat,lon){
 
 // ── 내비 ──────────────────────────────────────────────
 function openNavi(name,address){
-  var copyText=name||address||'';
+  var copyText=address||name||'';
   if(copyText){
     navigator.clipboard.writeText(copyText).catch(function(){});
-    toast('📋 이름 복사됨! 앱에서 붙여넣기 하세요');
+    toast('📋 주소 복사됨! 앱에서 붙여넣기 하세요');
   }
   setTimeout(function(){
     window.location.href='https://carner.kakaomobility.com/web2app/bridge?action=kakaonavi%3A%2F%2Fstartapp';
