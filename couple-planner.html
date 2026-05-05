@@ -1781,6 +1781,11 @@ async function touchEnd(e){
 }
 
 // ── 페이지 전환 ───────────────────────────────────────
+function goToTab(page){
+  var btn=document.querySelector('.nb[onclick*="\''+page+'\'"]');
+  if(btn)goPage(page,btn);
+}
+
 function goPage(page,btn){
   document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on')});
   document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on')});
@@ -1840,7 +1845,9 @@ function renderStats(){
     html+='<div class="visit-card">'
       // 헤더
       +'<div class="visit-card-hd">'
-        +'<span class="visit-card-title">'+catEmoji[cat]+' '+catNames[cat]+'</span>'
+        +'<span class="visit-card-title" style="cursor:pointer" onclick="goToTab(\''+cat+'\')">'
+          +catEmoji[cat]+' '+catNames[cat]+' <span style="font-size:11px;color:var(--muted)">→</span>'
+        +'</span>'
         +'<span class="visit-pct-badge">'+pct+'%</span>'
       +'</div>'
       // 방문/미방문 큰 숫자
