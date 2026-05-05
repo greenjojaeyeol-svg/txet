@@ -1353,6 +1353,15 @@ async function saveSet(){
   toast('저장했어요 ♡');
 }
 
+function copyHomeAddr(inputId){
+  var el=g(inputId);
+  var addr=el?el.value.trim():'';
+  if(!addr){toast('주소를 먼저 입력해주세요');return;}
+  navigator.clipboard.writeText(addr).then(function(){
+    toast('📋 주소 복사됐어요!');
+  }).catch(function(){toast('복사 실패');});
+}
+
 async function saveHome(){
   var addr1=(g('s-home1')||{}).value||'';
   var addr2=(g('s-home2')||{}).value||'';
@@ -1412,12 +1421,24 @@ function calcHomeRoutes(){
   });
 }
 
+function copyHomeAddrByIdx(idx){
+  var s=DB.settings||{};
+  var addr=idx===1?s.home1:s.home2;
+  if(!addr){toast('주소를 먼저 설정에서 등록해주세요');return;}
+  navigator.clipboard.writeText(addr).then(function(){
+    toast('📋 주소 복사됐어요! 네비에 붙여넣기 하세요');
+  }).catch(function(){toast('복사 실패');});
+}
+
 function openHomeNavi(idx){
   var s=DB.settings||{};
   var addr=idx===1?s.home1:s.home2;
   var name=idx===1?(s.name1?s.name1+' 집':'내 집'):(s.name2?s.name2+' 집':'여자친구 집');
-  if(addr)openNavi(name,addr);
-  else toast('주소를 먼저 설정해주세요');
+  if(!addr){toast('주소를 먼저 설정에서 등록해주세요');return;}
+  // 주소 클립보드 복사
+  navigator.clipboard.writeText(addr).catch(function(){});
+  // 카카오내비 연동
+  openNavi(name,addr);
 }
 
 // ── 날씨 (Open-Meteo) ────────────────────────────────
