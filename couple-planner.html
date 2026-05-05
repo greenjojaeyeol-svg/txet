@@ -969,9 +969,9 @@ async function toggleFav(k,cat,cur,e){
 }
 
 function copyAddr(name,addr){
-  var text=(name?name:'')+(addr?'\n'+addr:'');
+  var text=addr||name||'';
   navigator.clipboard.writeText(text).then(function(){
-    toast('📋 복사됐어요!');
+    toast('📋 주소 복사됐어요!');
   }).catch(function(){
     toast('복사 실패. 직접 선택해주세요.');
   });
