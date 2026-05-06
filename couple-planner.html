@@ -891,7 +891,7 @@ function makeCard(key,item,cat){
   }
 
   var stepsH='';
-  if(cat==='courses'&&item.steps&&item.steps.length){
+  if((cat==='courses'||cat==='plans')&&item.steps&&item.steps.length){
     stepsH='<div class="steps">'+item.steps.map(function(s,i){
       return'<div class="step-r"><div class="step-dot">'+(i+1)+'</div><div class="step-t">'+esc(s)+'</div></div>';
     }).join('')+'</div>';
@@ -1763,6 +1763,7 @@ var FORMS={
         +'<div class="fg"><label>유형</label><select id="f-cat"><option value="">선택 안 함</option>'
         +['🌅 당일치기','🏨 1박2일','🎉 기념일','☀️ 일상데이트'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
+        +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="카페 투썸플레이스&#10;한강공원&#10;홍대 거리">'+(d&&d.steps?d.steps.join('\n'):'')+'</textarea></div>'
         +'<div class="fg"><label>메모</label><textarea id="f-memo" placeholder="특별한 계획을 적어보세요">'+(d?esc(d.memo||''):'')+'</textarea></div>'};
   }
 };
