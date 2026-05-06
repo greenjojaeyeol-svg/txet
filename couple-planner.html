@@ -2070,7 +2070,7 @@ function renderStats(){
     months.forEach(function(m){
       var cnt=monthMap[m];
       var h=maxCnt>0?Math.round(cnt/maxCnt*76):2;
-      var lbl=m.slice(5)+'월';
+      var lbl=m.slice(2,4)+'.'+m.slice(5)+'월';
       html+='<div class="month-col">'
         +'<div class="month-cnt">'+cnt+'</div>'
         +'<div class="month-bar-wrap"><div class="month-bar" style="height:'+h+'px"></div></div>'
