@@ -214,7 +214,29 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .month-cnt{font-size:11px;font-weight:600;color:var(--rose)}
 .stats-empty{text-align:center;padding:32px 0;color:var(--muted);font-size:13px}
 .rating-avg{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#f5a623;font-weight:600}
-/* 방문 현황 카드 */
+/* 캘린더 */
+.cal-wrap{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-title{font-size:15px;font-weight:700;color:var(--ink)}
+.cal-nav{background:none;border:none;font-size:18px;cursor:pointer;padding:4px 8px;color:var(--muted);border-radius:8px}
+.cal-nav:active{background:var(--blush)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-dow{text-align:center;font-size:10px;font-weight:600;color:var(--muted);padding:4px 0}
+.cal-dow:first-child{color:#e85d5d}
+.cal-dow:last-child{color:#5b9cf6}
+.cal-day{position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink);transition:background .12s;user-select:none}
+.cal-day:active{background:var(--blush)}
+.cal-day.sun{color:#e85d5d}
+.cal-day.sat{color:#5b9cf6}
+.cal-day.today{background:var(--blush);font-weight:700;color:var(--rose)}
+.cal-day.other{color:#ccc}
+.cal-day.marked .cal-num{opacity:0}
+.cal-mark-ico{font-size:18px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);line-height:1}
+.cal-dot-wrap{display:flex;gap:2px;justify-content:center;position:absolute;bottom:3px}
+.cal-dot{width:4px;height:4px;border-radius:50%;background:var(--rose)}
+.cal-num{font-size:13px;line-height:1}
+
+
 .visit-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
 .visit-card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .visit-card-title{font-size:14px;font-weight:600;color:var(--ink)}
@@ -414,6 +436,15 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
       <div class="stat"><div class="stat-n" id="sn-ca">0</div><div class="stat-l">☕ 카페</div></div>
       <div class="stat"><div class="stat-n" id="sn-s">0</div><div class="stat-l">🎡 명소</div></div>
     </div>
+    <!-- 캘린더 -->
+    <div class="cal-wrap">
+      <div class="cal-hdr">
+        <button class="cal-nav" onclick="calMove(-1)">‹</button>
+        <div class="cal-title" id="cal-title"></div>
+        <button class="cal-nav" onclick="calMove(1)">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
     <button class="addbtn" onclick="openAdd('plans')">+ 데이트 일정 추가</button>
     <div class="fbar" id="fb-plans"></div>
     <div class="sec">데이트 일정</div>
@@ -541,12 +572,13 @@ function enterApp(){
   DB={courses:{},restaurants:{},cafes:{},spots:{},plans:{},checklist:{},settings:{}};
   ROUTE_CACHE={};DIST_CACHE={};
   subscribeAll();
-  loadWeather(); // 날씨 로드 시 USER_LAT/LON 세팅 + 이후 loadRouteCache 재호출
+  loadWeather();
+  renderCal(); // 날씨 로드 시 USER_LAT/LON 세팅 + 이후 loadRouteCache 재호출
 }
 
 // ── Firebase 구독 ─────────────────────────────────────
 function subscribeAll(){
-  ['courses','restaurants','cafes','spots','plans','checklist','chk_cats','settings'].forEach(function(cat){
+  ['courses','restaurants','cafes','spots','plans','checklist','chk_cats','settings','date_marks'].forEach(function(cat){
     var u=fb().onValue(rr(cat),function(snap){
       DB[cat]=snap.val()||{};
       render(cat);
@@ -772,6 +804,7 @@ var EMPTY_MSG={
 function render(cat){
   if(cat==='settings')return;
   if(cat==='checklist'||cat==='chk_cats'){renderChk();return}
+  if(cat==='date_marks'||cat==='plans'){if(cat==='plans')renderFbar('plans');renderCal();}
   var el=g('lst-'+cat);if(!el)return;
   renderFbar(cat);
   var items=Object.entries(DB[cat]||{});
@@ -2311,6 +2344,63 @@ function openKakaoSearch(name){
 }
 function openNaverSearch(name){
   window.open('https://map.naver.com/v5/search/'+encodeURIComponent(name),'_blank');
+}
+
+// ── 캘린더 ────────────────────────────────────────────
+var calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
+
+function calMove(dir){
+  calMonth+=dir;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCal();
+}
+
+function renderCal(){
+  var titleEl=g('cal-title'),gridEl=g('cal-grid');
+  if(!titleEl||!gridEl)return;
+  titleEl.textContent=calYear+'년 '+(calMonth+1)+'월';
+  var now=new Date();
+  var todayStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var firstDay=new Date(calYear,calMonth,1).getDay();
+  var lastDate=new Date(calYear,calMonth+1,0).getDate();
+  var prevLast=new Date(calYear,calMonth,0).getDate();
+  // 일정 날짜
+  var planDates={};
+  Object.values(DB.plans||{}).forEach(function(item){if(item.date)planDates[item.date]=(planDates[item.date]||0)+1;});
+  var marks=DB.date_marks||{};
+  var html=['일','월','화','수','목','금','토'].map(function(d){return'<div class="cal-dow">'+d+'</div>'}).join('');
+  // 이전달 빈칸
+  for(var i=0;i<firstDay;i++){
+    html+='<div class="cal-day other"><span class="cal-num">'+(prevLast-firstDay+1+i)+'</span></div>';
+  }
+  // 이번달
+  for(var d=1;d<=lastDate;d++){
+    var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var dow=(firstDay+d-1)%7;
+    var cls='cal-day'+(dow===0?' sun':dow===6?' sat':'')+(ds===todayStr?' today':'');
+    var mark=marks[ds.replace(/-/g,'_')];
+    var markedCls=mark?' marked':'';
+    var markEmoji=mark==='red'?'❤️':mark?'🩷':'';
+    var cls='cal-day'+(dow===0?' sun':dow===6?' sat':'')+(ds===todayStr?' today':'')+markedCls;
+    var dot=planDates[ds]?'<div class="cal-dot-wrap"><div class="cal-dot"></div></div>':'';
+    html+='<div class="'+cls+'" onclick="toggleMark(\''+ds+'\')" data-mark="'+( mark||'')+'">'
+      +'<span class="cal-num">'+d+'</span>'
+      +(markEmoji?'<span class="cal-mark-ico">'+markEmoji+'</span>':'')
+      +dot+'</div>';
+  }
+  // 다음달 빈칸
+  var rem=(7-((firstDay+lastDate)%7))%7;
+  for(var i=1;i<=rem;i++)html+='<div class="cal-day other"><span class="cal-num">'+i+'</span></div>';
+  gridEl.innerHTML=html;
+}
+
+async function toggleMark(dateStr){
+  var key=dateStr.replace(/-/g,'_');
+  var cur=(DB.date_marks||{})[key];
+  if(!cur)await fb().set(rr('date_marks/'+key),'pink');        // 없음 → 🩷
+  else if(cur==='pink')await fb().set(rr('date_marks/'+key),'red'); // 🩷 → ❤️
+  else await fb().remove(rr('date_marks/'+key));               // ❤️ → 취소
 }
 
 function onFbReady(){
