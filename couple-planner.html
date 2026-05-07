@@ -1690,15 +1690,15 @@ var FORMS={
         +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 영업</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
-            +'<div style="flex:1"><label>마감</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>오픈</label><input type="text" id="f-open" inputmode="numeric" placeholder="2100" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.open_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>마감</label><input type="text" id="f-close" inputmode="numeric" placeholder="2200" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.close_time||'':'')+'"></div>'
           +'</div>'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>브레이크 시작</label><input type="time" id="f-bts" value="'+(d?d.break_start||'':'')+'"></div>'
-            +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 시작</label><input type="text" id="f-bts" inputmode="numeric" placeholder="1500" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.break_start||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 종료</label><input type="text" id="f-bte" inputmode="numeric" placeholder="1700" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.break_end||'':'')+'"></div>'
           +'</div>'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
+            +'<div style="flex:1"><label>라스트오더</label><input type="text" id="f-lo" inputmode="numeric" placeholder="2130" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.last_order||'':'')+'"></div>'
             +'<div style="flex:1"><label>&nbsp;</label></div>'
           +'</div>'
         +'</div>'
@@ -1727,15 +1727,15 @@ var FORMS={
         +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 영업</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
-            +'<div style="flex:1"><label>마감</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>오픈</label><input type="text" id="f-open" inputmode="numeric" placeholder="2100" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.open_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>마감</label><input type="text" id="f-close" inputmode="numeric" placeholder="2200" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.close_time||'':'')+'"></div>'
           +'</div>'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>브레이크 시작</label><input type="time" id="f-bts" value="'+(d?d.break_start||'':'')+'"></div>'
-            +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 시작</label><input type="text" id="f-bts" inputmode="numeric" placeholder="1500" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.break_start||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 종료</label><input type="text" id="f-bte" inputmode="numeric" placeholder="1700" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.break_end||'':'')+'"></div>'
           +'</div>'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
+            +'<div style="flex:1"><label>라스트오더</label><input type="text" id="f-lo" inputmode="numeric" placeholder="2130" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.last_order||'':'')+'"></div>'
             +'<div style="flex:1"><label>&nbsp;</label></div>'
           +'</div>'
         +'</div>'
@@ -1764,15 +1764,15 @@ var FORMS={
         +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 / 상시 개방</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>오픈</label><input type="time" id="f-open" value="'+(d?d.open_time||'':'')+'"></div>'
-            +'<div style="flex:1"><label>마감</label><input type="time" id="f-close" value="'+(d?d.close_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>오픈</label><input type="text" id="f-open" inputmode="numeric" placeholder="2100" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.open_time||'':'')+'"></div>'
+            +'<div style="flex:1"><label>마감</label><input type="text" id="f-close" inputmode="numeric" placeholder="2200" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.close_time||'':'')+'"></div>'
           +'</div>'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>브레이크 시작</label><input type="time" id="f-bts" value="'+(d?d.break_start||'':'')+'"></div>'
-            +'<div style="flex:1"><label>브레이크 종료</label><input type="time" id="f-bte" value="'+(d?d.break_end||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 시작</label><input type="text" id="f-bts" inputmode="numeric" placeholder="1500" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.break_start||'':'')+'"></div>'
+            +'<div style="flex:1"><label>브레이크 종료</label><input type="text" id="f-bte" inputmode="numeric" placeholder="1700" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.break_end||'':'')+'"></div>'
           +'</div>'
           +'<div class="fg" style="display:flex;gap:8px">'
-            +'<div style="flex:1"><label>라스트오더</label><input type="time" id="f-lo" value="'+(d?d.last_order||'':'')+'"></div>'
+            +'<div style="flex:1"><label>라스트오더</label><input type="text" id="f-lo" inputmode="numeric" placeholder="2130" maxlength="5" onblur="fmtTimeInput(this)" value="'+(d?d.last_order||'':'')+'"></div>'
             +'<div style="flex:1"><label>&nbsp;</label></div>'
           +'</div>'
         +'</div>'
@@ -1807,6 +1807,22 @@ function setPark(btn){
   if(!wrap)return;
   wrap.querySelectorAll('.park-btn').forEach(function(b){b.classList.remove('on')});
   btn.classList.add('on');
+}
+
+// 시간 자동 포맷: 2100 → 21:00, 9 → 09:00, 930 → 09:30
+function fmtTimeInput(el){
+  var v=el.value.replace(/[^0-9]/g,'');
+  if(!v){el.value='';return;}
+  var h,m;
+  if(v.length<=2){
+    h=parseInt(v);m=0;
+  }else if(v.length===3){
+    h=parseInt(v.slice(0,1));m=parseInt(v.slice(1));
+  }else{
+    h=parseInt(v.slice(0,2));m=parseInt(v.slice(2,4));
+  }
+  if(h>23)h=23;if(m>59)m=59;
+  el.value=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
 }
 
 function toggleAllday(){
