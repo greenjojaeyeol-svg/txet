@@ -51,6 +51,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .wbar-clock{text-align:right}
 .wbar-time{font-size:24px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:1px}
 .wbar-date{font-size:11px;color:var(--muted);margin-top:3px}
+.wbar-outfit{display:flex;align-items:center;gap:6px;margin-bottom:8px;background:var(--sand);border-radius:20px;padding:5px 12px;width:fit-content}
+.wbar-outfit-ico{font-size:14px}
+.wbar-outfit-txt{font-size:12px;color:var(--ink);font-weight:500}
 .wbar-sub{display:flex;gap:6px;flex-wrap:wrap}
 .wsi{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);background:var(--sand);padding:4px 9px;border-radius:20px;font-weight:500}
 .wsi-ico{font-size:12px}
@@ -1564,6 +1567,18 @@ function loadWeather(){
   },{maximumAge:0,timeout:8000});
 }
 
+function outfitGuide(tmp){
+  if(tmp===null||tmp===undefined)return null;
+  if(tmp>=28)return{ico:'👕',txt:'민소매·반팔·반바지'};
+  if(tmp>=23)return{ico:'👚',txt:'반팔·얇은 긴팔'};
+  if(tmp>=20)return{ico:'👔',txt:'얇은 가디건·긴팔'};
+  if(tmp>=17)return{ico:'🧥',txt:'가디건·청자켓'};
+  if(tmp>=12)return{ico:'🧣',txt:'자켓·가벼운 코트'};
+  if(tmp>=9) return{ico:'🧤',txt:'코트·니트·레이어링'};
+  if(tmp>=5) return{ico:'🧣',txt:'두꺼운 코트·목도리'};
+  return{ico:'🧤',txt:'패딩·두꺼운 외투'};
+}
+
 function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
   var pm10g=pm10!==null?pmGrade(pm10,'pm10'):null;
   var pm25g=pm25!==null?pmGrade(pm25,'pm25'):null;
@@ -1573,6 +1588,7 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
     pm10g?'<div class="wsi"><span class="wsi-ico">'+pm10g.i+'</span>미세 '+pm10g.l+'</div>':'',
     pm25g?'<div class="wsi"><span class="wsi-ico">'+pm25g.i+'</span>초미세 '+pm25g.l+'</div>':''
   ].filter(Boolean).join('');
+  var outfit=outfitGuide(feel!==null&&feel!==undefined?feel:tmp);
   var srcTxt=src==='kma'?'📡 기상청':'📡 Open-Meteo';
   g('wbar').innerHTML=
     '<div class="wbar-top">'
@@ -1588,6 +1604,7 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
         +'<div class="wbar-date" id="wbar-date"></div>'
       +'</div>'
     +'</div>'
+    +(outfit?'<div class="wbar-outfit"><span class="wbar-outfit-ico">'+outfit.ico+'</span><span class="wbar-outfit-txt">'+outfit.txt+'</span></div>':'')
     +(subItems?'<div class="wbar-sub">'+subItems+'</div>':'')
     +'<div class="wbar-loc" id="wbar-loc"></div>';
   startClock();
