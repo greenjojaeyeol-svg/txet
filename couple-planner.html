@@ -57,7 +57,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .wbar-sub{display:flex;gap:6px;flex-wrap:wrap}
 .wsi{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);background:var(--sand);padding:4px 9px;border-radius:20px;font-weight:500}
 .wsi-ico{font-size:12px}
-.wbar-loc{font-size:10px;color:var(--muted);margin-top:2px;text-align:right}
+
 .wbar-src{display:none}
 
 /* 헤더 */
@@ -1506,7 +1506,6 @@ function loadWeather(){
   navigator.geolocation.getCurrentPosition(function(pos){
     var la=pos.coords.latitude,lo=pos.coords.longitude;
     USER_LAT=la;USER_LON=lo;
-    loadLocation(la,lo);
     loadRouteCache();
     if(kakaoMap)placeMyLocMarker();
     if((DB.settings||{}).home1||(DB.settings||{}).home2)calcHomeRoutes();
@@ -1602,7 +1601,6 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
       +'<div class="wbar-clock">'
         +'<div class="wbar-time" id="wbar-time">--:--</div>'
         +'<div class="wbar-date" id="wbar-date"></div>'
-        +'<div class="wbar-loc" id="wbar-loc"></div>'
       +'</div>'
     +'</div>'
     +(outfit?'<div class="wbar-outfit"><span class="wbar-outfit-ico">'+outfit.ico+'</span><span class="wbar-outfit-txt">'+outfit.txt+'</span></div>':'')
@@ -1649,30 +1647,6 @@ function startClock(){
 }
 
 // ── 위치 표시 ─────────────────────────────────────────
-function loadLocation(lat,lon){
-  fetch('https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x='+lon+'&y='+lat,{
-    headers:{'Authorization':'KakaoAK '+KAKAO_REST}
-  })
-  .then(function(r){return r.json()})
-  .then(function(d){
-    var doc=d.documents&&d.documents[0];
-    if(doc){
-      var city=doc.region_1depth_name;
-      var gu=doc.region_2depth_name;
-      city=city.replace('특별시','').replace('광역시','').replace('특별자치시','').replace('특별자치도','');
-      var locTxt='📍 '+city+' '+gu;
-      // wbar-loc이 아직 없을 수 있으므로 최대 10회 재시도
-      var tries=0;
-      function trySet(){
-        var el=g('wbar-loc');
-        if(el){el.textContent=locTxt;}
-        else if(tries++<10){setTimeout(trySet,300);}
-      }
-      trySet();
-    }
-  }).catch(function(){});
-}
-
 // ── 내비 ──────────────────────────────────────────────
 function openNavi(name,address){
   var copyText=address||name||'';
