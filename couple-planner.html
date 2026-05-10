@@ -62,6 +62,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .wbar-tmr-rain{font-size:11px;color:#5b9cf6;font-weight:500}
 .wbar-outfit-ico{font-size:14px}
 .wbar-outfit-txt{font-size:12px;color:var(--ink);font-weight:500}
+.wsi-outfit{background:var(--blush);color:var(--rose);font-weight:600;border:1px solid #f5c6cb}
 .wbar-sub{display:flex;gap:6px;flex-wrap:wrap}
 .wsi{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);background:var(--sand);padding:4px 9px;border-radius:20px;font-weight:500}
 .wsi-ico{font-size:12px}
@@ -1601,13 +1602,14 @@ function outfitGuide(tmp){
 function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
   var pm10g=pm10!==null?pmGrade(pm10,'pm10'):null;
   var pm25g=pm25!==null?pmGrade(pm25,'pm25'):null;
+  var outfit=outfitGuide(feel!==null&&feel!==undefined?feel:tmp);
   var subItems=[
+    outfit?'<div class="wsi wsi-outfit"><span class="wsi-ico">'+outfit.ico+'</span>'+outfit.txt+'</div>':'',
     wind?'<div class="wsi"><span class="wsi-ico">💨</span>'+wind+'m/s</div>':'',
     uv!==null?'<div class="wsi"><span class="wsi-ico">☀️</span>자외선 '+uvGrade(uv)+'</div>':'',
     pm10g?'<div class="wsi"><span class="wsi-ico">'+pm10g.i+'</span>미세 '+pm10g.l+'</div>':'',
     pm25g?'<div class="wsi"><span class="wsi-ico">'+pm25g.i+'</span>초미세 '+pm25g.l+'</div>':''
   ].filter(Boolean).join('');
-  var outfit=outfitGuide(feel!==null&&feel!==undefined?feel:tmp);
   var tmrH=tmr
     ?'<div class="wbar-tmr">'
       +'<span class="wbar-tmr-lbl">내일</span>'
@@ -1633,7 +1635,6 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
         +tmrH
       +'</div>'
     +'</div>'
-    +(outfit?'<div class="wbar-outfit"><span class="wbar-outfit-ico">'+outfit.ico+'</span><span class="wbar-outfit-txt">'+outfit.txt+'</span></div>':'')
     +(subItems?'<div class="wbar-sub">'+subItems+'</div>':'');
   startClock();
 }
