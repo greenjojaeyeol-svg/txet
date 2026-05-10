@@ -51,7 +51,15 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .wbar-clock{text-align:right}
 .wbar-time{font-size:24px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:1px}
 .wbar-date{font-size:11px;color:var(--muted);margin-top:3px}
-.wbar-outfit{display:flex;align-items:center;gap:6px;margin-bottom:8px;background:var(--sand);border-radius:20px;padding:5px 12px;width:fit-content}
+.wbar-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.wbar-tmr{display:flex;align-items:center;gap:6px;background:var(--sand);border-radius:20px;padding:4px 10px}
+.wbar-tmr-lbl{font-size:10px;color:var(--muted);font-weight:600}
+.wbar-tmr-ico{font-size:14px;line-height:1}
+.wbar-tmr-range{font-size:12px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:2px}
+.tmr-max{color:#e85d5d}
+.tmr-sep{color:var(--muted);font-weight:400}
+.tmr-min{color:#5b9cf6}
+.wbar-tmr-rain{font-size:11px;color:#5b9cf6;font-weight:500}
 .wbar-outfit-ico{font-size:14px}
 .wbar-outfit-txt{font-size:12px;color:var(--ink);font-weight:500}
 .wbar-sub{display:flex;gap:6px;flex-wrap:wrap}
@@ -1497,7 +1505,7 @@ function loadWeather(){
       var cw=JSON.parse(cached);
       var age=Date.now()-cw.ts;
       if(age<3600000){ // 1시간 이내면 즉시 표시
-        setWbar(cw.ico,cw.tmp,cw.feel,cw.hum,cw.pm10,cw.pm25,cw.uv,cw.wind,'openmeteo');
+        setWbar(cw.ico,cw.tmp,cw.feel,cw.hum,cw.pm10,cw.pm25,cw.uv,cw.wind,'openmeteo',cw.tmr||null);
       }
     }
   }catch(e){}
@@ -1534,7 +1542,10 @@ function loadWeather(){
         }
       });
     },800);
-    fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature,uv_index&timezone=Asia%2FSeoul')
+    fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo
+      +'&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature,uv_index'
+      +'&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+      +'&timezone=Asia%2FSeoul&forecast_days=2')
     .then(function(r){return r.json()})
     .then(function(d){
       var c=d.current;
@@ -1544,17 +1555,26 @@ function loadWeather(){
       var hum=c.relativehumidity_2m;
       var uv=Math.round(c.uv_index||0);
       var wind=Math.round(c.windspeed_10m);
+      // 내일 날씨
+      var tmr=null;
+      if(d.daily&&d.daily.time&&d.daily.time.length>1){
+        tmr={
+          ico:wIcon(d.daily.weathercode[1]),
+          max:Math.round(d.daily.temperature_2m_max[1]),
+          min:Math.round(d.daily.temperature_2m_min[1]),
+          rain:d.daily.precipitation_probability_max[1]||0
+        };
+      }
       fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+la+'&longitude='+lo+'&current=pm10,pm2_5&timezone=Asia%2FSeoul')
       .then(function(r){return r.json()})
       .then(function(aq){
         var pm10=Math.round((aq.current&&aq.current.pm10)||0);
         var pm25=Math.round((aq.current&&aq.current.pm2_5)||0);
-        setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,'openmeteo');
-        // 캐시 저장
-        try{localStorage.setItem('weather_cache',JSON.stringify({ico,tmp,feel,hum,pm10,pm25,uv,wind,ts:Date.now()}))}catch(e){}
+        setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,'openmeteo',tmr);
+        try{localStorage.setItem('weather_cache',JSON.stringify({ico,tmp,feel,hum,pm10,pm25,uv,wind,tmr,ts:Date.now()}))}catch(e){}
       }).catch(function(){
-        setWbar(ico,tmp,feel,hum,null,null,uv,wind,'openmeteo');
-        try{localStorage.setItem('weather_cache',JSON.stringify({ico,tmp,feel,hum,pm10:null,pm25:null,uv,wind,ts:Date.now()}))}catch(e){}
+        setWbar(ico,tmp,feel,hum,null,null,uv,wind,'openmeteo',tmr);
+        try{localStorage.setItem('weather_cache',JSON.stringify({ico,tmp,feel,hum,pm10:null,pm25:null,uv,wind,tmr,ts:Date.now()}))}catch(e){}
       });
     }).catch(function(){
       if(!localStorage.getItem('weather_cache'))
@@ -1578,7 +1598,7 @@ function outfitGuide(tmp){
   return{ico:'🧤',txt:'패딩·두꺼운 외투'};
 }
 
-function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
+function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
   var pm10g=pm10!==null?pmGrade(pm10,'pm10'):null;
   var pm25g=pm25!==null?pmGrade(pm25,'pm25'):null;
   var subItems=[
@@ -1588,7 +1608,14 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
     pm25g?'<div class="wsi"><span class="wsi-ico">'+pm25g.i+'</span>초미세 '+pm25g.l+'</div>':''
   ].filter(Boolean).join('');
   var outfit=outfitGuide(feel!==null&&feel!==undefined?feel:tmp);
-  var srcTxt=src==='kma'?'📡 기상청':'📡 Open-Meteo';
+  var tmrH=tmr
+    ?'<div class="wbar-tmr">'
+      +'<span class="wbar-tmr-lbl">내일</span>'
+      +'<span class="wbar-tmr-ico">'+tmr.ico+'</span>'
+      +'<span class="wbar-tmr-range"><span class="tmr-max">'+tmr.max+'°</span><span class="tmr-sep">/</span><span class="tmr-min">'+tmr.min+'°</span></span>'
+      +(tmr.rain?'<span class="wbar-tmr-rain">💧'+tmr.rain+'%</span>':'')
+      +'</div>'
+    :'';
   g('wbar').innerHTML=
     '<div class="wbar-top">'
       +'<div class="wbar-main">'
@@ -1598,9 +1625,12 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
           +'<div class="wbar-desc">'+(feel&&feel!=='--'?'체감 '+feel+'° · ':'')+hum+'%</div>'
         +'</div>'
       +'</div>'
-      +'<div class="wbar-clock">'
-        +'<div class="wbar-time" id="wbar-time">--:--</div>'
-        +'<div class="wbar-date" id="wbar-date"></div>'
+      +'<div class="wbar-right">'
+        +'<div class="wbar-clock">'
+          +'<div class="wbar-time" id="wbar-time">--:--</div>'
+          +'<div class="wbar-date" id="wbar-date"></div>'
+        +'</div>'
+        +tmrH
       +'</div>'
     +'</div>'
     +(outfit?'<div class="wbar-outfit"><span class="wbar-outfit-ico">'+outfit.ico+'</span><span class="wbar-outfit-txt">'+outfit.txt+'</span></div>':'')
