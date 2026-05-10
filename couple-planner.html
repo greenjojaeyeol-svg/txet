@@ -57,7 +57,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .wbar-sub{display:flex;gap:6px;flex-wrap:wrap}
 .wsi{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);background:var(--sand);padding:4px 9px;border-radius:20px;font-weight:500}
 .wsi-ico{font-size:12px}
-.wbar-loc{font-size:11px;color:var(--muted);margin-top:8px}
+.wbar-loc{font-size:10px;color:var(--muted);margin-top:2px;text-align:right}
 .wbar-src{display:none}
 
 /* 헤더 */
@@ -1602,11 +1602,11 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src){
       +'<div class="wbar-clock">'
         +'<div class="wbar-time" id="wbar-time">--:--</div>'
         +'<div class="wbar-date" id="wbar-date"></div>'
+        +'<div class="wbar-loc" id="wbar-loc"></div>'
       +'</div>'
     +'</div>'
     +(outfit?'<div class="wbar-outfit"><span class="wbar-outfit-ico">'+outfit.ico+'</span><span class="wbar-outfit-txt">'+outfit.txt+'</span></div>':'')
-    +(subItems?'<div class="wbar-sub">'+subItems+'</div>':'')
-    +'<div class="wbar-loc" id="wbar-loc"></div>';
+    +(subItems?'<div class="wbar-sub">'+subItems+'</div>':'');
   startClock();
 }
 
