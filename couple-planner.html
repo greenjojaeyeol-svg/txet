@@ -37,36 +37,41 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 #scr-app{display:none;max-width:700px;margin:0 auto;padding-bottom:80px}
 
 /* 날씨바 */
-.wbar{
-  background:#fff;
-  padding:14px 18px 12px;
-  border-bottom:1px solid var(--border);
-  position:relative;
-}
-.wbar-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+/* 날씨바 */
+.wbar{background:#fff;border-bottom:1px solid var(--border);position:relative;overflow:hidden;user-select:none}
+.wbar-slides{display:flex;transition:transform .3s cubic-bezier(.4,0,.2,1);will-change:transform}
+.wbar-slide{min-width:100%;padding:14px 18px 10px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px}
+.wbar-row{display:flex;align-items:center;justify-content:space-between}
 .wbar-main{display:flex;align-items:center;gap:10px}
-.wbar-ico{font-size:36px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.08))}
-.wbar-temp{font-size:32px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:-1px}
-.wbar-desc{font-size:11px;color:var(--muted);margin-top:3px}
+.wbar-ico{font-size:34px;line-height:1}
+.wbar-temp{font-size:30px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:-1px}
+.wbar-desc{font-size:11px;color:var(--muted);margin-top:2px}
 .wbar-clock{text-align:right}
-.wbar-time{font-size:24px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:1px}
-.wbar-date{font-size:11px;color:var(--muted);margin-top:3px}
-.wbar-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.wbar-tmr{display:flex;align-items:center;gap:6px;background:var(--sand);border-radius:20px;padding:4px 10px}
-.wbar-tmr-lbl{font-size:10px;color:var(--muted);font-weight:600}
-.wbar-tmr-ico{font-size:14px;line-height:1}
-.wbar-tmr-range{font-size:12px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:2px}
-.tmr-max{color:#e85d5d}
-.tmr-sep{color:var(--muted);font-weight:400}
-.tmr-min{color:#5b9cf6}
-.wbar-tmr-rain{font-size:11px;color:#5b9cf6;font-weight:500}
-.wbar-outfit-ico{font-size:14px}
-.wbar-outfit-txt{font-size:12px;color:var(--ink);font-weight:500}
-.wsi-outfit{background:var(--blush);color:var(--rose);font-weight:600;border:1px solid #f5c6cb}
-.wbar-sub{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-ms-overflow-style:none}
-.wbar-sub::-webkit-scrollbar{display:none}
-.wsi{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);background:var(--sand);padding:4px 9px;border-radius:20px;font-weight:500;flex-shrink:0;white-space:nowrap}
-.wsi-ico{font-size:12px}
+.wbar-time{font-size:22px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:1px}
+.wbar-date{font-size:11px;color:var(--muted);margin-top:2px}
+/* 내일 슬라이드 */
+.wbar-tmr-big{display:flex;align-items:center;gap:12px}
+.wbar-tmr-ico-big{font-size:34px;line-height:1}
+.wbar-tmr-info{}
+.wbar-tmr-label{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:2px}
+.wbar-tmr-temps{font-size:22px;font-weight:700;line-height:1}
+.wbar-outfit-line{font-size:12px;color:var(--muted);margin-top:3px}
+.wbar-tmr-rain-big{font-size:12px;color:#5b9cf6;margin-top:2px}
+/* 상세 슬라이드 */
+.wbar-detail{display:flex;gap:16px;flex-wrap:wrap}
+.wdi{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:48px}
+.wdi-ico{font-size:18px;line-height:1}
+.wdi-val{font-size:12px;font-weight:600;color:var(--ink)}
+.wdi-lbl{font-size:10px;color:var(--muted)}
+/* 인디케이터 */
+.wbar-dots{display:flex;justify-content:center;gap:5px;padding:6px 0 8px}
+.wbar-dot{width:5px;height:5px;border-radius:50%;background:var(--border);transition:background .2s}
+.wbar-dot.on{background:var(--rose);width:14px;border-radius:4px}
+.wbar-tmr{display:none}
+.wsi-outfit{display:none}
+.wbar-top{display:none}
+.wbar-sub{display:none}
+.wbar-right{display:none}
 
 .wbar-src{display:none}
 
@@ -1600,43 +1605,123 @@ function outfitGuide(tmp){
   return{ico:'🧤',txt:'패딩·두꺼운 외투'};
 }
 
+var wbarSlide=0;
+
 function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
   var pm10g=pm10!==null?pmGrade(pm10,'pm10'):null;
   var pm25g=pm25!==null?pmGrade(pm25,'pm25'):null;
   var outfit=outfitGuide(feel!==null&&feel!==undefined?feel:tmp);
-  var subItems=[
-    wind?'<div class="wsi"><span class="wsi-ico">💨</span>'+wind+'m/s</div>':'',
-    uv!==null?'<div class="wsi"><span class="wsi-ico">☀️</span>자외선 '+uvGrade(uv)+'</div>':'',
-    pm10g?'<div class="wsi"><span class="wsi-ico">'+pm10g.i+'</span>미세 '+pm10g.l+'</div>':'',
-    pm25g?'<div class="wsi"><span class="wsi-ico">'+pm25g.i+'</span>초미세 '+pm25g.l+'</div>':''
-  ].filter(Boolean).join('');
-  var tmrH=tmr
-    ?'<div class="wbar-tmr">'
-      +'<span class="wbar-tmr-lbl">내일</span>'
-      +'<span class="wbar-tmr-ico">'+tmr.ico+'</span>'
-      +'<span class="wbar-tmr-range"><span class="tmr-max">'+tmr.max+'°</span><span class="tmr-sep">/</span><span class="tmr-min">'+tmr.min+'°</span></span>'
-      +(tmr.rain?'<span class="wbar-tmr-rain">💧'+tmr.rain+'%</span>':'')
-      +'</div>'
-    :'';
-  g('wbar').innerHTML=
-    '<div class="wbar-top">'
-      +'<div class="wbar-main">'
-        +'<span class="wbar-ico">'+ico+'</span>'
-        +'<div>'
-          +'<div class="wbar-temp">'+(tmp!==null?tmp+'°':'--')+'</div>'
-          +'<div class="wbar-desc">'+(feel&&feel!=='--'?'체감 '+feel+'° · ':'')+hum+'%'+(outfit?' · '+outfit.ico+' '+outfit.txt:'')+'</div>'
+
+  // 슬라이드 1: 오늘
+  var s1=
+    '<div class="wbar-slide">'
+      +'<div class="wbar-row">'
+        +'<div class="wbar-main">'
+          +'<span class="wbar-ico">'+ico+'</span>'
+          +'<div>'
+            +'<div class="wbar-temp">'+(tmp!==null?tmp+'°':'--')+'</div>'
+            +'<div class="wbar-desc">'+(feel!==null?'체감 '+feel+'° · ':'')+hum+'%</div>'
+          +'</div>'
         +'</div>'
-      +'</div>'
-      +'<div class="wbar-right">'
         +'<div class="wbar-clock">'
           +'<div class="wbar-time" id="wbar-time">--:--</div>'
           +'<div class="wbar-date" id="wbar-date"></div>'
         +'</div>'
-        +tmrH
       +'</div>'
-    +'</div>'
-    +(subItems?'<div class="wbar-sub">'+subItems+'</div>':'');
+    +'</div>';
+
+  // 슬라이드 2: 내일 + 옷차림
+  var s2=
+    '<div class="wbar-slide">'
+      +'<div class="wbar-row">'
+        +(tmr
+          ?'<div class="wbar-tmr-big">'
+            +'<span class="wbar-tmr-ico-big">'+tmr.ico+'</span>'
+            +'<div class="wbar-tmr-info">'
+              +'<div class="wbar-tmr-label">내일 날씨</div>'
+              +'<div class="wbar-tmr-temps"><span style="color:#e85d5d">'+tmr.max+'°</span><span style="color:var(--muted);font-weight:400;font-size:16px"> / </span><span style="color:#5b9cf6">'+tmr.min+'°</span></div>'
+              +(tmr.rain?'<div class="wbar-tmr-rain-big">💧 강수확률 '+tmr.rain+'%</div>':'')
+            +'</div>'
+          +'</div>'
+          :'<div style="color:var(--muted);font-size:13px">내일 날씨 정보 없음</div>'
+        )
+        +(outfit
+          ?'<div style="text-align:right">'
+            +'<div style="font-size:24px">'+outfit.ico+'</div>'
+            +'<div style="font-size:11px;color:var(--muted);margin-top:3px;max-width:90px;text-align:right">'+outfit.txt+'</div>'
+          +'</div>'
+          :'')
+      +'</div>'
+    +'</div>';
+
+  // 슬라이드 3: 상세
+  var details=[
+    wind!==null?{ico:'💨',val:wind+'m/s',lbl:'바람'}:null,
+    uv!==null?{ico:'☀️',val:uvGrade(uv),lbl:'자외선'}:null,
+    pm10g?{ico:pm10g.i,val:pm10g.l,lbl:'미세먼지'}:null,
+    pm25g?{ico:pm25g.i,val:pm25g.l,lbl:'초미세'}:null,
+    hum!==null?{ico:'💧',val:hum+'%',lbl:'습도'}:null,
+  ].filter(Boolean);
+
+  var s3=
+    '<div class="wbar-slide">'
+      +'<div class="wbar-detail">'
+        +details.map(function(d){
+          return'<div class="wdi"><div class="wdi-ico">'+d.ico+'</div><div class="wdi-val">'+d.val+'</div><div class="wdi-lbl">'+d.lbl+'</div></div>';
+        }).join('')
+      +'</div>'
+    +'</div>';
+
+  var dots='<div class="wbar-dots">'
+    +'<div class="wbar-dot'+(wbarSlide===0?' on':'')+'"></div>'
+    +'<div class="wbar-dot'+(wbarSlide===1?' on':'')+'"></div>'
+    +'<div class="wbar-dot'+(wbarSlide===2?' on':'')+'"></div>'
+    +'</div>';
+
+  g('wbar').innerHTML=
+    '<div class="wbar-slides" id="wbar-slides" style="transform:translateX(-'+wbarSlide*100+'%)">'+s1+s2+s3+'</div>'
+    +dots;
+
+  // 스와이프 이벤트
+  initWbarSwipe();
   startClock();
+}
+
+function initWbarSwipe(){
+  var el=g('wbar');
+  var startX=0,startY=0,moved=false;
+  el.ontouchstart=function(e){startX=e.touches[0].clientX;startY=e.touches[0].clientY;moved=false;};
+  el.ontouchmove=function(e){
+    var dx=e.touches[0].clientX-startX;
+    var dy=e.touches[0].clientY-startY;
+    if(Math.abs(dx)>Math.abs(dy))e.preventDefault();
+  };
+  el.ontouchend=function(e){
+    var dx=e.changedTouches[0].clientX-startX;
+    if(Math.abs(dx)>40){
+      if(dx<0&&wbarSlide<2)wbarSlide++;
+      else if(dx>0&&wbarSlide>0)wbarSlide--;
+      var slides=g('wbar-slides');
+      if(slides)slides.style.transform='translateX(-'+wbarSlide*100+'%)';
+      var dots=el.querySelectorAll('.wbar-dot');
+      dots.forEach(function(d,i){d.classList.toggle('on',i===wbarSlide);});
+    }
+  };
+  // 마우스 드래그도 지원
+  var mStart=0,mDragging=false;
+  el.onmousedown=function(e){mStart=e.clientX;mDragging=true;};
+  el.onmouseup=function(e){
+    if(!mDragging)return;mDragging=false;
+    var dx=e.clientX-mStart;
+    if(Math.abs(dx)>40){
+      if(dx<0&&wbarSlide<2)wbarSlide++;
+      else if(dx>0&&wbarSlide>0)wbarSlide--;
+      var slides=g('wbar-slides');
+      if(slides)slides.style.transform='translateX(-'+wbarSlide*100+'%)';
+      var dots=el.querySelectorAll('.wbar-dot');
+      dots.forEach(function(d,i){d.classList.toggle('on',i===wbarSlide);});
+    }
+  };
 }
 
 function wIcon(c){
