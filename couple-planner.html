@@ -1605,7 +1605,6 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
   var pm25g=pm25!==null?pmGrade(pm25,'pm25'):null;
   var outfit=outfitGuide(feel!==null&&feel!==undefined?feel:tmp);
   var subItems=[
-    outfit?'<div class="wsi wsi-outfit"><span class="wsi-ico">'+outfit.ico+'</span>'+outfit.txt+'</div>':'',
     wind?'<div class="wsi"><span class="wsi-ico">💨</span>'+wind+'m/s</div>':'',
     uv!==null?'<div class="wsi"><span class="wsi-ico">☀️</span>자외선 '+uvGrade(uv)+'</div>':'',
     pm10g?'<div class="wsi"><span class="wsi-ico">'+pm10g.i+'</span>미세 '+pm10g.l+'</div>':'',
@@ -1620,7 +1619,8 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
       +'</div>'
     :'';
   g('wbar').innerHTML=
-    '<div class="wbar-top">'
+    +(outfit?'<div class="wbar-sub" style="margin-bottom:8px"><div class="wsi wsi-outfit"><span class="wsi-ico">'+outfit.ico+'</span>'+outfit.txt+'</div></div>':'')
+    +'<div class="wbar-top">'
       +'<div class="wbar-main">'
         +'<span class="wbar-ico">'+ico+'</span>'
         +'<div>'
