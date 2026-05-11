@@ -1619,13 +1619,12 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
       +'</div>'
     :'';
   g('wbar').innerHTML=
-    +(outfit?'<div class="wbar-sub" style="margin-bottom:8px"><div class="wsi wsi-outfit"><span class="wsi-ico">'+outfit.ico+'</span>'+outfit.txt+'</div></div>':'')
-    +'<div class="wbar-top">'
+    '<div class="wbar-top">'
       +'<div class="wbar-main">'
         +'<span class="wbar-ico">'+ico+'</span>'
         +'<div>'
           +'<div class="wbar-temp">'+(tmp!==null?tmp+'°':'--')+'</div>'
-          +'<div class="wbar-desc">'+(feel&&feel!=='--'?'체감 '+feel+'° · ':'')+hum+'%</div>'
+          +'<div class="wbar-desc">'+(feel&&feel!=='--'?'체감 '+feel+'° · ':'')+hum+'%'+(outfit?' · '+outfit.ico+' '+outfit.txt:'')+'</div>'
         +'</div>'
       +'</div>'
       +'<div class="wbar-right">'
