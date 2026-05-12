@@ -278,11 +278,12 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .park-btn.on{background:var(--rose);color:#fff;border-color:var(--rose)}
 .park-tag{font-size:12px;font-weight:500;display:inline-block}
 .park-가능{color:#1e7d45}.park-유료{color:#854F0B}.park-불가{color:#a32d2d}
-.map-filter-bar{display:flex;gap:6px;flex-wrap:wrap;padding:10px 0 8px;align-items:center}
-.map-fbtn{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:'Pretendard',sans-serif;color:var(--txt);transition:.15s}
+.map-filter-bar{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding:10px 0 8px;align-items:center;scrollbar-width:none}
+.map-filter-bar::-webkit-scrollbar{display:none}
+.map-fbtn{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:'Pretendard',sans-serif;color:var(--txt);transition:.15s;flex-shrink:0;white-space:nowrap}
 .map-fbtn.on{background:var(--rose);color:#fff;border-color:var(--rose)}
 .map-fbar-div{flex:1}
-.map-my-loc{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:12px;cursor:pointer;font-family:'Pretendard',sans-serif;white-space:nowrap}
+.map-my-loc{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:12px;cursor:pointer;font-family:'Pretendard',sans-serif;white-space:nowrap;flex-shrink:0}
 .map-iw{min-width:180px;max-width:240px;padding:10px 12px;font-family:'Pretendard',sans-serif}
 .map-iw-name{font-size:14px;font-weight:600;color:#222;margin-bottom:4px}
 .map-iw-sub{font-size:12px;color:#666;margin-bottom:3px}
@@ -1634,21 +1635,20 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
   var s2='<div class="wbar-slide">'
     +'<div class="wbar-row1">'
       +(tmr
-        ?'<div class="wbar-tmr-main">'
+        ?'<div style="display:flex;align-items:center;gap:10px">'
           +'<span class="wbar-tmr-ico">'+tmr.ico+'</span>'
           +'<div>'
             +'<div class="wbar-tmr-temp"><span class="tmr-max">'+tmr.max+'°</span><span class="tmr-sep"> / </span><span class="tmr-min">'+tmr.min+'°</span></div>'
-            +'<div class="wbar-tmr-sub">내일'+(tmr.rain?' · 💧'+tmr.rain+'%':'')+'</div>'
+            +'<div class="wbar-desc">내일'+(tmr.rain?' · 💧'+tmr.rain+'%':'')+'</div>'
+            +(outfit?'<div class="wbar-desc" style="margin-top:2px">'+outfit.ico+' '+outfit.txt+'</div>':'')
           +'</div>'
         +'</div>'
         :'<div class="wbar-desc">내일 날씨 없음</div>'
       )
-      +(outfit
-        ?'<div class="wbar-tmr-right">'
-          +'<div class="wbar-tmr-outfit">'+outfit.ico+'</div>'
-          +'<div class="wbar-tmr-outfit-txt">'+outfit.txt+'</div>'
-        +'</div>'
-        :'')
+      +'<div class="wbar-clock">'
+        +'<div class="wbar-time">내일</div>'
+        +'<div class="wbar-date" id="wbar-date2"></div>'
+      +'</div>'
     +'</div>'
     +subRow
     +'</div>';
@@ -1728,13 +1728,16 @@ function startClock(){
   function tick(){
     var now=new Date();
     var h=now.getHours(),m=now.getMinutes();
-    var ampm=h<12?'AM':'PM';
-    var h12=h%12||12;
     var days=['일','월','화','수','목','금','토'];
     var mo=now.getMonth()+1,d=now.getDate(),day=days[now.getDay()];
-    var te=g('wbar-time'),de=g('wbar-date');
-    if(te)te.innerHTML='<span style="font-size:11px;opacity:.7;margin-right:3px">'+ampm+'</span>'+String(h12).padStart(2,'0')+':'+String(m).padStart(2,'0');
+    var te=g('wbar-time'),de=g('wbar-date'),de2=g('wbar-date2');
+    if(te)te.textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
     if(de)de.textContent=mo+'월 '+d+'일 ('+day+')';
+    // 내일 날짜
+    if(de2){
+      var tmr=new Date(now);tmr.setDate(tmr.getDate()+1);
+      de2.textContent=(tmr.getMonth()+1)+'월 '+tmr.getDate()+'일 ('+days[tmr.getDay()]+')';
+    }
   }
   tick();
   clockTimer=setInterval(tick,1000);
