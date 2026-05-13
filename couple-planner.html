@@ -425,7 +425,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
       <div class="map-fbar-div"></div>
       <button class="map-my-loc" onclick="moveToMyLoc()">📍 내 위치</button>
     </div>
-    <div id="kakao-map" style="width:100%;height:calc(100vh - 200px);border-radius:12px;overflow:hidden;background:#f3f3f3;"></div>
+    <div id="kakao-map" style="width:100%;height:calc(100vh - var(--top-h, 260px));border-radius:0;overflow:hidden;background:#f3f3f3;"></div>
     <div id="map-empty" style="display:none;text-align:center;padding:40px 0;color:var(--muted)">
       <div style="font-size:32px;margin-bottom:8px">📍</div>
       <div style="font-size:14px">주소가 등록된 장소가 없어요</div>
@@ -2280,6 +2280,21 @@ function placeMyLocMarker(){
 }
 
 function initMap(){
+  // 지도 높이 동적 계산 (상단 요소들 높이 합산)
+  function setMapHeight(){
+    var wbar=g('wbar'),hbar=g('home-route-bar'),hdr=document.querySelector('.hdr'),nav=document.querySelector('.nav');
+    var total=0;
+    if(wbar)total+=wbar.offsetHeight;
+    if(hbar&&hbar.style.display!=='none')total+=hbar.offsetHeight;
+    if(hdr)total+=hdr.offsetHeight;
+    if(nav)total+=nav.offsetHeight;
+    // 필터바 높이
+    var fbar=g('map-fbar');
+    if(fbar)total+=fbar.offsetHeight;
+    total+=8; // 여유
+    document.documentElement.style.setProperty('--top-h', total+'px');
+  }
+  setMapHeight();
   loadKakaoSdk(function(){
     var container=g('kakao-map');
     if(!container)return;
