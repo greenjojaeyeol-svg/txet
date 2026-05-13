@@ -1618,13 +1618,14 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
   ].filter(Boolean).join('');
 
   g('wbar').innerHTML=
-    // 상단: 오늘 날씨 + 시계
+    // 1행: 날씨아이콘+기온+옷차림 / 시계
     '<div class="wbar-main-row">'
-      +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<div class="wbar-left">'
         +'<span class="wbar-ico">'+ico+'</span>'
-        +'<div>'
+        +'<div class="wbar-info">'
           +'<div class="wbar-temp">'+(tmp!==null?tmp+'°':'--')+'</div>'
           +'<div class="wbar-desc">'+(feel!==null?'체감 '+feel+'° · ':'')+' 습도 '+hum+'%</div>'
+          +(outfit?'<div class="wbar-outfit-inline">'+outfit.ico+' <span>'+outfit.txt+'</span></div>':'')
         +'</div>'
       +'</div>'
       +'<div class="wbar-clock">'
@@ -1632,57 +1633,24 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
         +'<div class="wbar-date" id="wbar-date"></div>'
       +'</div>'
     +'</div>'
-    // 옷차림
-    +(outfit
-      ?'<div class="wbar-outfit-row">'+outfit.ico+' <span>'+outfit.txt+'</span></div>'
-      :'')
-    // 내일 날씨 구분선 + 한 줄
-    +(tmrRow
-      ?'<div class="wbar-divider"></div>'+tmrRow
-      :'')
-    // 하단 상세
-    +(badges
-      ?'<div class="wbar-divider"></div><div class="wbar-badges">'+badges+'</div>'
-      :'');
-
+    // 2행: 내일날씨 + 구분 + 상세뱃지 (가로스크롤)
+    +'<div class="wbar-bottom-row">'
+      +(tmr
+        ?'<span class="wbar-tmr-lbl">내일</span>'
+          +'<span class="wbar-tmr-ico2">'+tmr.ico+'</span>'
+          +'<span class="wbar-tmr-range"><span class="tmr-max">'+tmr.max+'°</span><span class="tmr-sep">/</span><span class="tmr-min">'+tmr.min+'°</span></span>'
+          +(tmr.rain?'<span class="wbar-tmr-rain2">강수 '+tmr.rain+'%</span>':'')
+          +'<span class="wbar-sep"></span>'
+        :'')
+      +(wind!==null?'<span class="wsi">💨 '+wind+'m/s</span>':'')
+      +(uv!==null?'<span class="wsi">☀️ '+uvGrade(uv)+'</span>':'')
+      +(pm10g?'<span class="wsi">'+pm10g.i+' 미세 '+pm10g.l+'</span>':'')
+      +(pm25g?'<span class="wsi">'+pm25g.i+' 초미세 '+pm25g.l+'</span>':'')
+    +'</div>';
   startClock();
 }
 
-function initWbarSwipe(){
-  var el=g('wbar');
-  if(!el)return;
-  el.ontouchstart=function(e){el._sx=e.touches[0].clientX;el._sy=e.touches[0].clientY;el._lock=null;};
-  el.ontouchmove=function(e){
-    var dx=Math.abs(e.touches[0].clientX-el._sx);
-    var dy=Math.abs(e.touches[0].clientY-el._sy);
-    if(el._lock===null)el._lock=dx>dy?'h':'v';
-    if(el._lock==='h')e.preventDefault();
-  };
-  el.ontouchend=function(e){
-    if(el._lock!=='h')return;
-    var dx=e.changedTouches[0].clientX-el._sx;
-    if(dx<-40&&wbarSlide<1)wbarSlide++;
-    else if(dx>40&&wbarSlide>0)wbarSlide--;
-    else return;
-    _updateWbarSlide();
-  };
-  var msx=0,md=false;
-  el.onmousedown=function(e){msx=e.clientX;md=true;};
-  el.onmouseup=function(e){
-    if(!md)return;md=false;
-    var dx=e.clientX-msx;
-    if(dx<-40&&wbarSlide<1)wbarSlide++;
-    else if(dx>40&&wbarSlide>0)wbarSlide--;
-    else return;
-    _updateWbarSlide();
-  };
-}
-function _updateWbarSlide(){
-  var s=g('wbar-slides');
-  if(s)s.style.transform='translateX(-'+wbarSlide*100+'%)';
-  var el=g('wbar');
-  if(el)el.querySelectorAll('.wbar-dot').forEach(function(d,i){d.classList.toggle('on',i===wbarSlide);});
-}
+function initWbarSwipe(){}
 
 function wIcon(c){
   if(c===0)return'☀️';if(c<=2)return'⛅';if(c<=3)return'☁️';
