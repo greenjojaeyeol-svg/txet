@@ -37,32 +37,26 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 #scr-app{display:none;max-width:700px;margin:0 auto;padding-bottom:80px}
 
 /* 날씨바 */
-.wbar{background:#fff;border-bottom:1px solid var(--border);overflow:hidden}
-.wbar-slides{display:flex;transition:transform .3s cubic-bezier(.4,0,.2,1);will-change:transform}
-.wbar-slide{min-width:100%;padding:12px 16px 8px;box-sizing:border-box}
-.wbar-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.wbar{background:#fff;border-bottom:1px solid var(--border);padding:12px 16px 10px}
+.wbar-main-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
 .wbar-ico{font-size:30px;line-height:1}
 .wbar-temp{font-size:26px;font-weight:700;color:var(--ink);letter-spacing:-1px;line-height:1}
 .wbar-desc{font-size:10px;color:var(--muted);margin-top:2px}
 .wbar-clock{text-align:right}
 .wbar-time{font-size:20px;font-weight:700;color:var(--ink);letter-spacing:1px;line-height:1}
 .wbar-date{font-size:10px;color:var(--muted);margin-top:2px}
-.wbar-row2{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;margin-top:4px}
-.wbar-row2::-webkit-scrollbar{display:none}
+.wbar-outfit-row{font-size:11px;color:var(--muted);margin-bottom:5px}
+.wbar-outfit-row span{color:var(--ink);font-weight:500}
+.wbar-divider{height:1px;background:var(--border);margin:5px 0}
+.wbar-tmr-row{display:flex;align-items:center;gap:8px;padding:2px 0}
+.wbar-tmr-lbl{font-size:11px;font-weight:600;color:var(--muted);flex-shrink:0}
+.wbar-tmr-ico2{font-size:15px;line-height:1}
+.wbar-tmr-range{font-size:13px;font-weight:600}
+.tmr-max{color:#e85d5d}.tmr-sep{color:var(--muted);margin:0 1px;font-weight:400}.tmr-min{color:#5b9cf6}
+.wbar-tmr-rain2{font-size:10px;color:var(--muted)}
+.wbar-badges{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
+.wbar-badges::-webkit-scrollbar{display:none}
 .wsi{display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);background:var(--sand);padding:3px 8px;border-radius:20px;font-weight:500;flex-shrink:0;white-space:nowrap}
-.wsi-ico{font-size:11px}
-.wbar-tmr-main{display:flex;align-items:center;gap:10px}
-.wbar-tmr-ico{font-size:30px;line-height:1}
-.wbar-tmr-temp{font-size:22px;font-weight:700;line-height:1}
-.tmr-max{color:#e85d5d}.tmr-sep{color:var(--muted);font-weight:400;font-size:16px}.tmr-min{color:#5b9cf6}
-.wbar-tmr-sub{font-size:10px;color:var(--muted);margin-top:3px}
-.wbar-tmr-right{text-align:right}
-.wbar-tmr-outfit{font-size:22px;line-height:1}
-.wbar-tmr-outfit-txt{font-size:10px;color:var(--muted);margin-top:3px}
-.wbar-dots{display:flex;justify-content:center;gap:5px;padding:4px 0 6px}
-.wbar-dot{width:5px;height:5px;border-radius:50%;background:var(--border);transition:.2s}
-.wbar-dot.on{background:var(--rose);width:14px;border-radius:4px}
-.wbar-src{display:none}
 
 /* 헤더 */
 .hdr{background:#fff;border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between}
@@ -1604,23 +1598,32 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
   var pm25g=pm25!==null?pmGrade(pm25,'pm25'):null;
   var outfit=outfitGuide(feel!==null&&feel!==undefined?feel:tmp);
 
-  // 공통 하단 뱃지
-  var subRow='<div class="wbar-row2">'
-    +(wind!==null?'<div class="wsi"><span class="wsi-ico">💨</span>'+wind+'m/s</div>':'')
-    +(uv!==null?'<div class="wsi"><span class="wsi-ico">☀️</span>자외선 '+uvGrade(uv)+'</div>':'')
-    +(pm10g?'<div class="wsi"><span class="wsi-ico">'+pm10g.i+'</span>미세 '+pm10g.l+'</div>':'')
-    +(pm25g?'<div class="wsi"><span class="wsi-ico">'+pm25g.i+'</span>초미세 '+pm25g.l+'</div>':'')
-    +'</div>';
+  // 내일 줄 — 강수확률 대신 날씨 아이콘으로 표현, 습도 형식
+  var tmrRow=tmr
+    ?'<div class="wbar-tmr-row">'
+      +'<span class="wbar-tmr-lbl">내일</span>'
+      +'<span class="wbar-tmr-ico2">'+tmr.ico+'</span>'
+      +'<span class="wbar-tmr-range"><span class="tmr-max">'+tmr.max+'°</span><span class="tmr-sep">/</span><span class="tmr-min">'+tmr.min+'°</span></span>'
+      +(tmr.rain?'<span class="wbar-tmr-rain2">강수 '+tmr.rain+'%</span>':'')
+      +'</div>'
+    :'';
 
-  // 1페이지 — 오늘
-  var s1='<div class="wbar-slide">'
-    +'<div class="wbar-row1">'
+  // 하단 상세 뱃지
+  var badges=[
+    wind!==null?'<span class="wsi">💨 '+wind+'m/s</span>':'',
+    uv!==null?'<span class="wsi">☀️ '+uvGrade(uv)+'</span>':'',
+    pm10g?'<span class="wsi">'+pm10g.i+' 미세 '+pm10g.l+'</span>':'',
+    pm25g?'<span class="wsi">'+pm25g.i+' 초미세 '+pm25g.l+'</span>':''
+  ].filter(Boolean).join('');
+
+  g('wbar').innerHTML=
+    // 상단: 오늘 날씨 + 시계
+    '<div class="wbar-main-row">'
       +'<div style="display:flex;align-items:center;gap:10px">'
         +'<span class="wbar-ico">'+ico+'</span>'
         +'<div>'
           +'<div class="wbar-temp">'+(tmp!==null?tmp+'°':'--')+'</div>'
-          +'<div class="wbar-desc">'+(feel!==null?'체감 '+feel+'°':'')+' · 습도 '+hum+'%</div>'
-          +(outfit?'<div class="wbar-desc" style="margin-top:2px">'+outfit.ico+' '+outfit.txt+'</div>':'')
+          +'<div class="wbar-desc">'+(feel!==null?'체감 '+feel+'° · ':'')+' 습도 '+hum+'%</div>'
         +'</div>'
       +'</div>'
       +'<div class="wbar-clock">'
@@ -1628,41 +1631,19 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
         +'<div class="wbar-date" id="wbar-date"></div>'
       +'</div>'
     +'</div>'
-    +subRow
-    +'</div>';
+    // 옷차림
+    +(outfit
+      ?'<div class="wbar-outfit-row">'+outfit.ico+' <span>'+outfit.txt+'</span></div>'
+      :'')
+    // 내일 날씨 구분선 + 한 줄
+    +(tmrRow
+      ?'<div class="wbar-divider"></div>'+tmrRow
+      :'')
+    // 하단 상세
+    +(badges
+      ?'<div class="wbar-divider"></div><div class="wbar-badges">'+badges+'</div>'
+      :'');
 
-  // 2페이지 — 내일
-  var s2='<div class="wbar-slide">'
-    +'<div class="wbar-row1">'
-      +(tmr
-        ?'<div style="display:flex;align-items:center;gap:10px">'
-          +'<span class="wbar-tmr-ico">'+tmr.ico+'</span>'
-          +'<div>'
-            +'<div class="wbar-tmr-temp"><span class="tmr-max">'+tmr.max+'°</span><span class="tmr-sep"> / </span><span class="tmr-min">'+tmr.min+'°</span></div>'
-            +'<div class="wbar-desc">내일'+(tmr.rain?' · 💧'+tmr.rain+'%':'')+'</div>'
-            +(outfit?'<div class="wbar-desc" style="margin-top:2px">'+outfit.ico+' '+outfit.txt+'</div>':'')
-          +'</div>'
-        +'</div>'
-        :'<div class="wbar-desc">내일 날씨 없음</div>'
-      )
-      +'<div class="wbar-clock">'
-        +'<div class="wbar-time">내일</div>'
-        +'<div class="wbar-date" id="wbar-date2"></div>'
-      +'</div>'
-    +'</div>'
-    +subRow
-    +'</div>';
-
-  g('wbar').innerHTML=
-    '<div class="wbar-slides" id="wbar-slides" style="transform:translateX(-'+wbarSlide*100+'%)">'
-      +s1+s2
-    +'</div>'
-    +'<div class="wbar-dots">'
-      +'<div class="wbar-dot'+(wbarSlide===0?' on':'')+'"></div>'
-      +'<div class="wbar-dot'+(wbarSlide===1?' on':'')+'"></div>'
-    +'</div>';
-
-  initWbarSwipe();
   startClock();
 }
 
