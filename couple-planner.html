@@ -53,6 +53,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .wbar-bottom-row::-webkit-scrollbar{display:none}
 .wbar-tmr-lbl{font-size:10px;font-weight:600;color:var(--muted);flex-shrink:0}
 .wbar-tmr-ico2{font-size:13px;line-height:1;flex-shrink:0}
+.wbar-tmr-chip{display:flex;align-items:center;gap:3px;margin-top:3px;justify-content:flex-end}
 .wbar-tmr-range{font-size:11px;font-weight:600;flex-shrink:0}
 .tmr-max{color:#e85d5d}.tmr-sep{color:var(--muted);margin:0 1px;font-weight:400}.tmr-min{color:#5b9cf6}
 .wbar-tmr-rain2{font-size:10px;color:var(--muted);flex-shrink:0}
@@ -1537,7 +1538,8 @@ function loadWeather(){
       });
     },800);
     fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo
-      +'&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature,uv_index'
+      +'&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature,uv_index,precipitation'
+      +'&hourly=precipitation_probability'
       +'&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
       +'&timezone=Asia%2FSeoul&forecast_days=2')
     .then(function(r){return r.json()})
@@ -1546,9 +1548,14 @@ function loadWeather(){
       var ico=wIcon(c.weathercode);
       var tmp=Math.round(c.temperature_2m);
       var feel=Math.round(c.apparent_temperature);
-      var hum=c.relativehumidity_2m;
       var uv=Math.round(c.uv_index||0);
       var wind=Math.round(c.windspeed_10m);
+      // 오늘 강수확률 (현재 시간 기준)
+      var rainNow=0;
+      if(d.hourly&&d.hourly.precipitation_probability){
+        var nowH=new Date().getHours();
+        rainNow=d.hourly.precipitation_probability[nowH]||0;
+      }
       // 내일 날씨
       var tmr=null;
       if(d.daily&&d.daily.time&&d.daily.time.length>1){
@@ -1564,11 +1571,11 @@ function loadWeather(){
       .then(function(aq){
         var pm10=Math.round((aq.current&&aq.current.pm10)||0);
         var pm25=Math.round((aq.current&&aq.current.pm2_5)||0);
-        setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,'openmeteo',tmr);
-        try{localStorage.setItem('weather_cache',JSON.stringify({ico:ico,tmp:tmp,feel:feel,hum:hum,pm10:pm10,pm25:pm25,uv:uv,wind:wind,tmr:tmr,ts:Date.now()}))}catch(e){}
+        setWbar(ico,tmp,feel,rainNow,pm10,pm25,uv,wind,'openmeteo',tmr);
+        try{localStorage.setItem('weather_cache',JSON.stringify({ico:ico,tmp:tmp,feel:feel,hum:rainNow,pm10:pm10,pm25:pm25,uv:uv,wind:wind,tmr:tmr,ts:Date.now()}))}catch(e){}
       }).catch(function(){
-        setWbar(ico,tmp,feel,hum,null,null,uv,wind,'openmeteo',tmr);
-        try{localStorage.setItem('weather_cache',JSON.stringify({ico:ico,tmp:tmp,feel:feel,hum:hum,pm10:null,pm25:null,uv:uv,wind:wind,tmr:tmr,ts:Date.now()}))}catch(e){}
+        setWbar(ico,tmp,feel,rainNow,null,null,uv,wind,'openmeteo',tmr);
+        try{localStorage.setItem('weather_cache',JSON.stringify({ico:ico,tmp:tmp,feel:feel,hum:rainNow,pm10:null,pm25:null,uv:uv,wind:wind,tmr:tmr,ts:Date.now()}))}catch(e){}
       });
     }).catch(function(){
       if(!localStorage.getItem('weather_cache'))
@@ -1599,49 +1606,29 @@ function setWbar(ico,tmp,feel,hum,pm10,pm25,uv,wind,src,tmr){
   var pm25g=pm25!==null?pmGrade(pm25,'pm25'):null;
   var outfit=outfitGuide(feel!==null&&feel!==undefined?feel:tmp);
 
-  // 내일 줄 — 강수확률 대신 날씨 아이콘으로 표현, 습도 형식
-  var tmrRow=tmr
-    ?'<div class="wbar-tmr-row">'
-      +'<span class="wbar-tmr-lbl">내일</span>'
-      +'<span class="wbar-tmr-ico2">'+tmr.ico+'</span>'
-      +'<span class="wbar-tmr-range"><span class="tmr-max">'+tmr.max+'°</span><span class="tmr-sep">/</span><span class="tmr-min">'+tmr.min+'°</span></span>'
-      +(tmr.rain?'<span class="wbar-tmr-rain2">강수 '+tmr.rain+'%</span>':'')
-      +'</div>'
-    :'';
-
-  // 하단 상세 뱃지
-  var badges=[
-    wind!==null?'<span class="wsi">💨 '+wind+'m/s</span>':'',
-    uv!==null?'<span class="wsi">☀️ '+uvGrade(uv)+'</span>':'',
-    pm10g?'<span class="wsi">'+pm10g.i+' 미세 '+pm10g.l+'</span>':'',
-    pm25g?'<span class="wsi">'+pm25g.i+' 초미세 '+pm25g.l+'</span>':''
-  ].filter(Boolean).join('');
-
   g('wbar').innerHTML=
-    // 1행: 날씨아이콘+기온+옷차림 / 시계
     '<div class="wbar-main-row">'
       +'<div class="wbar-left">'
         +'<span class="wbar-ico">'+ico+'</span>'
         +'<div class="wbar-info">'
           +'<div class="wbar-temp">'+(tmp!==null?tmp+'°':'--')+'</div>'
-          +'<div class="wbar-desc">'+(feel!==null?'체감 '+feel+'° · ':'')+' 습도 '+hum+'%</div>'
+          +'<div class="wbar-desc">'+(feel!==null?'체감 '+feel+'°':'')+(hum?'  ·  강수 '+hum+'%':'')+'</div>'
           +(outfit?'<div class="wbar-outfit-inline">'+outfit.ico+' <span>'+outfit.txt+'</span></div>':'')
         +'</div>'
       +'</div>'
       +'<div class="wbar-clock">'
         +'<div class="wbar-time" id="wbar-time">--:--</div>'
         +'<div class="wbar-date" id="wbar-date"></div>'
+        +(tmr
+          ?'<div class="wbar-tmr-chip">'
+            +'<span class="wbar-tmr-lbl">내일</span> '
+            +'<span class="wbar-tmr-ico2">'+tmr.ico+'</span> '
+            +'<span class="wbar-tmr-range"><span class="tmr-max">'+tmr.max+'°</span><span class="tmr-sep">/</span><span class="tmr-min">'+tmr.min+'°</span></span>'
+          +'</div>'
+          :'')
       +'</div>'
     +'</div>'
-    // 2행: 내일날씨 + 구분 + 상세뱃지 (가로스크롤)
     +'<div class="wbar-bottom-row">'
-      +(tmr
-        ?'<span class="wbar-tmr-lbl">내일</span>'
-          +'<span class="wbar-tmr-ico2">'+tmr.ico+'</span>'
-          +'<span class="wbar-tmr-range"><span class="tmr-max">'+tmr.max+'°</span><span class="tmr-sep">/</span><span class="tmr-min">'+tmr.min+'°</span></span>'
-          +(tmr.rain?'<span class="wbar-tmr-rain2">강수 '+tmr.rain+'%</span>':'')
-          +'<span class="wbar-sep"></span>'
-        :'')
       +(wind!==null?'<span class="wsi">💨 '+wind+'m/s</span>':'')
       +(uv!==null?'<span class="wsi">☀️ '+uvGrade(uv)+'</span>':'')
       +(pm10g?'<span class="wsi">'+pm10g.i+' 미세 '+pm10g.l+'</span>':'')
