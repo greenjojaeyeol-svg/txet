@@ -149,7 +149,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .cat-edit-btn{font-size:12px;margin-left:4px;opacity:.6;vertical-align:middle}
 .chk-cattab.cat-dragging{opacity:.45;transform:scale(.95)}
 .chk-cattab.cat-drag-over{border-color:var(--rose)!important;transform:scale(1.06);box-shadow:0 0 0 2px var(--rose)}
-.chk-cat-lbl{font-size:11px;color:var(--muted);margin-left:2px}
+.chk-time-badge{display:inline-flex;align-items:center;font-size:10px;color:var(--rose);font-weight:600;margin-left:5px;background:var(--blush);padding:1px 6px;border-radius:10px;vertical-align:middle}
 .chki{display:flex;align-items:center;gap:11px;padding:12px 13px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;user-select:none}
 .chki.dragging{opacity:.5;box-shadow:0 6px 20px rgba(0,0,0,.15)}
 .chki.drag-over{border:2px dashed var(--rose);background:var(--blush)}
@@ -461,6 +461,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
     <div class="chk-addbar">
       <input type="text" id="chk-inp" placeholder="할 일 입력…" onkeydown="if(event.key==='Enter')addCheck()">
       <input type="date" id="chk-date">
+      <input type="text" id="chk-time" inputmode="numeric" placeholder="시간" maxlength="5" onblur="fmtTimeInput(this)" style="width:70px;padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:12px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;text-align:center">
       <button onclick="addCheck()">추가</button>
     </div>
     <div id="lst-checklist"><div class="loading">불러오는 중…</div></div>
@@ -1239,6 +1240,8 @@ function renderChk(){
   items.sort(function(a,b){
     var ad=a[1].date||'9999-99-99',bd=b[1].date||'9999-99-99';
     if(ad!==bd)return ad.localeCompare(bd);
+    var at=a[1].time||'99:99',bt=b[1].time||'99:99';
+    if(at!==bt)return at.localeCompare(bt);
     return(a[1].order||0)-(b[1].order||0);
   });
   var groups={};
@@ -1274,7 +1277,11 @@ function renderChk(){
         +'<span class="chk-handle" onclick="event.stopPropagation()">⠿</span>'
         +dot
         +'<div class="chk-c"><span class="chk-ck">✓</span></div>'
-        +'<div class="chk-lbl" id="chklbl-'+k+'">'+esc(v.text||'')+catLbl+'</div>'
+        +'<div class="chk-lbl" id="chklbl-'+k+'">'
+        +esc(v.text||'')
+        +(v.time?'<span class="chk-time-badge">🕐 '+v.time+'</span>':'')
+        +catLbl
+      +'</div>'
         +'<button class="chk-edit" onclick="event.stopPropagation();startEditChk(\''+k+'\')">✏️</button>'
         +'<button class="chk-del" onclick="event.stopPropagation();delChk(\''+k+'\')">×</button>'
         +'</div>';
@@ -1330,9 +1337,10 @@ async function chkTouchEnd(e){
 async function addCheck(){
   var inp=g('chk-inp'),text=inp.value.trim();if(!text)return;
   var date=(g('chk-date')||{}).value||'';
+  var time=(g('chk-time')||{}).value||'';
   var cat=(g('chk-cat-sel')||{}).value||'';
-  await fb().set(rr('checklist/'+uid()),{text:text,done:false,date:date,cat:cat,ts:Date.now()});
-  inp.value='';
+  await fb().set(rr('checklist/'+uid()),{text:text,done:false,date:date,time:time,cat:cat,ts:Date.now()});
+  inp.value='';if(g('chk-time'))g('chk-time').value='';
 }
 async function toggleChk(k){var c=(DB.checklist[k]||{}).done||false;await fb().update(rr('checklist/'+k),{done:!c})}
 async function delChk(k){await fb().remove(rr('checklist/'+k))}
@@ -1350,6 +1358,9 @@ function startEditChk(k){
     +'</div>'
     +'<div class="fg"><label>날짜</label>'
     +'<input type="date" id="chkedit-date-'+k+'" value="'+(item.date||'')+'" onclick="event.stopPropagation()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:\'Pretendard\',sans-serif;outline:none;box-sizing:border-box">'
+    +'</div>'
+    +'<div class="fg"><label>시간</label>'
+    +'<input type="text" id="chkedit-time-'+k+'" value="'+(item.time||'')+'" inputmode="numeric" placeholder="예: 1430" maxlength="5" onblur="fmtTimeInput(this)" onclick="event.stopPropagation()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:\'Pretendard\',sans-serif;outline:none;box-sizing:border-box">'
     +'</div>'
     +(cats.length?
       '<div class="fg"><label>카테고리</label>'
@@ -1375,6 +1386,7 @@ async function saveEditChk(k){
   await fb().update(rr('checklist/'+k),{
     text:val,
     date:dateEl?dateEl.value:'',
+    time:(g('chkedit-time-'+k)||{}).value||'',
     cat:catEl?catEl.value:''
   });
   // 저장 버튼 원래대로 복원
