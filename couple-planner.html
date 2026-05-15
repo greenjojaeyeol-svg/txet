@@ -132,15 +132,16 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 
 /* 체크 */
 /* 체크리스트 */
-.chk-catbar{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0 4px;align-items:center}
+.chk-catbar{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding:8px 0 4px;align-items:center;scrollbar-width:none}
+.chk-catbar::-webkit-scrollbar{display:none}
 .chk-cattab{padding:5px 13px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:'Pretendard',sans-serif;transition:.15s;white-space:nowrap}
 .chk-cattab.on{background:var(--rose);color:#fff;border-color:var(--rose)}
 .chk-cattab.add{background:none;border-style:dashed;color:var(--muted)}
-.chk-addbar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.chk-addbar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:nowrap;align-items:center}
 .chk-addbar input[type=text]{flex:1;min-width:120px;padding:10px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;transition:.2s}
 .chk-addbar input[type=text]:focus{border-color:var(--rose);background:#fff}
-.chk-addbar input[type=date]{padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:12px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;width:130px}
-.chk-addbar button{padding:10px 14px;background:var(--rose);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Pretendard',sans-serif}
+.chk-addbar input[type=date]{padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:12px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;width:108px;flex-shrink:0}
+.chk-addbar button{padding:10px 14px;background:var(--rose);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Pretendard',sans-serif;flex-shrink:0}
 .chk-date-group{margin-bottom:14px}
 .chk-date-hdr{font-size:12px;font-weight:600;color:var(--rose);margin:10px 0 6px;display:flex;align-items:center;gap:6px}
 .chk-date-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -149,7 +150,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .cat-edit-btn{font-size:12px;margin-left:4px;opacity:.6;vertical-align:middle}
 .chk-cattab.cat-dragging{opacity:.45;transform:scale(.95)}
 .chk-cattab.cat-drag-over{border-color:var(--rose)!important;transform:scale(1.06);box-shadow:0 0 0 2px var(--rose)}
-.chk-time-badge{display:inline-flex;align-items:center;font-size:10px;color:var(--rose);font-weight:600;margin-left:5px;background:var(--blush);padding:1px 6px;border-radius:10px;vertical-align:middle}
+.chk-time-badge{font-size:11px;color:var(--muted);font-weight:500;margin-right:5px}
+.chk-cat-name{font-size:11px;color:var(--muted);margin-left:6px;font-weight:400}
+.chk-cat-tag{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:6px;vertical-align:middle;flex-shrink:0}
 .chki{display:flex;align-items:center;gap:11px;padding:12px 13px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;user-select:none}
 .chki.dragging{opacity:.5;box-shadow:0 6px 20px rgba(0,0,0,.15)}
 .chki.drag-over{border:2px dashed var(--rose);background:var(--blush)}
@@ -455,15 +458,8 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
     <div id="lst-plans"><div class="loading">불러오는 중…</div></div>
   </div>
   <div class="pg" id="pg-checklist">
-    <!-- 카테고리 탭 -->
+    <button class="addbtn" onclick="openAddChk()">+ 할 일 추가</button>
     <div class="chk-catbar" id="chk-catbar"></div>
-    <!-- 추가 바 -->
-    <div class="chk-addbar">
-      <input type="text" id="chk-inp" placeholder="할 일 입력…" onkeydown="if(event.key==='Enter')addCheck()">
-      <input type="date" id="chk-date">
-      <input type="text" id="chk-time" inputmode="numeric" placeholder="시간" maxlength="5" onblur="fmtTimeInput(this)" style="width:70px;padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:12px;font-family:'Pretendard',sans-serif;background:var(--blush);color:var(--ink);outline:none;text-align:center">
-      <button onclick="addCheck()">추가</button>
-    </div>
     <div id="lst-checklist"><div class="loading">불러오는 중…</div></div>
   </div>
   <div class="pg" id="pg-settings">
@@ -1207,19 +1203,7 @@ async function delChkCat(key,name){
   closeModal();
   toast(name+' 카테고리 삭제됐어요');
 }
-function renderChkCatSelect(){
-  var old=g('chk-cat-sel');if(old)old.remove();
-  var cats=getChkCats().filter(function(c){return c!=='전체'});
-  if(!cats.length)return;
-  var sel=document.createElement('select');
-  sel.id='chk-cat-sel';
-  sel.style.cssText='padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:12px;font-family:"Pretendard",sans-serif;background:var(--blush);color:var(--ink);outline:none;max-width:100px';
-  sel.innerHTML='<option value="">카테고리</option>'+cats.map(function(c){return'<option value="'+esc(c)+'">'+esc(c)+'</option>'}).join('');
-  if(chkActiveCat!=='전체')sel.value=chkActiveCat;
-  var bar=document.querySelector('.chk-addbar');
-  var btn=bar&&bar.querySelector('button');
-  if(bar&&btn)bar.insertBefore(sel,btn);
-}
+function renderChkCatSelect(){} // addbar 제거로 불필요
 function setChkCat(name){chkActiveCat=name;renderChk();}
 async function addChkCat(){
   var name=prompt('카테고리 이름을 입력하세요');
@@ -1267,21 +1251,22 @@ function renderChk(){
     html+='<div class="chk-date-group"><div class="chk-date-hdr">'+label+'</div>';
     html+=groups[dk].map(function(kv){
       var k=kv[0],v=kv[1];
-      var dot=v.cat?'<span class="chk-cat-dot" style="background:'+getCatColor(v.cat)+';border-color:rgba(0,0,0,.1)"></span>':'';
-      var catLbl=v.cat?'<span class="chk-cat-lbl">'+esc(v.cat)+'</span>':'';
+      var catColor=v.cat?getCatColor(v.cat):'transparent';
+      var catDot='<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+catColor+';flex-shrink:0;margin-top:1px"></span>';
+      var catName=v.cat?'<span class="chk-cat-name">'+esc(v.cat)+'</span>':'';
       return'<div class="chki'+(v.done?' done':'')+'" id="chki-'+k+'" data-key="'+k+'"'
         +' draggable="true"'
         +' ondragstart="chkDragStart(event)" ondragover="chkDragOver(event)" ondrop="chkDrop(event)" ondragend="chkDragEnd(event)"'
         +' ontouchstart="chkTouchStart(event)" ontouchmove="chkTouchMove(event)" ontouchend="chkTouchEnd(event)"'
         +' onclick="toggleChk(\''+k+'\')">'
         +'<span class="chk-handle" onclick="event.stopPropagation()">⠿</span>'
-        +dot
+        +catDot
         +'<div class="chk-c"><span class="chk-ck">✓</span></div>'
         +'<div class="chk-lbl" id="chklbl-'+k+'">'
-        +esc(v.text||'')
-        +(v.time?'<span class="chk-time-badge">🕐 '+v.time+'</span>':'')
-        +catLbl
-      +'</div>'
+          +(v.time?'<span class="chk-time-badge">'+v.time+'</span>':'')
+          +esc(v.text||'')
+          +catName
+        +'</div>'
         +'<button class="chk-edit" onclick="event.stopPropagation();startEditChk(\''+k+'\')">✏️</button>'
         +'<button class="chk-del" onclick="event.stopPropagation();delChk(\''+k+'\')">×</button>'
         +'</div>';
@@ -1334,13 +1319,41 @@ async function chkTouchEnd(e){
   document.querySelectorAll('.chki.drag-over').forEach(function(el){el.classList.remove('drag-over')});
   chkTouchEl=null;
 }
+function openAddChk(){
+  var cats=getChkCats().filter(function(c){return c!=='전체'});
+  var catOpts=cats.map(function(c){
+    return'<option value="'+esc(c)+'">'+esc(c)+'</option>';
+  }).join('');
+  g('m-ttl').textContent='할 일 추가';
+  g('m-body').innerHTML=
+    '<div class="fg"><label>할 일 *</label><input type="text" id="chk-inp" placeholder="할 일을 입력하세요"></div>'
+    +'<div class="fg"><label>날짜</label><input type="date" id="chk-date"></div>'
+    +'<div class="fg"><label>시간</label><input type="text" id="chk-time" inputmode="numeric" placeholder="예: 1430" maxlength="5" onblur="fmtTimeInput(this)"></div>'
+    +(cats.length
+      ?'<div class="fg"><label>카테고리</label><select id="chk-cat-sel"><option value="">카테고리 없음</option>'+catOpts+'</select></div>'
+      :'');
+  // 활성 카테고리 미리 선택
+  var sel=g('chk-cat-sel');
+  if(sel&&chkActiveCat!=='전체')sel.value=chkActiveCat;
+  g('mbg').classList.add('on');
+  var saveBtn=document.querySelector('.msave');
+  saveBtn.onclick=function(){addCheck();};
+  setTimeout(function(){var t=g('chk-inp');if(t)t.focus();},100);
+}
+
 async function addCheck(){
-  var inp=g('chk-inp'),text=inp.value.trim();if(!text)return;
+  var inp=g('chk-inp');
+  if(!inp)return;
+  var text=inp.value.trim();
+  if(!text){toast('할 일을 입력해주세요');return;}
   var date=(g('chk-date')||{}).value||'';
   var time=(g('chk-time')||{}).value||'';
   var cat=(g('chk-cat-sel')||{}).value||'';
   await fb().set(rr('checklist/'+uid()),{text:text,done:false,date:date,time:time,cat:cat,ts:Date.now()});
-  inp.value='';if(g('chk-time'))g('chk-time').value='';
+  var saveBtn=document.querySelector('.msave');
+  if(saveBtn)saveBtn.onclick=saveModal;
+  closeModal();
+  toast('할 일 추가됐어요 ✓');
 }
 async function toggleChk(k){var c=(DB.checklist[k]||{}).done||false;await fb().update(rr('checklist/'+k),{done:!c})}
 async function delChk(k){await fb().remove(rr('checklist/'+k))}
