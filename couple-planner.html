@@ -164,8 +164,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .chki.done .chk-c{background:var(--rose);border-color:var(--rose)}
 .chk-ck{color:#fff;font-size:11px;font-weight:700;opacity:0}
 .chki.done .chk-ck{opacity:1}
-.chk-lbl{flex:1;font-size:14px}
-.chki.done .chk-lbl{text-decoration:line-through}
+.chk-lbl{flex:1;font-size:14px;display:flex;align-items:center;flex-wrap:wrap;gap:3px}
+.chki.done .chk-lbl{text-decoration:line-through;color:var(--muted)}
+.chki.done .chk-time-badge,.chki.done .chk-cat-name{text-decoration:none}
 .chk-del{background:none;border:none;color:var(--muted);font-size:19px;cursor:pointer;opacity:0;line-height:1;padding:0 2px}
 .chki:hover .chk-del{opacity:1}
 
@@ -452,7 +453,13 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
       </div>
       <div class="cal-grid" id="cal-grid"></div>
     </div>
-    <button class="addbtn" onclick="openAdd('plans')">+ 데이트 일정 추가</button>
+    <div id="cal-day-sheet" style="display:none;margin-top:8px;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="sec" style="margin:0;padding:0;border:none;font-size:13px" id="cal-sheet-title"></div>
+        <button onclick="closeCalSheet()" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:0 4px">×</button>
+      </div>
+      <div id="cal-sheet-body"></div>
+    </div>
     <div class="fbar" id="fb-plans"></div>
     <div class="sec">데이트 일정</div>
     <div id="lst-plans"><div class="loading">불러오는 중…</div></div>
@@ -802,7 +809,7 @@ var EMPTY_MSG={
 
 function render(cat){
   if(cat==='settings')return;
-  if(cat==='checklist'||cat==='chk_cats'){renderChk();return}
+  if(cat==='checklist'||cat==='chk_cats'){renderChk();renderCal();return}
   if(cat==='date_marks'||cat==='plans'){if(cat==='plans')renderFbar('plans');renderCal();}
   var el=g('lst-'+cat);if(!el)return;
   renderFbar(cat);
@@ -2446,9 +2453,12 @@ function renderCal(){
   var firstDay=new Date(calYear,calMonth,1).getDay();
   var lastDate=new Date(calYear,calMonth+1,0).getDate();
   var prevLast=new Date(calYear,calMonth,0).getDate();
-  // 일정 날짜
+  // 일정 날짜 (빨간 점)
   var planDates={};
   Object.values(DB.plans||{}).forEach(function(item){if(item.date)planDates[item.date]=(planDates[item.date]||0)+1;});
+  // 할일 날짜 (파란 점, 미완료만)
+  var chkDates={};
+  Object.values(DB.checklist||{}).forEach(function(item){if(item.date&&!item.done)chkDates[item.date]=(chkDates[item.date]||0)+1;});
   var marks=DB.date_marks||{};
   var html=['일','월','화','수','목','금','토'].map(function(d){return'<div class="cal-dow">'+d+'</div>'}).join('');
   // 이전달 빈칸
@@ -2464,8 +2474,13 @@ function renderCal(){
     var markedCls=mark?' marked':'';
     var markEmoji=mark==='red'?'❤️':mark?'🩷':'';
     var cls='cal-day'+(dow===0?' sun':dow===6?' sat':'')+(ds===todayStr?' today':'')+markedCls;
-    var dot=planDates[ds]?'<div class="cal-dot-wrap"><div class="cal-dot"></div></div>':'';
-    html+='<div class="'+cls+'" onclick="toggleMark(\''+ds+'\')" data-mark="'+( mark||'')+'">'
+    var dot=(planDates[ds]||chkDates[ds])
+      ?'<div class="cal-dot-wrap">'
+        +(planDates[ds]?'<div class="cal-dot"></div>':'')
+        +(chkDates[ds]?'<div class="cal-dot" style="background:#5b9cf6"></div>':'')
+      +'</div>'
+      :'';
+    html+='<div class="'+cls+'" onclick="calDayClick(\''+ds+'\')" data-mark="'+(mark||'')+'">'
       +'<span class="cal-num">'+d+'</span>'
       +(markEmoji?'<span class="cal-mark-ico">'+markEmoji+'</span>':'')
       +dot+'</div>';
@@ -2479,9 +2494,77 @@ function renderCal(){
 async function toggleMark(dateStr){
   var key=dateStr.replace(/-/g,'_');
   var cur=(DB.date_marks||{})[key];
-  if(!cur)await fb().set(rr('date_marks/'+key),'pink');        // 없음 → 🩷
-  else if(cur==='pink')await fb().set(rr('date_marks/'+key),'red'); // 🩷 → ❤️
-  else await fb().remove(rr('date_marks/'+key));               // ❤️ → 취소
+  if(!cur)await fb().set(rr('date_marks/'+key),'pink');
+  else if(cur==='pink')await fb().set(rr('date_marks/'+key),'red');
+  else await fb().remove(rr('date_marks/'+key));
+}
+
+async function calDayClick(dateStr){
+  await toggleMark(dateStr);
+  showCalSheet(dateStr);
+}
+
+function showCalSheet(dateStr){
+  var sheet=g('cal-day-sheet');
+  var title=g('cal-sheet-title');
+  var body=g('cal-sheet-body');
+  if(!sheet||!title||!body)return;
+
+  var dp=dateStr.split('-');
+  var now=new Date();
+  var todayStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var diff=Math.round((new Date(parseInt(dp[0]),parseInt(dp[1])-1,parseInt(dp[2]))-new Date(parseInt(todayStr.split('-')[0]),parseInt(todayStr.split('-')[1])-1,parseInt(todayStr.split('-')[2])))/(1000*60*60*24));
+  var dLabel=dp[1]+'월 '+parseInt(dp[2])+'일';
+  if(diff===0)dLabel+=' (오늘)';
+  else if(diff===1)dLabel+=' (내일)';
+  else if(diff===-1)dLabel+=' (어제)';
+  title.textContent=dLabel;
+
+  // 해당 날짜의 일정
+  var plans=Object.values(DB.plans||{}).filter(function(p){return p.date===dateStr});
+  // 해당 날짜의 할일
+  var chks=Object.values(DB.checklist||{}).filter(function(c){return c.date===dateStr});
+
+  if(!plans.length&&!chks.length){
+    body.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 0">이 날의 일정이나 할 일이 없어요</div>';
+    sheet.style.display='block';
+    sheet.scrollIntoView({behavior:'smooth',block:'nearest'});
+    return;
+  }
+
+  var html='';
+  if(plans.length){
+    html+='<div style="font-size:11px;font-weight:600;color:var(--rose);margin-bottom:6px">📅 데이트 일정</div>';
+    html+=plans.map(function(p){
+      return'<div style="font-size:13px;padding:6px 8px;background:var(--blush);border-radius:8px;margin-bottom:5px">'
+        +(p.category?'<span style="font-size:10px;color:var(--muted)">'+esc(p.category)+'</span><br>':'')
+        +'<strong>'+esc(p.name||'')+'</strong>'
+        +(p.memo?'<span style="font-size:11px;color:var(--muted)"> · '+esc(p.memo)+'</span>':'')
+        +'</div>';
+    }).join('');
+  }
+  if(chks.length){
+    html+='<div style="font-size:11px;font-weight:600;color:#5b9cf6;margin:'+(plans.length?'10px':0)+' 0 6px">✅ 할 일</div>';
+    html+=chks.sort(function(a,b){return(a.time||'').localeCompare(b.time||'')}).map(function(c){
+      var catColor=c.cat?getCatColor(c.cat):'#ccc';
+      return'<div style="font-size:13px;padding:6px 8px;background:var(--sand);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:6px">'
+        +'<span style="width:7px;height:7px;border-radius:50%;background:'+catColor+';flex-shrink:0;display:inline-block"></span>'
+        +(c.time?'<span style="font-size:11px;color:var(--muted);flex-shrink:0">'+c.time+'</span>':'')
+        +'<span style="'+(c.done?'text-decoration:line-through;color:var(--muted)':'')+'">'
+          +esc(c.text||'')
+          +(c.cat?'<span style="font-size:10px;color:var(--muted);margin-left:5px">'+esc(c.cat)+'</span>':'')
+        +'</span>'
+        +'</div>';
+    }).join('');
+  }
+  body.innerHTML=html;
+  sheet.style.display='block';
+  sheet.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function closeCalSheet(){
+  var sheet=g('cal-day-sheet');
+  if(sheet)sheet.style.display='none';
 }
 
 function onFbReady(){
