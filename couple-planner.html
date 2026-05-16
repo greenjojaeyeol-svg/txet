@@ -391,6 +391,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
     <button class="nb" onclick="goPage('cafes',this)"><span class="ni">☕</span>카페</button>
     <button class="nb" onclick="goPage('spots',this)"><span class="ni">🎡</span>명소</button>
     <button class="nb" onclick="goPage('map',this);initMap()"><span class="ni">📍</span>지도</button>
+    <button class="nb" onclick="goPage('calendar',this);renderCal()"><span class="ni">🗓️</span>캘린더</button>
     <button class="nb" onclick="goPage('plans',this)"><span class="ni">📅</span>일정</button>
     <button class="nb" onclick="goPage('checklist',this)"><span class="ni">✅</span>체크</button>
     <button class="nb" onclick="goPage('stats',this);renderStats()"><span class="ni">📊</span>통계</button>
@@ -444,7 +445,8 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
       <div class="stat"><div class="stat-n" id="sn-ca">0</div><div class="stat-l">☕ 카페</div></div>
       <div class="stat"><div class="stat-n" id="sn-s">0</div><div class="stat-l">🎡 명소</div></div>
     </div>
-    <!-- 캘린더 -->
+  <!-- 캘린더 페이지 -->
+  <div class="pg" id="pg-calendar">
     <div class="cal-wrap">
       <div class="cal-hdr">
         <button class="cal-nav" onclick="calMove(-1)">‹</button>
@@ -460,6 +462,8 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
       </div>
       <div id="cal-sheet-body"></div>
     </div>
+  </div>
+  <!-- 일정 페이지 (캘린더 제거) -->
     <div class="fbar" id="fb-plans"></div>
     <div class="sec">데이트 일정</div>
     <div id="lst-plans"><div class="loading">불러오는 중…</div></div>
@@ -2456,9 +2460,15 @@ function renderCal(){
   // 일정 날짜 (빨간 점)
   var planDates={};
   Object.values(DB.plans||{}).forEach(function(item){if(item.date)planDates[item.date]=(planDates[item.date]||0)+1;});
-  // 할일 날짜 (파란 점, 미완료만)
+  // 할일 날짜 — 카테고리별 색상 수집 (미완료만)
   var chkDates={};
-  Object.values(DB.checklist||{}).forEach(function(item){if(item.date&&!item.done)chkDates[item.date]=(chkDates[item.date]||0)+1;});
+  Object.values(DB.checklist||{}).forEach(function(item){
+    if(item.date&&!item.done){
+      if(!chkDates[item.date])chkDates[item.date]=[];
+      var color=item.cat?getCatColor(item.cat):'#5b9cf6';
+      if(chkDates[item.date].indexOf(color)<0)chkDates[item.date].push(color);
+    }
+  });
   var marks=DB.date_marks||{};
   var html=['일','월','화','수','목','금','토'].map(function(d){return'<div class="cal-dow">'+d+'</div>'}).join('');
   // 이전달 빈칸
@@ -2474,10 +2484,10 @@ function renderCal(){
     var markedCls=mark?' marked':'';
     var markEmoji=mark==='red'?'❤️':mark?'🩷':'';
     var cls='cal-day'+(dow===0?' sun':dow===6?' sat':'')+(ds===todayStr?' today':'')+markedCls;
-    var dot=(planDates[ds]||chkDates[ds])
+    var dot=(planDates[ds]||(chkDates[ds]&&chkDates[ds].length))
       ?'<div class="cal-dot-wrap">'
         +(planDates[ds]?'<div class="cal-dot"></div>':'')
-        +(chkDates[ds]?'<div class="cal-dot" style="background:#5b9cf6"></div>':'')
+        +((chkDates[ds]||[]).map(function(c){return'<div class="cal-dot" style="background:'+c+'"></div>';}).join(''))
       +'</div>'
       :'';
     html+='<div class="'+cls+'" onclick="calDayClick(\''+ds+'\')" data-mark="'+(mark||'')+'">'
@@ -2499,9 +2509,38 @@ async function toggleMark(dateStr){
   else await fb().remove(rr('date_marks/'+key));
 }
 
+var calLastDate=null,calClickCount=0,calClickTimer=null;
+
 async function calDayClick(dateStr){
-  await toggleMark(dateStr);
-  showCalSheet(dateStr);
+  // 같은 날짜 연속 탭 카운트
+  if(calLastDate===dateStr){
+    calClickCount++;
+  }else{
+    calLastDate=dateStr;
+    calClickCount=1;
+  }
+  clearTimeout(calClickTimer);
+
+  if(calClickCount===1){
+    // 1번: 시트만 표시 (하트 변경 없음)
+    showCalSheet(dateStr);
+  }else if(calClickCount===2){
+    // 2번: 🩷
+    await fb().set(rr('date_marks/'+dateStr.replace(/-/g,'_')),'pink');
+  }else if(calClickCount===3){
+    // 3번: ❤️
+    await fb().set(rr('date_marks/'+dateStr.replace(/-/g,'_')),'red');
+  }else{
+    // 4번: 취소
+    await fb().remove(rr('date_marks/'+dateStr.replace(/-/g,'_')));
+    calClickCount=0;
+    calLastDate=null;
+  }
+
+  // 1.5초 후 카운트 리셋
+  calClickTimer=setTimeout(function(){
+    calClickCount=0;calLastDate=null;
+  },1500);
 }
 
 function showCalSheet(dateStr){
