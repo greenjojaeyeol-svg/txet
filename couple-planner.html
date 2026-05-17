@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>우리 둘만의 공간 ♡</title>
+<title>우리 둘만의 공간 🩷</title>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -20,7 +20,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .lw{width:100%;max-width:360px;text-align:center}
 .lheart{font-size:54px;animation:hb 2.4s ease-in-out infinite;display:block;margin-bottom:10px}
 @keyframes hb{0%,100%{transform:scale(1)}14%{transform:scale(1.18)}28%{transform:scale(1)}42%{transform:scale(1.1)}56%{transform:scale(1)}}
-.ltitle{font-family:'Gowun Dodum',sans-serif;font-size:26px;font-weight:400;color:var(--rose);margin-bottom:6px;letter-spacing:.5px}
+.ltitle{font-family:'Gowun Dodum',sans-serif;font-size:28px;font-weight:400;color:var(--rose);margin-bottom:6px;letter-spacing:1px}
 .lsub{font-size:13px;color:var(--muted);margin-bottom:28px}
 .lcard{background:#fff;border-radius:24px;padding:28px 24px;border:1px solid var(--border);box-shadow:var(--shadow);text-align:left}
 .lcard label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
@@ -62,7 +62,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 
 /* 헤더 */
 .hdr{background:#fff;border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between}
-.hdr h2{font-family:'Gowun Dodum',sans-serif;font-size:17px;font-weight:400;color:var(--rose);letter-spacing:.3px}
+.hdr h2{font-family:'Gowun Dodum',sans-serif;font-size:18px;font-weight:400;color:var(--rose);letter-spacing:.5px}
 .hdr-dday{font-size:11px;color:var(--muted);margin-top:1px}
 .hdr-out{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Pretendard',sans-serif}
 
@@ -77,7 +77,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .pg{display:none;padding:14px}
 .pg.on{display:block;animation:fi .2s ease}
 @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.sec{font-family:'Gowun Dodum',sans-serif;font-size:14px;font-weight:400;color:var(--rose);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border);letter-spacing:.2px}
+.sec{font-family:'Gowun Dodum',sans-serif;font-size:15px;font-weight:400;color:var(--rose);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border);letter-spacing:.5px}
 .addbtn{width:100%;padding:11px;margin-bottom:10px;background:var(--blush);border:1.5px dashed var(--rose-l);border-radius:var(--r);color:var(--rose);font-size:13px;font-weight:500;font-family:'Pretendard',sans-serif;cursor:pointer;transition:.2s}
 .addbtn:hover{background:var(--rose);color:#fff;border-style:solid}
 
@@ -117,10 +117,14 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .mbtn.na{background:#1a73e8;color:#fff}
 
 /* 스텝 */
-.steps{margin-top:8px;display:flex;flex-direction:column;gap:5px}
-.step-r{display:flex;align-items:flex-start;gap:7px}
+.steps{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.step-r{display:flex;align-items:center;gap:7px}
 .step-dot{width:20px;height:20px;border-radius:50%;background:var(--rose);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600}
-.step-t{font-size:12px;color:var(--muted);padding-top:2px}
+.step-t{font-size:12px;color:var(--muted);flex:1}
+.step-maps{display:flex;gap:4px;flex-shrink:0}
+.step-map-btn{font-size:10px;padding:2px 7px;border-radius:10px;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:500;text-decoration:none;display:inline-flex;align-items:center}
+.step-map-btn.kakao{background:#FAE100;color:#3C1E1E}
+.step-map-btn.naver{background:#03C75A;color:#fff}
 
 /* 카드 푸터 */
 .card-ft{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center}
@@ -931,7 +935,15 @@ function makeCard(key,item,cat){
   var stepsH='';
   if((cat==='courses'||cat==='plans')&&item.steps&&item.steps.length){
     stepsH='<div class="steps">'+item.steps.map(function(s,i){
-      return'<div class="step-r"><div class="step-dot">'+(i+1)+'</div><div class="step-t">'+esc(s)+'</div></div>';
+      var q=encodeURIComponent(s.trim());
+      return'<div class="step-r">'
+        +'<div class="step-dot">'+(i+1)+'</div>'
+        +'<div class="step-t">'+esc(s)+'</div>'
+        +'<div class="step-maps">'
+          +'<a class="step-map-btn kakao" href="https://map.kakao.com/link/search/'+q+'" target="_blank" onclick="event.stopPropagation()">지도</a>'
+          +'<a class="step-map-btn naver" href="https://map.naver.com/v5/search/'+q+'" target="_blank" onclick="event.stopPropagation()">지도</a>'
+        +'</div>'
+        +'</div>';
     }).join('')+'</div>';
   }
 
