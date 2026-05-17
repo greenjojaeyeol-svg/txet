@@ -438,13 +438,6 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
       <div style="font-size:14px">주소가 등록된 장소가 없어요</div>
     </div>
   </div>
-  <div class="pg" id="pg-plans">
-    <div class="stats">
-      <div class="stat"><div class="stat-n" id="sn-c">0</div><div class="stat-l">🗺️ 코스</div></div>
-      <div class="stat"><div class="stat-n" id="sn-r">0</div><div class="stat-l">🍽️ 맛집</div></div>
-      <div class="stat"><div class="stat-n" id="sn-ca">0</div><div class="stat-l">☕ 카페</div></div>
-      <div class="stat"><div class="stat-n" id="sn-s">0</div><div class="stat-l">🎡 명소</div></div>
-    </div>
   <!-- 캘린더 페이지 -->
   <div class="pg" id="pg-calendar">
     <div class="cal-wrap">
@@ -463,7 +456,15 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
       <div id="cal-sheet-body"></div>
     </div>
   </div>
-  <!-- 일정 페이지 (캘린더 제거) -->
+  <!-- 일정 페이지 -->
+  <div class="pg" id="pg-plans">
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="sn-c">0</div><div class="stat-l">🗺️ 코스</div></div>
+      <div class="stat"><div class="stat-n" id="sn-r">0</div><div class="stat-l">🍽️ 맛집</div></div>
+      <div class="stat"><div class="stat-n" id="sn-ca">0</div><div class="stat-l">☕ 카페</div></div>
+      <div class="stat"><div class="stat-n" id="sn-s">0</div><div class="stat-l">🎡 명소</div></div>
+    </div>
+    <button class="addbtn" onclick="openAdd('plans')">+ 데이트 일정 추가</button>
     <div class="fbar" id="fb-plans"></div>
     <div class="sec">데이트 일정</div>
     <div id="lst-plans"><div class="loading">불러오는 중…</div></div>
@@ -473,15 +474,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
     <div class="chk-catbar" id="chk-catbar"></div>
     <div id="lst-checklist"><div class="loading">불러오는 중…</div></div>
   </div>
+  <!-- 설정 (커플정보 제거) -->
   <div class="pg" id="pg-settings">
-    <div class="sec">커플 정보</div>
-    <div class="setcard">
-      <div class="fg"><label>내 이름</label><input type="text" id="s1" placeholder="내 이름"></div>
-      <div class="fg"><label>상대방 이름</label><input type="text" id="s2" placeholder="상대방 이름"></div>
-      <div class="fg"><label>사귄 날짜</label><input type="date" id="sa"></div>
-      <button class="setsave" onclick="saveSet()">저장하기</button>
-    </div>
-    <div class="sec" style="margin-top:16px">집 주소</div>
+    <div class="sec">집 주소</div>
     <div class="setcard">
       <div class="fg"><label>내 집 주소</label><input type="text" id="s-home1" placeholder="예: 서울 강서구 화곡동"></div>
       <div class="fg"><label>여자친구 집 주소</label><input type="text" id="s-home2" placeholder="예: 서울 마포구 합정동"></div>
@@ -1701,12 +1696,13 @@ function startClock(){
   function tick(){
     var now=new Date();
     var h=now.getHours(),m=now.getMinutes();
+    var ampm=h<12?'오전':'오후';
+    var h12=h%12||12;
     var days=['일','월','화','수','목','금','토'];
     var mo=now.getMonth()+1,d=now.getDate(),day=days[now.getDay()];
     var te=g('wbar-time'),de=g('wbar-date'),de2=g('wbar-date2');
-    if(te)te.textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+    if(te)te.innerHTML='<span style="font-size:10px;color:var(--muted);margin-right:2px">'+ampm+'</span>'+String(h12).padStart(2,'0')+':'+String(m).padStart(2,'0');
     if(de)de.textContent=mo+'월 '+d+'일 ('+day+')';
-    // 내일 날짜
     if(de2){
       var tmr=new Date(now);tmr.setDate(tmr.getDate()+1);
       de2.textContent=(tmr.getMonth()+1)+'월 '+tmr.getDate()+'일 ('+days[tmr.getDay()]+')';
