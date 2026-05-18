@@ -108,6 +108,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .tbadge.closed{background:#fceaea;color:#a32d2d}
 .tbadge.soon{background:#fff3e0;color:#e65100}
 .tbadge.before{background:#f3f3f3;color:#444}
+.tbadge.holiday{background:#fce8e8;color:#a32d2d}
 
 /* 지도버튼 */
 .mapbtns{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
@@ -398,7 +399,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
     <button class="nb" onclick="goPage('cafes',this)"><span class="ni">☕</span>카페</button>
     <button class="nb" onclick="goPage('spots',this)"><span class="ni">🎡</span>명소</button>
     <button class="nb" onclick="goPage('map',this);initMap()"><span class="ni">📍</span>지도</button>
-    <button class="nb" onclick="goPage('calendar',this);renderCal()"><span class="ni">🗓️</span>캘린더</button>
+    <button class="nb" onclick="goPage('calendar',this);renderCal();showTodaySheet()"><span class="ni">🗓️</span>캘린더</button>
     <button class="nb" onclick="goPage('plans',this)"><span class="ni">📅</span>일정</button>
     <button class="nb" onclick="goPage('checklist',this)"><span class="ni">✅</span>체크</button>
     <button class="nb" onclick="goPage('stats',this);renderStats()"><span class="ni">📊</span>통계</button>
@@ -923,8 +924,8 @@ function makeCard(key,item,cat){
     })(key,item.address);
   }
 
-  // 지도 버튼 - 이름으로 검색
-  if(item.name||item.address){
+  // 지도 버튼 - 코스/일정은 장소명에 버튼 있어서 제외
+  if((item.name||item.address)&&cat!=='courses'&&cat!=='plans'){
     var searchQ=encodeURIComponent((item.name||'')+(item.address?' '+item.address:''));
     var kk='https://map.kakao.com/link/search/'+encName;
     var nv='https://map.naver.com/v5/search/'+encName;
@@ -2512,6 +2513,12 @@ function renderCal(){
   var rem=(7-((firstDay+lastDate)%7))%7;
   for(var i=1;i<=rem;i++)html+='<div class="cal-day other"><span class="cal-num">'+i+'</span></div>';
   gridEl.innerHTML=html;
+}
+
+function showTodaySheet(){
+  var now=new Date();
+  var today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  showCalSheet(today);
 }
 
 async function toggleMark(dateStr){
