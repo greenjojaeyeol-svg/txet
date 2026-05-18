@@ -120,11 +120,14 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .steps{margin-top:8px;display:flex;flex-direction:column;gap:6px}
 .step-r{display:flex;align-items:center;gap:7px}
 .step-dot{width:20px;height:20px;border-radius:50%;background:var(--rose);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600}
-.step-t{font-size:12px;color:var(--muted);flex:1}
-.step-maps{display:flex;gap:4px;flex-shrink:0}
-.step-map-btn{font-size:10px;padding:2px 7px;border-radius:10px;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:500;text-decoration:none;display:inline-flex;align-items:center}
-.step-map-btn.kakao{background:#FAE100;color:#3C1E1E}
-.step-map-btn.naver{background:#03C75A;color:#fff}
+.step-t{font-size:12px;color:var(--ink);flex:1}
+.step-btns{display:flex;gap:3px;flex-shrink:0}
+.step-ic{font-size:9px;padding:2px 6px;border-radius:8px;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;line-height:1.4}
+.step-ic.kakao{background:#FAE100;color:#3C1E1E}
+.step-ic.naver{background:#03C75A;color:#fff}
+.step-ic.navi{background:#FF6B35;color:#fff}
+.step-menu.on{display:flex}
+.step-t{font-size:13px;color:var(--ink);flex:1}
 
 /* 카드 푸터 */
 .card-ft{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center}
@@ -936,12 +939,14 @@ function makeCard(key,item,cat){
   if((cat==='courses'||cat==='plans')&&item.steps&&item.steps.length){
     stepsH='<div class="steps">'+item.steps.map(function(s,i){
       var q=encodeURIComponent(s.trim());
+      var naviUrl='https://map.kakao.com/link/search/'+q;
       return'<div class="step-r">'
         +'<div class="step-dot">'+(i+1)+'</div>'
         +'<div class="step-t">'+esc(s)+'</div>'
-        +'<div class="step-maps">'
-          +'<a class="step-map-btn kakao" href="https://map.kakao.com/link/search/'+q+'" target="_blank" onclick="event.stopPropagation()">지도</a>'
-          +'<a class="step-map-btn naver" href="https://map.naver.com/v5/search/'+q+'" target="_blank" onclick="event.stopPropagation()">지도</a>'
+        +'<div class="step-btns" onclick="event.stopPropagation()">'
+          +'<a class="step-ic kakao" href="https://map.kakao.com/link/search/'+q+'" target="_blank" title="카카오맵">지도</a>'
+          +'<a class="step-ic naver" href="https://map.naver.com/v5/search/'+q+'" target="_blank" title="네이버지도">지도</a>'
+          +'<button class="step-ic navi" onclick="openNavi(\''+esc(s)+'\',\'\')" title="카카오내비">내비</button>'
         +'</div>'
         +'</div>';
     }).join('')+'</div>';
