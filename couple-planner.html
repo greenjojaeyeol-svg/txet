@@ -276,7 +276,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .rating-badge{display:inline-flex;align-items:center;gap:1px;margin-top:3px}
 .rating-wrap{display:flex;align-items:center;gap:4px;padding:8px 0 4px;border-top:1px solid var(--border);margin-top:6px}
 .rating-lbl{font-size:11px;color:var(--muted);margin-right:4px;white-space:nowrap}
-.star-btn{background:none;border:none;font-size:22px;cursor:pointer;color:#ddd;padding:0 1px;line-height:1;transition:color .1s;font-family:inherit}
+.star-btn{background:none;border:none;font-size:16px;cursor:pointer;color:#ddd;padding:0 1px;line-height:1;transition:color .1s;font-family:inherit}
 .star-btn.on{color:#f5a623}
 .star-btn:hover{color:#f5a623}
 .star-clear{background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;margin-left:4px;padding:2px 4px;border-radius:4px}
@@ -862,7 +862,7 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
     if(closed_days.indexOf(todayIdx)>=0){
       var dayNames=['일','월','화','수','목','금','토'];
       var closedStr=closed_days.map(function(d){return dayNames[d]}).join('·');
-      return'<span class="tbadge holiday">🔴 정기휴무 ('+closedStr+')</span>';
+      return'<span class="tbadge holiday">정기휴무 ('+closedStr+')</span>';
     }
   }
   if(allday)return'<span class="tbadge open">🟢 24시간 영업</span>';
@@ -872,7 +872,7 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
   var loMin=lo?toMin(lo):null;
   var bt_sMin=bt_s?toMin(bt_s):null,bt_eMin=bt_e?toMin(bt_e):null;
   // 마감 이후
-  if(cur>=cl)return'<span class="tbadge closed">🔴 마감 '+fmt24(ct)+'</span>';
+  if(cur>=cl)return'<span class="tbadge closed">영업마감 '+fmt24(ct)+'</span>';
   // 오픈 30분 이내 (오픈예정)
   if(cur<op&&cur>=op-30)return'<span class="tbadge soon">🟡 오픈예정 '+fmt24(ot)+'</span>';
   // 오픈 전 (30분 초과)
@@ -984,7 +984,7 @@ function makeCard(key,item,cat){
   }
   if(item.closed_days&&item.closed_days.length){
     var _dn=['일','월','화','수','목','금','토'];
-    timeDetail+='<div class="card-sub">🚫 정기휴무 '+item.closed_days.map(function(d){return _dn[d]+'요일'}).join(', ')+'</div>';
+    timeDetail+='<div class="card-sub">정기휴무 · '+item.closed_days.map(function(d){return _dn[d]}).join(' · ')+'요일</div>';
   }
   var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
   var favbtnH='<button class="cbtn fav-btn'+(item.fav?' on':'')+'" onclick="toggleFav(\''+key+'\',\''+cat+'\','+!!item.fav+',event)" title="즐겨찾기">'+(item.fav?'⭐':'☆')+'</button>';
