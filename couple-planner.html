@@ -486,7 +486,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
   <div class="pg" id="pg-settings">
     <div class="sec">집 주소</div>
     <div class="setcard">
+      <div class="fg"><label>내 집 이름</label><input type="text" id="s-home-name1" placeholder="예: 우리집" maxlength="10"></div>
       <div class="fg"><label>내 집 주소</label><input type="text" id="s-home1" placeholder="예: 서울 강서구 화곡동"></div>
+      <div class="fg" style="margin-top:12px"><label>여자친구 집 이름</label><input type="text" id="s-home-name2" placeholder="예: 자기집" maxlength="10"></div>
       <div class="fg"><label>여자친구 집 주소</label><input type="text" id="s-home2" placeholder="예: 서울 마포구 합정동"></div>
       <button class="setsave" onclick="saveHome()">저장하기</button>
     </div>
@@ -614,6 +616,8 @@ function refreshHdr(){
   if(g('sa')&&!g('sa').value&&s.anniversary)g('sa').value=s.anniversary;
   if(g('s-home1')&&s.home1)g('s-home1').value=s.home1;
   if(g('s-home2')&&s.home2)g('s-home2').value=s.home2;
+  if(g('s-home-name1')&&s.homeName1)g('s-home-name1').value=s.homeName1;
+  if(g('s-home-name2')&&s.homeName2)g('s-home-name2').value=s.homeName2;
   // 집 주소 등록 시 소요시간 바 표시
   if(s.home1||s.home2)calcHomeRoutes();
   var snc=g('sn-c'),snr=g('sn-r'),snca=g('sn-ca'),sns=g('sn-s');
@@ -1455,13 +1459,17 @@ function copyHomeAddr(inputId){
 async function saveHome(){
   var addr1=(g('s-home1')||{}).value||'';
   var addr2=(g('s-home2')||{}).value||'';
-  await fb().update(rr('settings'),{home1:addr1.trim(),home2:addr2.trim()});
+  var name1=(g('s-home-name1')||{}).value||'';
+  var name2=(g('s-home-name2')||{}).value||'';
+  await fb().update(rr('settings'),{home1:addr1.trim(),home2:addr2.trim(),homeName1:name1.trim(),homeName2:name2.trim()});
   toast('집 주소 저장됐어요 🏠');
   calcHomeRoutes();
 }
 
 function loadHomeSettings(){
   var s=DB.settings||{};
+  if(g('s-home-name1')&&s.homeName1)g('s-home-name1').value=s.homeName1;
+  if(g('s-home-name2')&&s.homeName2)g('s-home-name2').value=s.homeName2;
   if(g('s-home1')&&s.home1)g('s-home1').value=s.home1;
   if(g('s-home2')&&s.home2)g('s-home2').value=s.home2;
 }
@@ -1472,8 +1480,8 @@ function calcHomeRoutes(){
   var s=DB.settings||{};
   var addrs=[s.home1||'',s.home2||''];
   var names=[
-    (s.name1?s.name1+' 집':'내 집'),
-    (s.name2?s.name2+' 집':'여자친구 집')
+    (s.homeName1||'내 집'),
+    (s.homeName2||'여자친구 집')
   ];
   var bar=g('home-route-bar');
   if(!addrs[0]&&!addrs[1]){if(bar)bar.style.display='none';return;}
@@ -1523,7 +1531,7 @@ function copyHomeAddrByIdx(idx){
 function openHomeNavi(idx){
   var s=DB.settings||{};
   var addr=idx===1?s.home1:s.home2;
-  var name=idx===1?(s.name1?s.name1+' 집':'내 집'):(s.name2?s.name2+' 집':'여자친구 집');
+  var name=idx===1?(s.homeName1||'내 집'):(s.homeName2||'여자친구 집');
   if(!addr){toast('주소를 먼저 설정에서 등록해주세요');return;}
   // 주소 클립보드 복사
   navigator.clipboard.writeText(addr).catch(function(){});
@@ -2206,9 +2214,17 @@ function renderStats(){
 
   // ── 5. 높은 별점 TOP 3 ──
   var topItems=[];
+  var CAT_EMOJI_MAP_STAT={
+    '🍚 한식':'🍚','🍣 일식':'🍣','🍝 양식':'🍝','🥢 중식':'🥢','🥪 분식':'🥪','🍽️ 기타':'🍽️',
+    '📷 감성카페':'📷','🏢 대형카페':'🏢','🍰 디저트':'🍰','🌇 루프탑':'🌇','🥐 베이커리':'🥐',
+    '🎡 테마파크':'🎡','🌸 꽃·자연':'🌸','🌃 야경':'🌃','🎭 문화·전시':'🎭','🏖 나들이':'🏖','🛍 쇼핑':'🛍','📍 기타':'📍'
+  };
   cats.forEach(function(cat){
     Object.values(DB[cat]||{}).forEach(function(item){
-      if(item.rating>=4)topItems.push({name:item.name,rating:item.rating,cat:catEmoji[cat]});
+      if(item.rating>=4){
+        var ico=item.category?CAT_EMOJI_MAP_STAT[item.category]||catEmoji[cat]:catEmoji[cat];
+        topItems.push({name:item.name,rating:item.rating,ico:ico});
+      }
     });
   });
   topItems.sort(function(a,b){return b.rating-a.rating});
@@ -2217,7 +2233,7 @@ function renderStats(){
     topItems.slice(0,5).forEach(function(item){
       var stars='';for(var i=1;i<=5;i++)stars+='<span style="color:'+(i<=item.rating?'#f5a623':'#ddd')+';font-size:13px">★</span>';
       html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">'
-        +'<span style="font-size:16px">'+item.cat+'</span>'
+        +'<span style="font-size:16px">'+item.ico+'</span>'
         +'<span style="flex:1;font-size:13px;font-weight:500">'+esc(item.name||'')+'</span>'
         +'<span>'+stars+'</span>'
         +'</div>';
