@@ -250,6 +250,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .cal-dot-wrap{display:flex;gap:2px;justify-content:center;position:absolute;bottom:3px}
 .cal-dot{width:4px;height:4px;border-radius:50%;background:var(--rose)}
 .cal-num{font-size:13px;line-height:1}
+.cal-holiday{display:block;font-size:7px;color:#e85d5d;line-height:1.1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 
 
 .visit-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
@@ -274,9 +275,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .visit-sub-bar{height:4px;background:#e0e0e0;border-radius:4px;overflow:hidden}
 
 .rating-badge{display:inline-flex;align-items:center;gap:1px;margin-top:3px}
-.rating-wrap{display:flex;align-items:center;gap:4px;padding:8px 0 4px;border-top:1px solid var(--border);margin-top:6px}
+.rating-wrap{display:flex;align-items:center;gap:0;padding:8px 0 4px;border-top:1px solid var(--border);margin-top:6px}
 .rating-lbl{font-size:11px;color:var(--muted);margin-right:4px;white-space:nowrap}
-.star-btn{background:none;border:none;font-size:14px!important;cursor:pointer;color:#ddd;padding:0 1px;line-height:1;transition:color .1s;font-family:inherit;vertical-align:middle}
+.star-btn{background:none;border:none;font-size:18px;cursor:pointer;color:#ddd;padding:0;line-height:1;transition:color .1s;font-family:inherit;vertical-align:middle;display:inline-block;transform:scale(0.7);transform-origin:center}
 .star-btn.on{color:#f5a623}
 .star-btn:hover{color:#f5a623}
 .star-clear{background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;margin-left:4px;padding:2px 4px;border-radius:4px}
@@ -876,7 +877,7 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
   var loMin=lo?toMin(lo):null;
   var bt_sMin=bt_s?toMin(bt_s):null,bt_eMin=bt_e?toMin(bt_e):null;
   // 마감 이후
-  if(cur>=cl)return'<span class="tbadge closed">영업마감 '+fmt24(ct)+'</span>';
+  if(cur>=cl)return'<span class="tbadge closed">🔴 영업마감 '+fmt24(ct)+'</span>';
   // 오픈 30분 이내 (오픈예정)
   if(cur<op&&cur>=op-30)return'<span class="tbadge soon">🟡 오픈예정 '+fmt24(ot)+'</span>';
   // 오픈 전 (30분 초과)
@@ -2469,6 +2470,30 @@ function openNaverSearch(name){
 }
 
 // ── 캘린더 ────────────────────────────────────────────
+// 한국 공휴일
+function getHolidays(year){
+  var h={};
+  // 고정 공휴일
+  var fixed=[
+    [1,1,'신정'],[3,1,'삼일절'],[5,5,'어린이날'],[6,6,'현충일'],
+    [8,15,'광복절'],[10,3,'개천절'],[10,9,'한글날'],[12,25,'크리스마스']
+  ];
+  fixed.forEach(function(d){h[year+'-'+String(d[0]).padStart(2,'0')+'-'+String(d[1]).padStart(2,'0')]=d[2];});
+  // 음력 공휴일 (근사값 - 주요 연도)
+  var lunar={
+    '2024':{seollal:['2024-02-09','2024-02-10','2024-02-11'],chuseok:['2024-09-16','2024-09-17','2024-09-18'],budda:'2024-05-15',memorial:'2024-04-10'},
+    '2025':{seollal:['2025-01-28','2025-01-29','2025-01-30'],chuseok:['2025-10-05','2025-10-06','2025-10-07'],budda:'2025-05-05'},
+    '2026':{seollal:['2026-02-17','2026-02-18','2026-02-19'],chuseok:['2026-09-24','2026-09-25','2026-09-26'],budda:'2026-05-24'},
+  };
+  var yd=lunar[String(year)];
+  if(yd){
+    if(yd.seollal)yd.seollal.forEach(function(d){h[d]='설날';});
+    if(yd.chuseok)yd.chuseok.forEach(function(d){h[d]='추석';});
+    if(yd.budda)h[yd.budda]='부처님오신날';
+  }
+  return h;
+}
+
 var calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
 
 function calMove(dir){
@@ -2487,7 +2512,9 @@ function renderCal(){
   var firstDay=new Date(calYear,calMonth,1).getDay();
   var lastDate=new Date(calYear,calMonth+1,0).getDate();
   var prevLast=new Date(calYear,calMonth,0).getDate();
-  // 일정 날짜 (빨간 점)
+  // 공휴일
+  var holidays=getHolidays(calYear);
+  // 일정 날짜
   var planDates={};
   Object.values(DB.plans||{}).forEach(function(item){if(item.date)planDates[item.date]=(planDates[item.date]||0)+1;});
   // 할일 날짜 — 카테고리별 색상 수집 (미완료만)
@@ -2509,19 +2536,22 @@ function renderCal(){
   for(var d=1;d<=lastDate;d++){
     var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     var dow=(firstDay+d-1)%7;
-    var cls='cal-day'+(dow===0?' sun':dow===6?' sat':'')+(ds===todayStr?' today':'');
+    var isHoliday=!!holidays[ds];
+    var holidayName=holidays[ds]||'';
+    // 공휴일이면 일요일처럼 빨간색
+    var cls='cal-day'+(dow===0||isHoliday?' sun':dow===6?' sat':'')+(ds===todayStr?' today':'');
     var mark=marks[ds.replace(/-/g,'_')];
-    var markedCls=mark?' marked':'';
+    if(mark)cls+=' marked';
     var markEmoji=mark==='red'?'❤️':mark?'🩷':'';
-    var cls='cal-day'+(dow===0?' sun':dow===6?' sat':'')+(ds===todayStr?' today':'')+markedCls;
     var dot=(planDates[ds]||(chkDates[ds]&&chkDates[ds].length))
       ?'<div class="cal-dot-wrap">'
         +(planDates[ds]?'<div class="cal-dot"></div>':'')
         +((chkDates[ds]||[]).map(function(c){return'<div class="cal-dot" style="background:'+c+'"></div>';}).join(''))
       +'</div>'
       :'';
-    html+='<div class="'+cls+'" onclick="calDayClick(\''+ds+'\')" data-mark="'+(mark||'')+'">'
+    html+='<div class="'+cls+'" onclick="calDayClick(\''+ds+'\')" data-mark="'+(mark||'')+'" title="'+holidayName+'">'
       +'<span class="cal-num">'+d+'</span>'
+      +(holidayName?'<span class="cal-holiday">'+holidayName+'</span>':'')
       +(markEmoji?'<span class="cal-mark-ico">'+markEmoji+'</span>':'')
       +dot+'</div>';
   }
