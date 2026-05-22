@@ -867,7 +867,7 @@ function timeBadge(ot,ct,lo,bt_s,bt_e,allday,closed_days){
     if(closed_days.indexOf(todayIdx)>=0){
       var dayNames=['일','월','화','수','목','금','토'];
       var closedStr=closed_days.map(function(d){return dayNames[d]}).join('·');
-      return'<span class="tbadge holiday">정기휴무 ('+closedStr+')</span>';
+      return'<span class="tbadge holiday">🔴 정기휴무 ('+closedStr+')</span>';
     }
   }
   if(allday)return'<span class="tbadge open">🟢 24시간 영업</span>';
