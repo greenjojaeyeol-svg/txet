@@ -1546,14 +1546,15 @@ function calcHomeRoutes(){
         +'?ox='+USER_LON+'&oy='+USER_LAT+'&dx='+lon+'&dy='+lat+'&priority=RECOMMEND')
       .then(function(r){return r.json()})
       .then(function(d){
-        var distStr=dist>=1000?(dist/1000).toFixed(1)+'km':Math.round(dist)+'m';
         if(d.duration!=null){
           var m=Math.round(d.duration/60);
           var t=m<60?m+'분':(Math.floor(m/60)+'시간'+(m%60?' '+m%60+'분':''));
+          var distStr=d.distance!=null?formatDist(d.distance):(dist>=1000?(dist/1000).toFixed(1)+'km':Math.round(dist)+'m');
           if(timeEl)timeEl.textContent='🚗 '+t+' · '+distStr;
         }else{
           var m2=Math.round(dist/1000/25*60);
-          if(timeEl)timeEl.textContent='약 '+m2+'분 · '+distStr;
+          var distStr2=dist>=1000?(dist/1000).toFixed(1)+'km':Math.round(dist)+'m';
+          if(timeEl)timeEl.textContent='약 '+m2+'분 · '+distStr2;
         }
       }).catch(function(){
         var m=Math.round(dist/1000/25*60);
@@ -2013,6 +2014,16 @@ async function saveModal(){
     ts:Date.now()
   };
   var k=M_KEY||uid(),wasEdit=!!M_KEY;
+  // 수정 시 step 캐시 삭제 (주소 변경 반영)
+  if(wasEdit&&(M_TYPE==='courses'||M_TYPE==='plans')){
+    Object.keys(ROUTE_CACHE).forEach(function(rk){
+      if(rk.indexOf(k+'_s')===0){delete ROUTE_CACHE[rk];}
+      if(rk.indexOf(k+'_step')===0){delete ROUTE_CACHE[rk];}
+    });
+    Object.keys(GEOCODE_CACHE).forEach(function(gk){
+      if(gk.indexOf(k+'_s')===0){delete GEOCODE_CACHE[gk];}
+    });
+  }
   try{
     await fb().set(rr(M_TYPE+'/'+k),item);
     closeModal();toast(wasEdit?'수정했어요 ♡':'추가했어요 ♡');
@@ -2660,6 +2671,12 @@ async function calDayClick(dateStr){
   },1500);
 }
 
+async function calDelChk(k){
+  if(!confirm('삭제할까요?'))return;
+  await fb().remove(rr('checklist/'+k));
+  toast('삭제했어요');
+}
+
 async function calToggleChk(k){
   if(!k)return;
   var cur=(DB.checklist[k]||{}).done||false;
@@ -2719,18 +2736,24 @@ function showCalSheet(dateStr){
     html+='<div style="font-size:11px;font-weight:600;color:#5b9cf6;margin:'+(plans.length?'10px':0)+' 0 6px">✅ 할 일</div>';
     html+=chks.sort(function(a,b){return(a.time||'').localeCompare(b.time||'')}).map(function(c){
       var catColor=c.cat?getCatColor(c.cat):'#ccc';
-      var chkKey=Object.entries(DB.checklist||{}).find(function(kv){return kv[1]===c;})||['',''];
-      var k=chkKey[0];
-      return'<div onclick="calToggleChk(\''+k+'\')" style="font-size:13px;padding:7px 10px;background:var(--sand);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:opacity .15s;'+(c.done?'opacity:.55':'')+'">'
-        +'<span style="width:16px;height:16px;border-radius:50%;border:1.5px solid '+(c.done?'var(--rose)':'#ccc')+';background:'+(c.done?'var(--rose)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      var k=Object.entries(DB.checklist||{}).find(function(kv){return kv[1]===c;});
+      var ck=k?k[0]:'';
+      return'<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--sand);border-radius:8px;margin-bottom:5px;">'
+        // 체크 버튼
+        +'<div onclick="calToggleChk(\''+ck+'\')" style="width:18px;height:18px;border-radius:50%;border:1.5px solid '+(c.done?'var(--rose)':'#ccc')+';background:'+(c.done?'var(--rose)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer">'
           +(c.done?'<span style="color:#fff;font-size:9px;font-weight:700">✓</span>':'')
-        +'</span>'
+        +'</div>'
+        // 카테고리 점
         +'<span style="width:6px;height:6px;border-radius:50%;background:'+catColor+';flex-shrink:0;display:inline-block"></span>'
-        +(c.time?'<span style="font-size:11px;color:var(--muted);flex-shrink:0">'+c.time+'</span>':'')
-        +'<span style="flex:1;'+(c.done?'text-decoration:line-through;color:var(--muted)':'')+'">'
+        // 내용 (완료 시 한 줄 취소선)
+        +'<div style="flex:1;font-size:13px;'+(c.done?'text-decoration:line-through;color:var(--muted)':'')+'">'
+          +(c.time?'<span style="font-size:11px;color:var(--muted);margin-right:4px">'+c.time+'</span>':'')
           +esc(c.text||'')
           +(c.cat?'<span style="font-size:10px;color:var(--muted);margin-left:5px">'+esc(c.cat)+'</span>':'')
-        +'</span>'
+        +'</div>'
+        // 수정·삭제 버튼
+        +'<button onclick="startEditChk(\''+ck+'\')" style="background:none;border:none;font-size:14px;cursor:pointer;padding:0 2px;color:var(--muted)">✏️</button>'
+        +'<button onclick="calDelChk(\''+ck+'\')" style="background:none;border:none;font-size:14px;cursor:pointer;padding:0 2px;color:var(--muted)">×</button>'
         +'</div>';
     }).join('');
   }
