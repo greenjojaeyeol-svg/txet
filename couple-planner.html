@@ -824,7 +824,14 @@ var EMPTY_MSG={
 
 function render(cat){
   if(cat==='settings')return;
-  if(cat==='checklist'||cat==='chk_cats'){renderChk();renderCal();return}
+  if(cat==='checklist'||cat==='chk_cats'){
+    renderChk();renderCal();
+    // 시트 열려있으면 갱신
+    var sheet=g('cal-day-sheet');
+    var title=g('cal-sheet-title');
+    if(sheet&&sheet.style.display!=='none'&&title&&title._dateStr)showCalSheet(title._dateStr);
+    return;
+  }
   if(cat==='date_marks'||cat==='plans'){if(cat==='plans')renderFbar('plans');renderCal();}
   var el=g('lst-'+cat);if(!el)return;
   renderFbar(cat);
@@ -909,32 +916,28 @@ function makeCard(key,item,cat){
   var encAddr=encodeURIComponent(item.address||'');
   var mapH='';
 
-  // 소요시간 - 주소 있으면 주소, 코스/일정은 첫 번째 장소명으로
+  // 소요시간 - 코스/일정은 장소별로 표시하므로 상단 뱃지 생략
   var distH='';
   var routeAddr=item.address||'';
   var routeKey=key;
-  if(!routeAddr&&(cat==='courses'||cat==='plans')&&item.steps&&item.steps.length){
-    routeAddr=item.steps[0];
-    routeKey=key+'_step0'; // 주소와 캐시 키 구분
-  }
-  if(USER_LAT&&routeAddr){
-    var gc=GEOCODE_CACHE[routeKey];
-    if(gc&&gc.lat){
-      var quickDist=formatDist(haversine(USER_LAT,USER_LON,gc.lat,gc.lon));
-      distH='<div class="drive-badge" id="drv-'+routeKey+'">🚗 <span style="opacity:.6">'+quickDist+' 계산중…</span></div>';
-    }else{
-      distH='<div class="drive-badge" id="drv-'+routeKey+'">🚗 <span style="opacity:.5">계산 중…</span></div>';
+  if(cat!=='courses'&&cat!=='plans'){
+    if(USER_LAT&&routeAddr){
+      var gc=GEOCODE_CACHE[routeKey];
+      if(gc&&gc.lat){
+        var quickDist=formatDist(haversine(USER_LAT,USER_LON,gc.lat,gc.lon));
+        distH='<div class="drive-badge" id="drv-'+routeKey+'">🚗 <span style="opacity:.6">'+quickDist+' 계산중…</span></div>';
+      }else{
+        distH='<div class="drive-badge" id="drv-'+routeKey+'">🚗 <span style="opacity:.5">계산 중…</span></div>';
+      }
+      (function(k,addr){
+        fetchRoute(k,addr,function(r){
+          var el=g('drv-'+k);if(!el)return;
+          if(r&&r.duration)el.innerHTML='🚗 '+(formatDist(r.distance)?formatDist(r.distance)+' · ':'')+formatDuration(r.duration);
+          else if(r&&r.dist)el.innerHTML='📍 '+formatDist(r.dist)+' (직선거리)';
+          else el.style.display='none';
+        });
+      })(routeKey,routeAddr);
     }
-    (function(k,addr){
-      fetchRoute(k,addr,function(r){
-        var el=g('drv-'+k);if(!el)return;
-        if(r&&r.duration){
-          el.innerHTML='🚗 '+(formatDist(r.distance)?formatDist(r.distance)+' · ':'')+formatDuration(r.duration);
-        }else if(r&&r.dist){
-          el.innerHTML='📍 '+formatDist(r.dist)+' (직선거리)';
-        }else{el.style.display='none';}
-      });
-    })(routeKey,routeAddr);
   }
 
   // 지도 버튼 - 코스/일정은 장소명에 버튼 있어서 제외
@@ -950,29 +953,30 @@ function makeCard(key,item,cat){
   }
 
   var stepsH='';
+  var stepsH='';
   if((cat==='courses'||cat==='plans')&&item.steps&&item.steps.length){
     stepsH='<div class="steps">'+item.steps.map(function(s,i){
       var q=encodeURIComponent(s.trim());
       var stepKey=key+'_s'+i;
-      // 소요시간 뱃지 (캐시 있으면 즉시, 없으면 계산중)
+      var stepAddr=(item.stepAddrs&&item.stepAddrs[i]&&item.stepAddrs[i].trim())||s.trim();
       var rc=ROUTE_CACHE[stepKey];
       var drvTxt='';
-      if(rc&&rc.duration){drvTxt=formatDuration(rc.duration);}
-      else if(rc&&rc.dist){drvTxt=formatDist(rc.dist);}
+      if(rc&&rc.duration)drvTxt='🚗 '+(rc.distance?formatDist(rc.distance)+' · ':'')+formatDuration(rc.duration);
+      else if(rc&&rc.dist)drvTxt='📍 '+formatDist(rc.dist);
       var drvBadge=USER_LAT
-        ?'<span class="step-drv" id="sdrv-'+stepKey+'">'+(drvTxt||'…')+'</span>'
+        ?'<span class="drive-badge" id="sdrv-'+stepKey+'" style="margin-top:0;font-size:11px;padding:1px 7px">'+(drvTxt||'🚗 …')+'</span>'
         :'';
-      // 캐시 없으면 비동기로 계산
       if(USER_LAT&&!rc){
         (function(sk,addr){
           fetchRoute(sk,addr,function(r){
             var el=g('sdrv-'+sk);if(!el)return;
-            if(r&&r.duration)el.textContent=formatDuration(r.duration);
-            else if(r&&r.dist)el.textContent=formatDist(r.dist);
+            if(r&&r.duration)el.textContent='🚗 '+(r.distance?formatDist(r.distance)+' · ':'')+formatDuration(r.duration);
+            else if(r&&r.dist)el.textContent='📍 '+formatDist(r.dist);
             else el.style.display='none';
           });
-        })(stepKey,s.trim());
+        })(stepKey,stepAddr);
       }
+      var naviAddr=(item.stepAddrs&&item.stepAddrs[i]&&item.stepAddrs[i].trim())||'';
       return'<div class="step-r">'
         +'<div class="step-dot">'+(i+1)+'</div>'
         +'<div class="step-body">'
@@ -983,12 +987,13 @@ function makeCard(key,item,cat){
           +'<div class="step-btns" onclick="event.stopPropagation()">'
             +'<a class="step-ic kakao" href="https://map.kakao.com/link/search/'+q+'" target="_blank">지도</a>'
             +'<a class="step-ic naver" href="https://map.naver.com/v5/search/'+q+'" target="_blank">지도</a>'
-            +'<button class="step-ic navi" onclick="openNavi(\''+esc(s)+'\',\'\')">내비</button>'
+            +'<button class="step-ic navi" onclick="openNavi(\''+esc(s)+'\',\''+naviAddr+'\')">내비</button>'
           +'</div>'
         +'</div>'
         +'</div>';
     }).join('')+'</div>';
   }
+
 
   var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
   var tagH=item.category?'<span class="card-tag">'+esc(item.category)+'</span>':'';
@@ -1380,7 +1385,15 @@ async function chkTouchEnd(e){
   document.querySelectorAll('.chki.drag-over').forEach(function(el){el.classList.remove('drag-over')});
   chkTouchEl=null;
 }
-function openAddChk(){
+function openAddChkFromCal(){
+  // 캘린더에서 보고 있는 날짜 or 오늘을 기본값으로
+  var now=new Date();
+  var defaultDate=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  openAddChk(defaultDate);
+}
+
+function openAddChk(defaultDate){
+  defaultDate=defaultDate||'';
   var cats=getChkCats().filter(function(c){return c!=='전체'});
   var catOpts=cats.map(function(c){
     return'<option value="'+esc(c)+'">'+esc(c)+'</option>';
@@ -1388,12 +1401,11 @@ function openAddChk(){
   g('m-ttl').textContent='할 일 추가';
   g('m-body').innerHTML=
     '<div class="fg"><label>할 일 *</label><input type="text" id="chk-inp" placeholder="할 일을 입력하세요"></div>'
-    +'<div class="fg"><label>날짜</label><input type="date" id="chk-date"></div>'
+    +'<div class="fg"><label>날짜</label><input type="date" id="chk-date" value="'+defaultDate+'"></div>'
     +'<div class="fg"><label>시간</label><input type="text" id="chk-time" inputmode="numeric" placeholder="예: 1430" maxlength="5" onblur="fmtTimeInput(this)"></div>'
     +(cats.length
       ?'<div class="fg"><label>카테고리</label><select id="chk-cat-sel"><option value="">카테고리 없음</option>'+catOpts+'</select></div>'
       :'');
-  // 활성 카테고리 미리 선택
   var sel=g('chk-cat-sel');
   if(sel&&chkActiveCat!=='전체')sel.value=chkActiveCat;
   g('mbg').classList.add('on');
@@ -1787,12 +1799,15 @@ function openNavi(name,address){
 // ── 모달 폼 ───────────────────────────────────────────
 var FORMS={
   courses:function(d){
+    var stepsVal=d&&d.steps?d.steps.join('\n'):'';
+    var addrsVal=d&&d.stepAddrs?d.stepAddrs.join('\n'):'';
     return{title:d?'코스 수정':'데이트 코스 추가',
       html:'<div class="fg"><label>코스 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="예: 홍대 반나절 코스"></div>'
         +'<div class="fg"><label>카테고리</label><select id="f-cat"><option value="">선택 안 함</option>'
         +['💑 로맨틱','🏃 액티비티','🌿 힐링','🍴 맛집투어','🌃 야경'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
-        +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="경복궁&#10;인사동&#10;광장시장">'+(d&&d.steps?d.steps.join('\n'):'')+'</textarea></div>'
+        +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="경복궁&#10;인사동&#10;광장시장">'+stepsVal+'</textarea></div>'
+        +'<div class="fg"><label>장소별 주소 (줄바꿈 구분, 순서 맞춰서)</label><textarea id="f-stepaddrs" placeholder="서울 종로구 사직로 161&#10;서울 종로구 인사동길&#10;서울 종로구 창경궁로" style="font-size:12px">'+addrsVal+'</textarea></div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="간단한 메모"></div>'};
   },
   restaurants:function(d){
@@ -1906,13 +1921,16 @@ var FORMS={
         +'</div></div>'};
   },
   plans:function(d){
+    var stepsVal=d&&d.steps?d.steps.join('\n'):'';
+    var addrsVal=d&&d.stepAddrs?d.stepAddrs.join('\n'):'';
     return{title:d?'일정 수정':'데이트 일정 추가',
       html:'<div class="fg"><label>날짜</label><input type="date" id="f-date" value="'+(d?d.date||'':'')+'"></div>'
         +'<div class="fg"><label>제목 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="예: 성수 데이트"></div>'
         +'<div class="fg"><label>유형</label><select id="f-cat"><option value="">선택 안 함</option>'
         +['🌅 당일치기','🏨 1박2일','🎉 기념일','☀️ 일상데이트'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
-        +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="카페 투썸플레이스&#10;한강공원&#10;홍대 거리">'+(d&&d.steps?d.steps.join('\n'):'')+'</textarea></div>'
+        +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="카페 투썸플레이스&#10;한강공원&#10;홍대 거리">'+stepsVal+'</textarea></div>'
+        +'<div class="fg"><label>장소별 주소 (줄바꿈 구분, 순서 맞춰서)</label><textarea id="f-stepaddrs" placeholder="서울 마포구 연남동&#10;서울 영등포구 여의도동&#10;서울 마포구 홍대입구역" style="font-size:12px">'+addrsVal+'</textarea></div>'
         +'<div class="fg"><label>메모</label><textarea id="f-memo" placeholder="특별한 계획을 적어보세요">'+(d?esc(d.memo||''):'')+'</textarea></div>'};
   }
 };
@@ -1980,6 +1998,7 @@ async function saveModal(){
     price:(g('f-price')||{}).value||'',
     address:(g('f-addr')||{}).value||'',
     steps:g('f-steps')?g('f-steps').value.split('\n').map(function(s){return s.trim()}).filter(Boolean):[],
+    stepAddrs:g('f-stepaddrs')?g('f-stepaddrs').value.split('\n').map(function(s){return s.trim()}):[],
     date:(g('f-date')||{}).value||'',
     allday:alldayEl?alldayEl.checked:false,
     open_time:(g('f-open')||{}).value||'',
@@ -2641,6 +2660,15 @@ async function calDayClick(dateStr){
   },1500);
 }
 
+async function calToggleChk(k){
+  if(!k)return;
+  var cur=(DB.checklist[k]||{}).done||false;
+  await fb().update(rr('checklist/'+k),{done:!cur});
+  // 시트 현재 날짜 다시 표시
+  var title=g('cal-sheet-title');
+  if(title&&title._dateStr)showCalSheet(title._dateStr);
+}
+
 function showCalSheet(dateStr){
   var sheet=g('cal-day-sheet');
   var title=g('cal-sheet-title');
@@ -2656,6 +2684,7 @@ function showCalSheet(dateStr){
   else if(diff===1)dLabel+=' (내일)';
   else if(diff===-1)dLabel+=' (어제)';
   title.textContent=dLabel;
+  title._dateStr=dateStr;
 
   // 해당 날짜의 일정
   var plans=Object.values(DB.plans||{}).filter(function(p){return p.date===dateStr});
@@ -2663,7 +2692,13 @@ function showCalSheet(dateStr){
   var chks=Object.values(DB.checklist||{}).filter(function(c){return c.date===dateStr});
 
   if(!plans.length&&!chks.length){
-    body.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 0">이 날의 일정이나 할 일이 없어요</div>';
+    body.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 0 10px">이 날의 일정이나 할 일이 없어요</div>';
+    var addBtn2=document.createElement('button');
+    addBtn2.className='addbtn';
+    addBtn2.style.cssText='width:100%;font-size:13px;padding:9px';
+    addBtn2.textContent='+ 이 날 할 일 추가';
+    addBtn2.onclick=function(){openAddChk(dateStr);};
+    body.appendChild(addBtn2);
     sheet.style.display='block';
     sheet.scrollIntoView({behavior:'smooth',block:'nearest'});
     return;
@@ -2684,10 +2719,15 @@ function showCalSheet(dateStr){
     html+='<div style="font-size:11px;font-weight:600;color:#5b9cf6;margin:'+(plans.length?'10px':0)+' 0 6px">✅ 할 일</div>';
     html+=chks.sort(function(a,b){return(a.time||'').localeCompare(b.time||'')}).map(function(c){
       var catColor=c.cat?getCatColor(c.cat):'#ccc';
-      return'<div style="font-size:13px;padding:6px 8px;background:var(--sand);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:6px">'
-        +'<span style="width:7px;height:7px;border-radius:50%;background:'+catColor+';flex-shrink:0;display:inline-block"></span>'
+      var chkKey=Object.entries(DB.checklist||{}).find(function(kv){return kv[1]===c;})||['',''];
+      var k=chkKey[0];
+      return'<div onclick="calToggleChk(\''+k+'\')" style="font-size:13px;padding:7px 10px;background:var(--sand);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:opacity .15s;'+(c.done?'opacity:.55':'')+'">'
+        +'<span style="width:16px;height:16px;border-radius:50%;border:1.5px solid '+(c.done?'var(--rose)':'#ccc')+';background:'+(c.done?'var(--rose)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+          +(c.done?'<span style="color:#fff;font-size:9px;font-weight:700">✓</span>':'')
+        +'</span>'
+        +'<span style="width:6px;height:6px;border-radius:50%;background:'+catColor+';flex-shrink:0;display:inline-block"></span>'
         +(c.time?'<span style="font-size:11px;color:var(--muted);flex-shrink:0">'+c.time+'</span>':'')
-        +'<span style="'+(c.done?'text-decoration:line-through;color:var(--muted)':'')+'">'
+        +'<span style="flex:1;'+(c.done?'text-decoration:line-through;color:var(--muted)':'')+'">'
           +esc(c.text||'')
           +(c.cat?'<span style="font-size:10px;color:var(--muted);margin-left:5px">'+esc(c.cat)+'</span>':'')
         +'</span>'
@@ -2695,6 +2735,13 @@ function showCalSheet(dateStr){
     }).join('');
   }
   body.innerHTML=html;
+  // 하단에 할일 추가 버튼
+  var addBtn=document.createElement('button');
+  addBtn.className='addbtn';
+  addBtn.style.cssText='margin-top:10px;width:100%;font-size:13px;padding:9px';
+  addBtn.textContent='+ 이 날 할 일 추가';
+  addBtn.onclick=function(){openAddChk(dateStr);};
+  body.appendChild(addBtn);
   sheet.style.display='block';
   sheet.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
