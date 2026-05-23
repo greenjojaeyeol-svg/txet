@@ -119,9 +119,12 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 
 /* 스텝 */
 .steps{margin-top:8px;display:flex;flex-direction:column;gap:6px}
-.step-r{display:flex;align-items:center;gap:7px}
-.step-dot{width:20px;height:20px;border-radius:50%;background:var(--rose);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600}
+.step-r{display:flex;align-items:flex-start;gap:7px}
+.step-dot{width:20px;height:20px;border-radius:50%;background:var(--rose);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;margin-top:1px}
+.step-body{flex:1;min-width:0}
+.step-name-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .step-t{font-size:12px;color:var(--ink);flex:1}
+.step-drv{font-size:10px;color:#1a56a0;background:#e8f0fe;padding:1px 6px;border-radius:10px;flex-shrink:0;white-space:nowrap}
 .step-btns{display:flex;gap:3px;flex-shrink:0}
 .step-ic{font-size:9px;padding:2px 6px;border-radius:8px;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;line-height:1.4}
 .step-ic.kakao{background:#FAE100;color:#3C1E1E}
@@ -906,27 +909,32 @@ function makeCard(key,item,cat){
   var encAddr=encodeURIComponent(item.address||'');
   var mapH='';
 
-  // 소요시간 - 매번 현재 위치로 새로 계산
+  // 소요시간 - 주소 있으면 주소, 코스/일정은 첫 번째 장소명으로
   var distH='';
-  if(USER_LAT&&item.address){
-    var gc=GEOCODE_CACHE[key];
+  var routeAddr=item.address||'';
+  var routeKey=key;
+  if(!routeAddr&&(cat==='courses'||cat==='plans')&&item.steps&&item.steps.length){
+    routeAddr=item.steps[0];
+    routeKey=key+'_step0'; // 주소와 캐시 키 구분
+  }
+  if(USER_LAT&&routeAddr){
+    var gc=GEOCODE_CACHE[routeKey];
     if(gc&&gc.lat){
       var quickDist=formatDist(haversine(USER_LAT,USER_LON,gc.lat,gc.lon));
-      distH='<div class="drive-badge" id="drv-'+key+'">🚗 <span style="opacity:.6">'+quickDist+' 계산중…</span></div>';
+      distH='<div class="drive-badge" id="drv-'+routeKey+'">🚗 <span style="opacity:.6">'+quickDist+' 계산중…</span></div>';
     }else{
-      distH='<div class="drive-badge" id="drv-'+key+'">🚗 <span style="opacity:.5">계산 중…</span></div>';
+      distH='<div class="drive-badge" id="drv-'+routeKey+'">🚗 <span style="opacity:.5">계산 중…</span></div>';
     }
     (function(k,addr){
       fetchRoute(k,addr,function(r){
         var el=g('drv-'+k);if(!el)return;
         if(r&&r.duration){
-          var timeStr=r.updatedAt?' <span style="opacity:.45;font-size:10px">'+r.updatedAt+' 기준</span>':'';
-          el.innerHTML='🚗 '+(formatDist(r.distance)?formatDist(r.distance)+' · ':'')+formatDuration(r.duration)+timeStr;
+          el.innerHTML='🚗 '+(formatDist(r.distance)?formatDist(r.distance)+' · ':'')+formatDuration(r.duration);
         }else if(r&&r.dist){
           el.innerHTML='📍 '+formatDist(r.dist)+' (직선거리)';
-        }else{el.style.display='none'}
+        }else{el.style.display='none';}
       });
-    })(key,item.address);
+    })(routeKey,routeAddr);
   }
 
   // 지도 버튼 - 코스/일정은 장소명에 버튼 있어서 제외
@@ -945,14 +953,38 @@ function makeCard(key,item,cat){
   if((cat==='courses'||cat==='plans')&&item.steps&&item.steps.length){
     stepsH='<div class="steps">'+item.steps.map(function(s,i){
       var q=encodeURIComponent(s.trim());
-      var naviUrl='https://map.kakao.com/link/search/'+q;
+      var stepKey=key+'_s'+i;
+      // 소요시간 뱃지 (캐시 있으면 즉시, 없으면 계산중)
+      var rc=ROUTE_CACHE[stepKey];
+      var drvTxt='';
+      if(rc&&rc.duration){drvTxt=formatDuration(rc.duration);}
+      else if(rc&&rc.dist){drvTxt=formatDist(rc.dist);}
+      var drvBadge=USER_LAT
+        ?'<span class="step-drv" id="sdrv-'+stepKey+'">'+(drvTxt||'…')+'</span>'
+        :'';
+      // 캐시 없으면 비동기로 계산
+      if(USER_LAT&&!rc){
+        (function(sk,addr){
+          fetchRoute(sk,addr,function(r){
+            var el=g('sdrv-'+sk);if(!el)return;
+            if(r&&r.duration)el.textContent=formatDuration(r.duration);
+            else if(r&&r.dist)el.textContent=formatDist(r.dist);
+            else el.style.display='none';
+          });
+        })(stepKey,s.trim());
+      }
       return'<div class="step-r">'
         +'<div class="step-dot">'+(i+1)+'</div>'
-        +'<div class="step-t">'+esc(s)+'</div>'
-        +'<div class="step-btns" onclick="event.stopPropagation()">'
-          +'<a class="step-ic kakao" href="https://map.kakao.com/link/search/'+q+'" target="_blank" title="카카오맵">지도</a>'
-          +'<a class="step-ic naver" href="https://map.naver.com/v5/search/'+q+'" target="_blank" title="네이버지도">지도</a>'
-          +'<button class="step-ic navi" onclick="openNavi(\''+esc(s)+'\',\'\')" title="카카오내비">내비</button>'
+        +'<div class="step-body">'
+          +'<div class="step-name-row">'
+            +'<span class="step-t">'+esc(s)+'</span>'
+            +drvBadge
+          +'</div>'
+          +'<div class="step-btns" onclick="event.stopPropagation()">'
+            +'<a class="step-ic kakao" href="https://map.kakao.com/link/search/'+q+'" target="_blank">지도</a>'
+            +'<a class="step-ic naver" href="https://map.naver.com/v5/search/'+q+'" target="_blank">지도</a>'
+            +'<button class="step-ic navi" onclick="openNavi(\''+esc(s)+'\',\'\')">내비</button>'
+          +'</div>'
         +'</div>'
         +'</div>';
     }).join('')+'</div>';
@@ -1571,7 +1603,7 @@ function loadWeather(){
     if(kakaoMap)placeMyLocMarker();
     if((DB.settings||{}).home1||(DB.settings||{}).home2)calcHomeRoutes();
     // 위치 세팅 후 카드 즉시 리렌더 (소요시간 표시)
-    ['courses','restaurants','cafes'].forEach(function(cat){
+    ['courses','restaurants','cafes','spots','plans'].forEach(function(cat){
       if(Object.keys(DB[cat]||{}).length>0)render(cat);
     });
     // 거리순 정렬 항목 자동 계산 (위치 확보 후 800ms 대기, DB 로드 여유)
