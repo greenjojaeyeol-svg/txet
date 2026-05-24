@@ -593,87 +593,6 @@ function enterApp(){
   subscribeAll();
   loadWeather();
   renderCal();
-  initNotifications();
-}
-
-// ── 할일 알림 ──────────────────────────────────────────
-var notifTimer=null;
-var notifiedKeys={};
-
-function initNotifications(){
-  if(!('Notification' in window)){
-    console.log('이 브라우저는 알림을 지원하지 않아요');
-    return;
-  }
-  if(Notification.permission==='denied'){
-    console.log('알림 권한이 거부됐어요. 브라우저 설정에서 허용해주세요.');
-    return;
-  }
-  if(Notification.permission==='default'){
-    Notification.requestPermission().then(function(perm){
-      console.log('알림 권한:', perm);
-      if(perm==='granted'){
-        startNotifTimer();
-        toast('🩷 할일 알림이 활성화됐어요!');
-      }
-    });
-  }else{
-    startNotifTimer();
-  }
-}
-
-function startNotifTimer(){
-  if(notifTimer)clearInterval(notifTimer);
-  notifTimer=setInterval(checkNotifications,30000); // 30초마다 체크
-  checkNotifications();
-}
-
-function checkNotifications(){
-  if(Notification.permission!=='granted')return;
-  var now=new Date();
-  var todayStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-  var nowMinutes=now.getHours()*60+now.getMinutes();
-
-  Object.entries(DB.checklist||{}).forEach(function(kv){
-    var k=kv[0],item=kv[1];
-    if(item.done)return;
-    if(!item.date||!item.time)return;
-    if(item.date!==todayStr)return;
-
-    var parts=item.time.split(':');
-    if(parts.length<2)return;
-    var itemMinutes=parseInt(parts[0])*60+parseInt(parts[1]);
-    var diff=itemMinutes-nowMinutes; // 양수 = 앞으로 남은 분
-
-    // 10분 전 알림
-    if(diff>=9&&diff<=10&&!notifiedKeys[k+'_'+todayStr+'_10']){
-      notifiedKeys[k+'_'+todayStr+'_10']=true;
-      sendNotif(k,'🔔 10분 후 할 일',item);
-    }
-    // 5분 전 알림
-    if(diff>=4&&diff<=5&&!notifiedKeys[k+'_'+todayStr+'_5']){
-      notifiedKeys[k+'_'+todayStr+'_5']=true;
-      sendNotif(k,'⏰ 5분 후 할 일',item);
-    }
-  });
-}
-
-function sendNotif(k,title,item){
-  var catName=item.cat?'['+item.cat+'] ':'';
-  try{
-    var n=new Notification(title,{
-      body:catName+item.time+' '+item.text,
-      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🩷</text></svg>',
-      tag:k+'_'+title,
-      requireInteraction:false
-    });
-    n.onclick=function(){
-      window.focus();
-      var btn=document.querySelector('.nb[onclick*="checklist"]');
-      if(btn)goPage('checklist',btn);
-      n.close();
-    };
-  }catch(err){console.log('알림 오류:',err);}
 }
 
 
@@ -907,7 +826,6 @@ function render(cat){
   if(cat==='settings')return;
   if(cat==='checklist'||cat==='chk_cats'){
     renderChk();renderCal();
-    checkNotifications();
     var sheet=g('cal-day-sheet');
     var title=g('cal-sheet-title');
     if(sheet&&sheet.style.display!=='none'&&title&&title._dateStr)showCalSheet(title._dateStr);
