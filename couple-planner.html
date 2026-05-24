@@ -632,41 +632,48 @@ function checkNotifications(){
   if(Notification.permission!=='granted')return;
   var now=new Date();
   var todayStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-  var nowH=String(now.getHours()).padStart(2,'0');
-  var nowM=String(now.getMinutes()).padStart(2,'0');
-  var nowTime=nowH+':'+nowM;
+  var nowMinutes=now.getHours()*60+now.getMinutes();
 
   Object.entries(DB.checklist||{}).forEach(function(kv){
     var k=kv[0],item=kv[1];
     if(item.done)return;
     if(!item.date||!item.time)return;
     if(item.date!==todayStr)return;
-    // 시간 정규화 비교 (HH:MM 형식 맞춤)
-    var itemTime=item.time.trim();
-    if(itemTime.length===4)itemTime='0'+itemTime; // 9:30 → 09:30 아닌 경우
-    if(itemTime!==nowTime)return;
-    if(notifiedKeys[k+'_'+todayStr])return;
 
-    notifiedKeys[k+'_'+todayStr]=true;
-    var catName=item.cat?'['+item.cat+'] ':'';
-    try{
-      var n=new Notification('🩷 할 일 알림', {
-        body:catName+item.time+' '+item.text,
-        icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🩷</text></svg>',
-        tag:k,
-        requireInteraction:false
-      });
-      n.onclick=function(){
-        window.focus();
-        var btn=document.querySelector('.nb[onclick*="checklist"]');
-        if(btn)goPage('checklist',btn);
-        n.close();
-      };
-      console.log('알림 발송:', item.text, item.time);
-    }catch(err){
-      console.log('알림 오류:', err);
+    var parts=item.time.split(':');
+    if(parts.length<2)return;
+    var itemMinutes=parseInt(parts[0])*60+parseInt(parts[1]);
+    var diff=itemMinutes-nowMinutes; // 양수 = 앞으로 남은 분
+
+    // 10분 전 알림
+    if(diff>=9&&diff<=10&&!notifiedKeys[k+'_'+todayStr+'_10']){
+      notifiedKeys[k+'_'+todayStr+'_10']=true;
+      sendNotif(k,'🔔 10분 후 할 일',item);
+    }
+    // 5분 전 알림
+    if(diff>=4&&diff<=5&&!notifiedKeys[k+'_'+todayStr+'_5']){
+      notifiedKeys[k+'_'+todayStr+'_5']=true;
+      sendNotif(k,'⏰ 5분 후 할 일',item);
     }
   });
+}
+
+function sendNotif(k,title,item){
+  var catName=item.cat?'['+item.cat+'] ':'';
+  try{
+    var n=new Notification(title,{
+      body:catName+item.time+' '+item.text,
+      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🩷</text></svg>',
+      tag:k+'_'+title,
+      requireInteraction:false
+    });
+    n.onclick=function(){
+      window.focus();
+      var btn=document.querySelector('.nb[onclick*="checklist"]');
+      if(btn)goPage('checklist',btn);
+      n.close();
+    };
+  }catch(err){console.log('알림 오류:',err);}
 }
 
 
