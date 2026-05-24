@@ -592,10 +592,60 @@ function enterApp(){
   ROUTE_CACHE={};DIST_CACHE={};
   subscribeAll();
   loadWeather();
-  renderCal(); // 날씨 로드 시 USER_LAT/LON 세팅 + 이후 loadRouteCache 재호출
+  renderCal();
+  initNotifications();
 }
 
-// ── Firebase 구독 ─────────────────────────────────────
+// ── 할일 알림 ──────────────────────────────────────────
+var notifTimer=null;
+var notifiedKeys={};
+
+function initNotifications(){
+  if(!('Notification' in window)){return;}
+  if(Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+  // 기존 타이머 제거 후 재시작
+  if(notifTimer)clearInterval(notifTimer);
+  notifTimer=setInterval(checkNotifications,60000);
+  checkNotifications(); // 즉시 한번 체크
+}
+
+function checkNotifications(){
+  if(Notification.permission!=='granted')return;
+  var now=new Date();
+  var todayStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var nowTime=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+
+  Object.entries(DB.checklist||{}).forEach(function(kv){
+    var k=kv[0],item=kv[1];
+    if(item.done)return; // 완료된 항목 제외
+    if(!item.date||!item.time)return; // 날짜·시간 없으면 제외
+    if(item.date!==todayStr)return; // 오늘 날짜만
+    if(item.time!==nowTime)return; // 현재 시간 일치
+    if(notifiedKeys[k+'_'+todayStr])return; // 이미 알림 보낸 항목
+
+    // 알림 발송
+    notifiedKeys[k+'_'+todayStr]=true;
+    var catName=item.cat?'['+item.cat+'] ':'';
+    var n=new Notification('🩷 할 일 알림', {
+      body:catName+item.time+' '+item.text,
+      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🩷</text></svg>',
+      badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🩷</text></svg>',
+      tag:k,
+      renotify:false
+    });
+    n.onclick=function(){
+      window.focus();
+      // 체크 탭으로 이동
+      var btn=document.querySelector('.nb[onclick*="checklist"]');
+      if(btn)goPage('checklist',btn);
+      n.close();
+    };
+  });
+}
+
+
 function subscribeAll(){
   ['courses','restaurants','cafes','spots','plans','checklist','chk_cats','settings','date_marks'].forEach(function(cat){
     var u=fb().onValue(rr(cat),function(snap){
@@ -826,7 +876,7 @@ function render(cat){
   if(cat==='settings')return;
   if(cat==='checklist'||cat==='chk_cats'){
     renderChk();renderCal();
-    // 시트 열려있으면 갱신
+    checkNotifications();
     var sheet=g('cal-day-sheet');
     var title=g('cal-sheet-title');
     if(sheet&&sheet.style.display!=='none'&&title&&title._dateStr)showCalSheet(title._dateStr);
@@ -997,7 +1047,6 @@ function makeCard(key,item,cat){
 
   var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
   var tagH=item.category?'<span class="card-tag">'+esc(item.category)+'</span>':'';
-  var vbadge=item.visited?'<span class="vbadge">✅ 방문</span>':'';
   var favbadge=item.fav?'<span style="font-size:14px">⭐</span>':'';
   // 별점 표시 (헤더)
   var ratingH='';
@@ -1028,6 +1077,7 @@ function makeCard(key,item,cat){
     var _dn=['일','월','화','수','목','금','토'];
     timeDetail+='<div class="card-sub">정기휴무 · '+item.closed_days.map(function(d){return _dn[d]}).join(' · ')+'요일</div>';
   }
+  var vbadge=item.visited?'<span class="vbadge">✅ 방문</span>':'';
   var vbtnH='<button class="vbtn'+(item.visited?' on':'')+'" onclick="toggleVisit(\''+key+'\',\''+cat+'\','+!!item.visited+',event)">'+(item.visited?'✅ 방문완료':'☑ 방문전')+'</button>';
   var favbtnH='<button class="cbtn fav-btn'+(item.fav?' on':'')+'" onclick="toggleFav(\''+key+'\',\''+cat+'\','+!!item.fav+',event)" title="즐겨찾기">'+(item.fav?'⭐':'☆')+'</button>';
 
@@ -1085,7 +1135,7 @@ function toggleCard(k){var e=g('cd-'+k);if(e)e.classList.toggle('open')}
 
 async function toggleVisit(k,cat,cur,e){
   e.stopPropagation();
-  await fb().update(rr(cat+'/'+k),{visited:!cur});
+  await fb().update(rr(cat+'/'+k),{visited:!cur,visited_date:null});
 }
 async function delItem(k,cat){
   if(!confirm('삭제할까요?'))return;
