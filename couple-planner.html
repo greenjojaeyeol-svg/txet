@@ -161,7 +161,9 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
 .cat-edit-btn{font-size:12px;margin-left:4px;opacity:.6;vertical-align:middle}
 .chk-cattab.cat-dragging{opacity:.45;transform:scale(.95)}
 .chk-cattab.cat-drag-over{border-color:var(--rose)!important;transform:scale(1.06);box-shadow:0 0 0 2px var(--rose)}
-.chk-time-badge{font-size:11px;color:var(--muted);font-weight:500;margin-right:5px}
+.chk-mode-btn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:'Pretendard',sans-serif;transition:.15s}
+.chk-mode-btn.on{background:var(--rose);color:#fff;border-color:var(--rose)}
+.outer-detail{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.6}
 .chk-cat-name{font-size:11px;color:var(--muted);margin-left:6px;font-weight:400}
 .chk-cat-tag{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:6px;vertical-align:middle;flex-shrink:0}
 .chki{display:flex;align-items:center;gap:11px;padding:12px 13px;background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;user-select:none}
@@ -1331,6 +1333,24 @@ function renderChk(){
           +(v.time?'<span class="chk-time-badge">'+v.time+'</span>':'')
           +esc(v.text||'')
           +catName
+          +(v.outer?'<div class="outer-detail">'
+            +(v.outer.addr?'<div>📍 '+esc(v.outer.addr)+'</div>':'')
+            +(v.outer.manager||v.outer.tel
+              ?'<div>👤 '+(v.outer.manager?esc(v.outer.manager):'')
+                +(v.outer.tel?' · <a href="tel:'+esc(v.outer.tel)+'" onclick="event.stopPropagation()" style="color:var(--rose);text-decoration:none">'+esc(v.outer.tel)+' 📞</a>':'')
+              +'</div>':'')
+            +(v.outer.symptom?'<div>📋 '+esc(v.outer.symptom)+'</div>':'')
+            +(v.outer.transport?'<div>🚗 '+esc(v.outer.transport)+(v.outer.car?' · '+esc(v.outer.car):'')+'</div>':'')
+            +(v.outer.checks&&v.outer.checks.length
+              ?'<div style="margin-top:4px">'+v.outer.checks.map(function(c,ci){
+                var ck=(v.outer.checked&&v.outer.checked[ci]);
+                return'<div style="display:flex;align-items:center;gap:5px;cursor:pointer" onclick="event.stopPropagation();toggleOuterChk(\''+k+'\','+ci+')">'
+                  +'<span style="width:14px;height:14px;border-radius:3px;border:1.5px solid '+(ck?'var(--rose)':'#ccc')+';background:'+(ck?'var(--rose)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(ck?'<span style="color:#fff;font-size:9px;font-weight:700">✓</span>':'')+'</span>'
+                  +'<span style="'+(ck?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(c)+'</span>'
+                  +'</div>';
+              }).join('')+'</div>'
+              :'')
+          +'</div>':'')
         +'</div>'
         +'<button class="chk-edit" onclick="event.stopPropagation();startEditChk(\''+k+'\')">✏️</button>'
         +'<button class="chk-del" onclick="event.stopPropagation();delChk(\''+k+'\')">×</button>'
@@ -1394,17 +1414,9 @@ function openAddChkFromCal(){
 function openAddChk(defaultDate){
   defaultDate=defaultDate||'';
   var cats=getChkCats().filter(function(c){return c!=='전체'});
-  var catOpts=cats.map(function(c){
-    return'<option value="'+esc(c)+'">'+esc(c)+'</option>';
-  }).join('');
+  var catOpts=cats.map(function(c){return'<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join('');
   g('m-ttl').textContent='할 일 추가';
-  g('m-body').innerHTML=
-    '<div class="fg"><label>할 일 *</label><input type="text" id="chk-inp" placeholder="할 일을 입력하세요"></div>'
-    +'<div class="fg"><label>날짜</label><input type="date" id="chk-date" value="'+defaultDate+'"></div>'
-    +'<div class="fg"><label>시간</label><input type="text" id="chk-time" inputmode="numeric" placeholder="예: 1430" maxlength="5" onblur="fmtTimeInput(this)"></div>'
-    +(cats.length
-      ?'<div class="fg"><label>카테고리</label><select id="chk-cat-sel"><option value="">카테고리 없음</option>'+catOpts+'</select></div>'
-      :'');
+  g('m-body').innerHTML=renderAddChkForm(defaultDate,catOpts,false);
   var sel=g('chk-cat-sel');
   if(sel&&chkActiveCat!=='전체')sel.value=chkActiveCat;
   g('mbg').classList.add('on');
@@ -1413,76 +1425,202 @@ function openAddChk(defaultDate){
   setTimeout(function(){var t=g('chk-inp');if(t)t.focus();},100);
 }
 
+function renderAddChkForm(defaultDate,catOpts,isOuter,d){
+  var modeBtn='<div style="display:flex;gap:6px;margin-bottom:12px">'
+    +'<button type="button" onclick="switchChkMode(false)" class="chk-mode-btn'+(isOuter?'':' on')+'">📝 일반</button>'
+    +'<button type="button" onclick="switchChkMode(true)" class="chk-mode-btn'+(isOuter?' on':'')+'">🏢 외근</button>'
+    +'</div>';
+
+  var inp=function(id,val,ph){
+    return'<input type="text" id="'+id+'" value="'+esc(val||'')+'" placeholder="'+ph+'" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none;box-sizing:border-box">';
+  };
+  var timeInp='<input type="text" id="chk-time" value="'+esc((d&&d.time)||'')+'" inputmode="numeric" placeholder="1430" maxlength="5" onblur="fmtTimeInput(this)" style="width:100%;padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none;box-sizing:border-box;text-align:center">';
+
+  if(!isOuter){
+    return modeBtn
+      +'<div class="fg"><label>할 일 *</label>'+inp('chk-inp',(d&&d.text)||'','할 일을 입력하세요')+'</div>'
+      +'<div class="fg" style="display:flex;gap:8px">'
+        +'<div style="flex:1"><label>날짜</label><input type="date" id="chk-date" value="'+esc((d&&d.date)||defaultDate)+'" style="width:100%;padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none;box-sizing:border-box"></div>'
+        +'<div style="width:90px"><label>시간</label>'+timeInp+'</div>'
+      +'</div>'
+      +(catOpts?'<div class="fg"><label>카테고리</label><select id="chk-cat-sel"><option value="">카테고리 없음</option>'+catOpts+'</select></div>':'');
+  }
+
+  var o=d&&d.outer||{};
+  // 체크리스트 아이템
+  var chkItems=o.checks||[''];
+  var chkHtml=chkItems.map(function(c,i){
+    return'<div style="display:flex;gap:6px;margin-bottom:5px" id="outer-chk-row-'+i+'">'
+      +'<input type="text" id="outer-chk-'+i+'" value="'+esc(c)+'" placeholder="'+(i+1)+'. 확인사항" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none">'
+      +'<button type="button" onclick="removeOuterChk('+i+')" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;cursor:pointer;font-size:16px;color:var(--muted)">×</button>'
+      +'</div>';
+  }).join('');
+
+  return modeBtn
+    +'<div class="fg" style="display:flex;gap:8px">'
+      +'<div style="flex:1"><label>날짜</label><input type="date" id="chk-date" value="'+esc((d&&d.date)||defaultDate)+'" style="width:100%;padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none;box-sizing:border-box"></div>'
+      +'<div style="width:90px"><label>방문시간</label>'+timeInp+'</div>'
+    +'</div>'
+    +'<div class="fg"><label>현장명 *</label>'+inp('outer-site',o.site,'현장명 입력')+'</div>'
+    +'<div class="fg"><label>주소</label>'+inp('outer-addr',o.addr,'현장 주소')+'</div>'
+    +'<div class="fg" style="display:flex;gap:8px;align-items:flex-end">'
+      +'<div style="flex:1"><label>담당자</label>'+inp('outer-manager',o.manager,'홍길동')+'</div>'
+      +'<div style="flex:1"><label>연락처</label>'
+        +'<div style="display:flex;gap:4px">'
+          +'<input type="tel" id="outer-tel" value="'+esc(o.tel||'')+'" placeholder="010-0000-0000" oninput="fmtTelInput(this);var a=g(\'outer-tel-call\');if(a)a.href=\'tel:\'+this.value;" style="flex:1;padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none">'
+          +'<a id="outer-tel-call" href="tel:'+(o.tel||'')+'" style="padding:0 10px;background:var(--rose);color:#fff;border-radius:12px;display:flex;align-items:center;font-size:16px;text-decoration:none;flex-shrink:0">📞</a>'
+        +'</div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="fg"><label>증상/내용</label><textarea id="outer-symptom" placeholder="증상 또는 작업 내용" style="height:60px;width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none;box-sizing:border-box;resize:vertical">'+esc(o.symptom||'')+'</textarea></div>'
+    +'<div class="fg" style="display:flex;gap:8px">'
+      +'<div style="flex:1"><label>교통수단</label><select id="outer-transport" style="width:100%;padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none">'
+        +'<option value="">선택</option>'
+        +'<option value="회사차량"'+(o.transport==='회사차량'?' selected':'')+'>🚗 회사차량</option>'
+        +'<option value="대중교통"'+(o.transport==='대중교통'?' selected':'')+'>🚌 대중교통</option>'
+        +'<option value="도보"'+(o.transport==='도보'?' selected':'')+'>🚶 도보</option>'
+        +'<option value="기타"'+(o.transport==='기타'?' selected':'')+'>기타</option>'
+      +'</select></div>'
+      +'<div style="flex:1"><label>차량번호</label>'+inp('outer-car',o.car,'예: 12가 3456')+'</div>'
+    +'</div>'
+    +'<div class="fg"><label>체크리스트</label>'
+      +'<div id="outer-chk-list">'+chkHtml+'</div>'
+      +'<button type="button" onclick="addOuterChk()" style="margin-top:4px;padding:6px 14px;border:1.5px dashed var(--border);border-radius:12px;background:#fff;font-size:12px;color:var(--muted);cursor:pointer;font-family:\'Pretendard\',sans-serif">+ 항목 추가</button>'
+    +'</div>'
+    +(catOpts?'<div class="fg"><label>카테고리</label><select id="chk-cat-sel"><option value="">카테고리 없음</option>'+catOpts+'</select></div>':'');
+}
+
+function addOuterChk(){
+  var list=g('outer-chk-list');if(!list)return;
+  var rows=list.querySelectorAll('[id^="outer-chk-"]');
+  var i=rows.length;
+  var div=document.createElement('div');
+  div.id='outer-chk-row-'+i;
+  div.style.cssText='display:flex;gap:6px;margin-bottom:5px';
+  div.innerHTML='<input type="text" id="outer-chk-'+i+'" placeholder="'+(i+1)+'. 확인사항" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none">'
+    +'<button type="button" onclick="removeOuterChk('+i+')" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;cursor:pointer;font-size:16px;color:var(--muted)">×</button>';
+  list.appendChild(div);
+  var inp=g('outer-chk-'+i);if(inp)inp.focus();
+}
+
+function removeOuterChk(i){
+  var row=g('outer-chk-row-'+i);
+  if(row)row.remove();
+}
+
+function getOuterChecks(){
+  var list=g('outer-chk-list');if(!list)return[];
+  var result=[];
+  list.querySelectorAll('input[type=text]').forEach(function(inp){
+    if(inp.value.trim())result.push(inp.value.trim());
+  });
+  return result;
+}
+
+function switchChkMode(isOuter){
+  var cats=getChkCats().filter(function(c){return c!=='전체'});
+  var catOpts=cats.map(function(c){return'<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join('');
+  var curDate=(g('chk-date')||{}).value||'';
+  var curTime=(g('chk-time')||{}).value||'';
+  g('m-body').innerHTML=renderAddChkForm(curDate,catOpts,isOuter);
+  if(g('chk-time')&&curTime)g('chk-time').value=curTime;
+  var sel=g('chk-cat-sel');
+  if(sel&&chkActiveCat!=='전체')sel.value=chkActiveCat;
+  var saveBtn=document.querySelector('.msave');
+  saveBtn.onclick=function(){addCheck();};
+}
+
 async function addCheck(){
-  var inp=g('chk-inp');
-  if(!inp)return;
-  var text=inp.value.trim();
-  if(!text){toast('할 일을 입력해주세요');return;}
+  var isOuter=!!g('outer-site');
+  var text='',outerData=null;
+  if(isOuter){
+    var site=(g('outer-site')||{}).value||'';
+    if(!site){toast('현장명을 입력해주세요');return;}
+    var addr=(g('outer-addr')||{}).value||'';
+    var manager=(g('outer-manager')||{}).value||'';
+    var tel=(g('outer-tel')||{}).value||'';
+    var symptom=(g('outer-symptom')||{}).value||'';
+    var transport=(g('outer-transport')||{}).value||'';
+    var car=(g('outer-car')||{}).value||'';
+    text='🏢 '+site;
+    outerData={site:site,addr:addr,manager:manager,tel:tel,symptom:symptom,transport:transport,car:car,checks:getOuterChecks()};
+  }else{
+    var inp=g('chk-inp');
+    if(!inp)return;
+    text=inp.value.trim();
+    if(!text){toast('할 일을 입력해주세요');return;}
+  }
   var date=(g('chk-date')||{}).value||'';
   var time=(g('chk-time')||{}).value||'';
   var cat=(g('chk-cat-sel')||{}).value||'';
-  await fb().set(rr('checklist/'+uid()),{text:text,done:false,date:date,time:time,cat:cat,ts:Date.now()});
+  var item={text:text,done:false,date:date,time:time,cat:cat,ts:Date.now()};
+  if(outerData)item.outer=outerData;
+  await fb().set(rr('checklist/'+uid()),item);
   var saveBtn=document.querySelector('.msave');
   if(saveBtn)saveBtn.onclick=saveModal;
   closeModal();
-  toast('할 일 추가됐어요 ✓');
+  toast('추가됐어요 ✓');
 }
+async function toggleOuterChk(k,idx){
+  var item=DB.checklist[k];if(!item||!item.outer)return;
+  var checked=item.outer.checked?item.outer.checked.slice():[];
+  checked[idx]=!checked[idx];
+  await fb().update(rr('checklist/'+k+'/outer'),{checked:checked});
+}
+
 async function toggleChk(k){var c=(DB.checklist[k]||{}).done||false;await fb().update(rr('checklist/'+k),{done:!c})}
 async function delChk(k){await fb().remove(rr('checklist/'+k))}
 
 function startEditChk(k){
   var item=DB.checklist[k];
   if(!item)return;
+  var isOuter=!!(item.outer);
   var cats=getChkCats().filter(function(c){return c!=='전체'});
-  var catOpts=cats.map(function(c){
-    return'<option value="'+esc(c)+'"'+(item.cat===c?' selected':'')+'>'+esc(c)+'</option>';
-  }).join('');
-  var html=''
-    +'<div class="fg"><label>할 일</label>'
-    +'<input type="text" id="chkedit-text-'+k+'" value="'+esc(item.text||'')+'" onclick="event.stopPropagation()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:\'Pretendard\',sans-serif;outline:none;box-sizing:border-box">'
-    +'</div>'
-    +'<div class="fg"><label>날짜</label>'
-    +'<input type="date" id="chkedit-date-'+k+'" value="'+(item.date||'')+'" onclick="event.stopPropagation()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:\'Pretendard\',sans-serif;outline:none;box-sizing:border-box">'
-    +'</div>'
-    +'<div class="fg"><label>시간</label>'
-    +'<input type="text" id="chkedit-time-'+k+'" value="'+(item.time||'')+'" inputmode="numeric" placeholder="예: 1430" maxlength="5" onblur="fmtTimeInput(this)" onclick="event.stopPropagation()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:\'Pretendard\',sans-serif;outline:none;box-sizing:border-box">'
-    +'</div>'
-    +(cats.length?
-      '<div class="fg"><label>카테고리</label>'
-      +'<select id="chkedit-cat-'+k+'" onclick="event.stopPropagation()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:\'Pretendard\',sans-serif;outline:none;box-sizing:border-box;background:#fff">'
-      +'<option value="">카테고리 없음</option>'+catOpts
-      +'</select></div>'
-    :'');
+  var catOpts=cats.map(function(c){return'<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join('');
   g('m-ttl').textContent='할 일 수정';
-  g('m-body').innerHTML=html;
+  g('m-body').innerHTML=renderAddChkForm('',catOpts,isOuter,item);
+  var sel=g('chk-cat-sel');if(sel&&item.cat)sel.value=item.cat;
   g('mbg').classList.add('on');
-  // 저장 버튼 교체
   var saveBtn=document.querySelector('.msave');
   saveBtn.onclick=function(){saveEditChk(k);};
-  setTimeout(function(){var t=g('chkedit-text-'+k);if(t){t.focus();t.select();}},100);
+  setTimeout(function(){var t=g('chk-inp')||g('outer-site');if(t){t.focus();if(t.select)t.select();}},100);
 }
 async function saveEditChk(k){
-  var textEl=g('chkedit-text-'+k);
-  var dateEl=g('chkedit-date-'+k);
-  var catEl=g('chkedit-cat-'+k);
-  if(!textEl)return;
-  var val=textEl.value.trim();
-  if(!val){toast('내용을 입력해주세요');return;}
-  await fb().update(rr('checklist/'+k),{
-    text:val,
-    date:dateEl?dateEl.value:'',
-    time:(g('chkedit-time-'+k)||{}).value||'',
-    cat:catEl?catEl.value:''
-  });
-  // 저장 버튼 원래대로 복원
+  var isOuter=!!g('outer-site');
+  var updates={};
+  if(isOuter){
+    var site=(g('outer-site')||{}).value||'';
+    if(!site){toast('현장명을 입력해주세요');return;}
+    var o=DB.checklist[k]&&DB.checklist[k].outer||{};
+    updates.text='🏢 '+site;
+    updates.date=(g('chk-date')||{}).value||'';
+    updates.time=(g('chk-time')||{}).value||'';
+    updates.cat=(g('chk-cat-sel')||{}).value||'';
+    updates.outer={
+      site:site,
+      addr:(g('outer-addr')||{}).value||'',
+      manager:(g('outer-manager')||{}).value||'',
+      tel:(g('outer-tel')||{}).value||'',
+      symptom:(g('outer-symptom')||{}).value||'',
+      transport:(g('outer-transport')||{}).value||'',
+      car:(g('outer-car')||{}).value||'',
+      checks:getOuterChecks(),
+      checked:o.checked||[]
+    };
+  }else{
+    var textEl=g('chk-inp');
+    if(!textEl||!textEl.value.trim()){toast('내용을 입력해주세요');return;}
+    updates.text=textEl.value.trim();
+    updates.date=(g('chk-date')||{}).value||'';
+    updates.time=(g('chk-time')||{}).value||'';
+    updates.cat=(g('chk-cat-sel')||{}).value||'';
+    updates.outer=null;
+  }
+  await fb().update(rr('checklist/'+k),updates);
   var saveBtn=document.querySelector('.msave');
   if(saveBtn)saveBtn.onclick=saveModal;
   closeModal();
   toast('수정했어요 ✓');
-}
-function cancelEditChk(k,orig){
-  var lbl=g('chklbl-'+k);
-  if(lbl)lbl.textContent=orig;
 }
 
 // ── 설정 ──────────────────────────────────────────────
@@ -1944,6 +2082,14 @@ function setPark(btn){
 }
 
 // 시간 자동 포맷: 2100 → 21:00, 9 → 09:00, 930 → 09:30
+function fmtTelInput(el){
+  var v=el.value.replace(/[^0-9]/g,'');
+  if(v.length<=3)el.value=v;
+  else if(v.length<=7)el.value=v.slice(0,3)+'-'+v.slice(3);
+  else if(v.length<=11)el.value=v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7);
+  else el.value=v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7,11);
+}
+
 function fmtTimeInput(el){
   var v=el.value.replace(/[^0-9]/g,'');
   if(!v){el.value='';return;}
@@ -2660,7 +2806,6 @@ async function toggleMark(dateStr){
 var calLastDate=null,calClickCount=0,calClickTimer=null;
 
 async function calDayClick(dateStr){
-  // 같은 날짜 연속 탭 카운트
   if(calLastDate===dateStr){
     calClickCount++;
   }else{
@@ -2670,31 +2815,31 @@ async function calDayClick(dateStr){
   clearTimeout(calClickTimer);
 
   if(calClickCount===1){
-    // 1번: 시트만 표시 (하트 변경 없음)
     showCalSheet(dateStr);
   }else if(calClickCount===2){
-    // 2번: 🩷
     await fb().set(rr('date_marks/'+dateStr.replace(/-/g,'_')),'pink');
   }else if(calClickCount===3){
-    // 3번: ❤️
     await fb().set(rr('date_marks/'+dateStr.replace(/-/g,'_')),'red');
   }else{
-    // 4번: 취소
     await fb().remove(rr('date_marks/'+dateStr.replace(/-/g,'_')));
-    calClickCount=0;
-    calLastDate=null;
-  }
-
-  // 1.5초 후 카운트 리셋
-  calClickTimer=setTimeout(function(){
     calClickCount=0;calLastDate=null;
-  },1500);
+  }
+  calClickTimer=setTimeout(function(){calClickCount=0;calLastDate=null;},1500);
 }
 
 async function calDelChk(k){
   if(!confirm('삭제할까요?'))return;
   await fb().remove(rr('checklist/'+k));
   toast('삭제했어요');
+}
+
+function calToggleOuter(rowEl){
+  var detail=rowEl.nextElementSibling;
+  if(!detail)return;
+  var arrow=rowEl.querySelector('.cal-outer-arrow');
+  var isOpen=detail.style.display!=='none';
+  detail.style.display=isOpen?'none':'block';
+  if(arrow)arrow.textContent=isOpen?'▼':'▲';
 }
 
 async function calToggleChk(k){
@@ -2758,22 +2903,49 @@ function showCalSheet(dateStr){
       var catColor=c.cat?getCatColor(c.cat):'#ccc';
       var k=Object.entries(DB.checklist||{}).find(function(kv){return kv[1]===c;});
       var ck=k?k[0]:'';
-      return'<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--sand);border-radius:8px;margin-bottom:5px;">'
-        // 체크 버튼
-        +'<div onclick="calToggleChk(\''+ck+'\')" style="width:18px;height:18px;border-radius:50%;border:1.5px solid '+(c.done?'var(--rose)':'#ccc')+';background:'+(c.done?'var(--rose)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer">'
-          +(c.done?'<span style="color:#fff;font-size:9px;font-weight:700">✓</span>':'')
+      var isOuter=!!(c.outer&&c.outer.site);
+      var detailId='cal-outer-'+ck;
+
+      // 외근 상세 내용
+      var outerDetail='';
+      if(isOuter){
+        var o=c.outer;
+        outerDetail='<div id="'+detailId+'" style="display:none;margin-top:6px;padding:8px 10px;background:#fff;border-radius:8px;border:1px solid var(--border);font-size:12px">'
+          +(o.addr?'<div style="margin-bottom:3px">📍 '+esc(o.addr)+'</div>':'')
+          +(o.manager||o.tel
+            ?'<div style="margin-bottom:3px">👤 '+(o.manager?esc(o.manager):'')
+              +(o.tel?' · <a href="tel:'+esc(o.tel)+'" onclick="event.stopPropagation()" style="color:var(--rose)">'+esc(o.tel)+' 📞</a>':'')
+            +'</div>':'')
+          +(o.symptom?'<div style="margin-bottom:3px">📋 '+esc(o.symptom)+'</div>':'')
+          +(o.transport?'<div style="margin-bottom:3px">🚗 '+esc(o.transport)+(o.car?' · '+esc(o.car):'')+'</div>':'')
+          +(o.checks&&o.checks.length
+            ?'<div style="margin-top:4px">'+o.checks.map(function(cc,ci){
+              var checked=o.checked&&o.checked[ci];
+              return'<div style="display:flex;align-items:center;gap:5px;padding:2px 0;cursor:pointer" onclick="event.stopPropagation();toggleOuterChk(\''+ck+'\','+ci+')">'
+                +'<span style="width:14px;height:14px;border-radius:3px;border:1.5px solid '+(checked?'var(--rose)':'#ccc')+';background:'+(checked?'var(--rose)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(checked?'<span style="color:#fff;font-size:9px;font-weight:700">✓</span>':'')+'</span>'
+                +'<span style="'+(checked?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(cc)+'</span>'
+                +'</div>';
+            }).join('')+'</div>'
+            :'')
+          +'</div>';
+      }
+
+      return'<div style="margin-bottom:6px">'
+        +'<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--sand);border-radius:8px;'+(isOuter?'cursor:pointer" onclick="calToggleOuter(this)"':'"')+'>'
+          +'<div onclick="calToggleChk(\''+ck+'\');event.stopPropagation()" style="width:18px;height:18px;border-radius:50%;border:1.5px solid '+(c.done?'var(--rose)':'#ccc')+';background:'+(c.done?'var(--rose)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer">'
+            +(c.done?'<span style="color:#fff;font-size:9px;font-weight:700">✓</span>':'')
+          +'</div>'
+          +'<span style="width:6px;height:6px;border-radius:50%;background:'+catColor+';flex-shrink:0;display:inline-block"></span>'
+          +(c.time?'<span style="font-size:11px;color:var(--muted);flex-shrink:0">'+c.time+'</span>':'')
+          +'<div style="flex:1;font-size:13px;'+(c.done?'text-decoration:line-through;color:var(--muted)':'')+'">'
+            +esc(c.text||'')
+            +(c.cat?'<span style="font-size:10px;color:var(--muted);margin-left:5px">'+esc(c.cat)+'</span>':'')
+          +'</div>'
+          +(isOuter?'<span class="cal-outer-arrow" style="font-size:11px;color:var(--muted)">▼</span>':'')
+          +'<button onclick="startEditChk(\''+ck+'\');event.stopPropagation()" style="background:none;border:none;font-size:14px;cursor:pointer;padding:0 2px;color:var(--muted)">✏️</button>'
+          +'<button onclick="calDelChk(\''+ck+'\');event.stopPropagation()" style="background:none;border:none;font-size:14px;cursor:pointer;padding:0 2px;color:var(--muted)">×</button>'
         +'</div>'
-        // 카테고리 점
-        +'<span style="width:6px;height:6px;border-radius:50%;background:'+catColor+';flex-shrink:0;display:inline-block"></span>'
-        // 내용 (완료 시 한 줄 취소선)
-        +'<div style="flex:1;font-size:13px;'+(c.done?'text-decoration:line-through;color:var(--muted)':'')+'">'
-          +(c.time?'<span style="font-size:11px;color:var(--muted);margin-right:4px">'+c.time+'</span>':'')
-          +esc(c.text||'')
-          +(c.cat?'<span style="font-size:10px;color:var(--muted);margin-left:5px">'+esc(c.cat)+'</span>':'')
-        +'</div>'
-        // 수정·삭제 버튼
-        +'<button onclick="startEditChk(\''+ck+'\')" style="background:none;border:none;font-size:14px;cursor:pointer;padding:0 2px;color:var(--muted)">✏️</button>'
-        +'<button onclick="calDelChk(\''+ck+'\')" style="background:none;border:none;font-size:14px;cursor:pointer;padding:0 2px;color:var(--muted)">×</button>'
+        +outerDetail
         +'</div>';
     }).join('');
   }
