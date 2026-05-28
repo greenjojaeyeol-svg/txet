@@ -1334,12 +1334,15 @@ function renderChk(){
           +esc(v.text||'')
           +catName
           +(v.outer?'<div class="outer-detail">'
+            +(v.outer.depart?'<div>🕐 출발 '+esc(v.outer.depart)+'</div>':'')
             +(v.outer.addr?'<div>📍 '+esc(v.outer.addr)+'</div>':'')
             +(v.outer.manager||v.outer.tel
               ?'<div>👤 '+(v.outer.manager?esc(v.outer.manager):'')
                 +(v.outer.tel?' · <a href="tel:'+esc(v.outer.tel)+'" onclick="event.stopPropagation()" style="color:var(--rose);text-decoration:none">'+esc(v.outer.tel)+' 📞</a>':'')
               +'</div>':'')
             +(v.outer.symptom?'<div>📋 '+esc(v.outer.symptom)+'</div>':'')
+            +(v.outer.cause?'<div>🔍 원인: '+esc(v.outer.cause)+'</div>':'')
+            +(v.outer.action?'<div>🔧 조치: '+esc(v.outer.action)+'</div>':'')
             +(v.outer.transport?'<div>🚗 '+esc(v.outer.transport)+(v.outer.car?' · '+esc(v.outer.car):'')+'</div>':'')
             +(v.outer.checks&&v.outer.checks.length
               ?'<div style="margin-top:4px">'+v.outer.checks.map(function(c,ci){
@@ -1459,6 +1462,7 @@ function renderAddChkForm(defaultDate,catOpts,isOuter,d){
   return modeBtn
     +'<div class="fg" style="display:flex;gap:8px">'
       +'<div style="flex:1"><label>날짜</label><input type="date" id="chk-date" value="'+esc((d&&d.date)||defaultDate)+'" style="width:100%;padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none;box-sizing:border-box"></div>'
+      +'<div style="width:90px"><label>출발시간</label><input type="text" id="outer-depart" value="'+esc(o.depart||'')+'" inputmode="numeric" placeholder="0900" maxlength="5" onblur="fmtTimeInput(this)" style="width:100%;padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none;box-sizing:border-box;text-align:center"></div>'
       +'<div style="width:90px"><label>방문시간</label>'+timeInp+'</div>'
     +'</div>'
     +'<div class="fg"><label>현장명 *</label>'+inp('outer-site',o.site,'현장명 입력')+'</div>'
@@ -1473,6 +1477,8 @@ function renderAddChkForm(defaultDate,catOpts,isOuter,d){
       +'</div>'
     +'</div>'
     +'<div class="fg"><label>증상/내용</label><textarea id="outer-symptom" placeholder="증상 또는 작업 내용" style="height:60px;width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none;box-sizing:border-box;resize:vertical">'+esc(o.symptom||'')+'</textarea></div>'
+    +'<div class="fg"><label>원인</label><textarea id="outer-cause" placeholder="원인 작성" style="height:50px;width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none;box-sizing:border-box;resize:vertical">'+esc(o.cause||'')+'</textarea></div>'
+    +'<div class="fg"><label>조치내용</label><textarea id="outer-action" placeholder="조치 내용 작성" style="height:60px;width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none;box-sizing:border-box;resize:vertical">'+esc(o.action||'')+'</textarea></div>'
     +'<div class="fg" style="display:flex;gap:8px">'
       +'<div style="flex:1"><label>교통수단</label><select id="outer-transport" style="width:100%;padding:10px 8px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none">'
         +'<option value="">선택</option>'
@@ -1542,8 +1548,11 @@ async function addCheck(){
     var symptom=(g('outer-symptom')||{}).value||'';
     var transport=(g('outer-transport')||{}).value||'';
     var car=(g('outer-car')||{}).value||'';
+    var depart=(g('outer-depart')||{}).value||'';
+    var cause=(g('outer-cause')||{}).value||'';
+    var action=(g('outer-action')||{}).value||'';
     text='🏢 '+site;
-    outerData={site:site,addr:addr,manager:manager,tel:tel,symptom:symptom,transport:transport,car:car,checks:getOuterChecks()};
+    outerData={site:site,addr:addr,manager:manager,tel:tel,symptom:symptom,transport:transport,car:car,depart:depart,cause:cause,action:action,checks:getOuterChecks()};
   }else{
     var inp=g('chk-inp');
     if(!inp)return;
@@ -1602,8 +1611,11 @@ async function saveEditChk(k){
       manager:(g('outer-manager')||{}).value||'',
       tel:(g('outer-tel')||{}).value||'',
       symptom:(g('outer-symptom')||{}).value||'',
+      cause:(g('outer-cause')||{}).value||'',
+      action:(g('outer-action')||{}).value||'',
       transport:(g('outer-transport')||{}).value||'',
       car:(g('outer-car')||{}).value||'',
+      depart:(g('outer-depart')||{}).value||'',
       checks:getOuterChecks(),
       checked:o.checked||[]
     };
@@ -2911,12 +2923,15 @@ function showCalSheet(dateStr){
       if(isOuter){
         var o=c.outer;
         outerDetail='<div id="'+detailId+'" style="display:none;margin-top:6px;padding:8px 10px;background:#fff;border-radius:8px;border:1px solid var(--border);font-size:12px">'
+          +(o.depart?'<div style="margin-bottom:3px">🕐 출발 '+esc(o.depart)+'</div>':'')
           +(o.addr?'<div style="margin-bottom:3px">📍 '+esc(o.addr)+'</div>':'')
           +(o.manager||o.tel
             ?'<div style="margin-bottom:3px">👤 '+(o.manager?esc(o.manager):'')
               +(o.tel?' · <a href="tel:'+esc(o.tel)+'" onclick="event.stopPropagation()" style="color:var(--rose)">'+esc(o.tel)+' 📞</a>':'')
             +'</div>':'')
           +(o.symptom?'<div style="margin-bottom:3px">📋 '+esc(o.symptom)+'</div>':'')
+          +(o.cause?'<div style="margin-bottom:3px">🔍 원인: '+esc(o.cause)+'</div>':'')
+          +(o.action?'<div style="margin-bottom:3px">🔧 조치: '+esc(o.action)+'</div>':'')
           +(o.transport?'<div style="margin-bottom:3px">🚗 '+esc(o.transport)+(o.car?' · '+esc(o.car):'')+'</div>':'')
           +(o.checks&&o.checks.length
             ?'<div style="margin-top:4px">'+o.checks.map(function(cc,ci){
