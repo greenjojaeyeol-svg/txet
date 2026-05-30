@@ -1169,14 +1169,19 @@ function renderChkCatbar(){
         +' ondragover="catDragOver(event)"'
         +' ondrop="catDrop(event)"'
         +' ondragend="catDragEnd(event)"'
-        +' ontouchstart="catTouchStart(event)"'
-        +' ontouchmove="catTouchMove(event)"'
-        +' ontouchend="catTouchEnd(event)"'
         :'')
       +' onclick="setChkCat(\''+esc(c)+'\')">'
       +dot+esc(c)+editBtn
       +'</button>';
   }).join('')+'<button class="chk-cattab add" onclick="addChkCat()">＋ 카테고리</button>';
+
+  // 터치 이벤트 passive:false 로 직접 등록
+  el.querySelectorAll('.chk-cattab[data-catname]').forEach(function(btn){
+    btn.addEventListener('touchstart',catTouchStart,{passive:true});
+    btn.addEventListener('touchmove',catTouchMove,{passive:false});
+    btn.addEventListener('touchend',catTouchEnd,{passive:true});
+  });
+
   renderChkCatSelect();
 }
 
@@ -1202,13 +1207,27 @@ async function catDrop(e){
   await reorderCats(catDragName,toName);
   catDragName=null;
 }
+var catTouchDragName=null,catTouchBtn=null,catLongPressTimer=null,catDragActive=false;
+
 function catTouchStart(e){
-  catTouchDragName=e.currentTarget.dataset.catname;
-  catTouchBtn=e.currentTarget;
-  catTouchBtn.classList.add('cat-dragging');
+  var btn=e.currentTarget;
+  catDragActive=false;
+  // 500ms 길게 누르면 드래그 모드 진입
+  catLongPressTimer=setTimeout(function(){
+    catDragActive=true;
+    catTouchDragName=btn.dataset.catname;
+    catTouchBtn=btn;
+    btn.classList.add('cat-dragging');
+    // 진동 피드백 (지원 시)
+    if(navigator.vibrate)navigator.vibrate(30);
+  },500);
 }
 function catTouchMove(e){
-  if(!catTouchBtn)return;
+  // 드래그 모드 아니면 스크롤 허용 (타이머 취소)
+  if(!catDragActive){
+    clearTimeout(catLongPressTimer);
+    return;
+  }
   e.preventDefault();
   var x=e.touches[0].clientX,y=e.touches[0].clientY;
   document.querySelectorAll('.chk-cattab.cat-drag-over').forEach(function(b){b.classList.remove('cat-drag-over')});
@@ -1217,14 +1236,18 @@ function catTouchMove(e){
   if(target)target.classList.add('cat-drag-over');
 }
 async function catTouchEnd(e){
-  if(!catTouchBtn)return;
+  clearTimeout(catLongPressTimer);
+  if(!catDragActive||!catTouchBtn){
+    catDragActive=false;catTouchBtn=null;catTouchDragName=null;
+    return;
+  }
   var over=document.querySelector('.chk-cattab.cat-drag-over');
   if(over&&over.dataset.catname&&over.dataset.catname!==catTouchDragName){
     await reorderCats(catTouchDragName,over.dataset.catname);
   }
   catTouchBtn.classList.remove('cat-dragging');
   document.querySelectorAll('.chk-cattab.cat-drag-over').forEach(function(b){b.classList.remove('cat-drag-over')});
-  catTouchBtn=null;catTouchDragName=null;
+  catTouchBtn=null;catTouchDragName=null;catDragActive=false;
 }
 async function reorderCats(fromName,toName){
   var sorted=Object.entries(DB.chk_cats||{}).sort(function(a,b){return(a[1].order||0)-(b[1].order||0)});
