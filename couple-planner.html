@@ -2000,6 +2000,56 @@ function startClock(){
   clockTimer=setInterval(tick,1000);
 }
 
+
+// ── 카테고리 추가/삭제 공통 ───────────────────────────
+var CAT_USER_ADDS={courses:[],restaurants:[],cafes:[]};
+
+function getCatList(type){
+  var defaults={
+    courses:['💑 로맨틱','🏃 액티비티','🌿 힐링','🍴 맛집투어','🌃 야경'],
+    restaurants:['🍚 한식','🍣 일식','🍝 양식','🥢 중식','🥪 분식','🍽️ 기타'],
+    cafes:['📷 감성카페','🏢 대형카페','🍰 디저트','🌇 루프탑','🥐 베이커리']
+  };
+  var all=(defaults[type]||[]).slice();
+  (CAT_USER_ADDS[type]||[]).forEach(function(c){if(all.indexOf(c)<0)all.push(c);});
+  return all;
+}
+
+function addCatItem(type){
+  var name=prompt('추가할 카테고리 이름:');
+  if(!name||!name.trim())return;
+  name=name.trim();
+  if(!CAT_USER_ADDS[type])CAT_USER_ADDS[type]=[];
+  if(CAT_USER_ADDS[type].indexOf(name)<0)CAT_USER_ADDS[type].push(name);
+  var sel=g('f-cat');
+  if(sel){var opt=document.createElement('option');opt.value=name;opt.textContent=name;opt.selected=true;sel.appendChild(opt);}
+  CAT_OPTS[type]=['전체'].concat(getCatList(type));
+  renderFbar(type);
+  toast('"'+name+'" 카테고리 추가됐어요');
+}
+
+function delCatItem(type){
+  var sel=g('f-cat');
+  if(!sel||!sel.value){toast('삭제할 카테고리를 선택해주세요');return;}
+  var val=sel.value;
+  if(confirm('"'+val+'" 카테고리를 삭제할까요?')){
+    CAT_USER_ADDS[type]=(CAT_USER_ADDS[type]||[]).filter(function(c){return c!==val;});
+    // 기본 카테고리도 제거
+    var defaults={
+      courses:['💑 로맨틱','🏃 액티비티','🌿 힐링','🍴 맛집투어','🌃 야경'],
+      restaurants:['🍚 한식','🍣 일식','🍝 양식','🥢 중식','🥪 분식','🍽️ 기타'],
+      cafes:['📷 감성카페','🏢 대형카페','🍰 디저트','🌇 루프탑','🥐 베이커리']
+    };
+    if(defaults[type])defaults[type]=defaults[type].filter(function(c){return c!==val;});
+    var opt=Array.from(sel.options).find(function(o){return o.value===val;});
+    if(opt)opt.remove();
+    sel.value='';
+    CAT_OPTS[type]=['전체'].concat(getCatList(type));
+    renderFbar(type);
+    toast('"'+val+'" 카테고리 삭제됐어요');
+  }
+}
+
 // ── 일정 카테고리 관리 ────────────────────────────────
 var PLANS_USER_CATS=[];
 var PLANS_DEFAULT_CATS=['🌅 당일치기','🏨 1박2일','🎉 기념일','☀️ 일상데이트'];
@@ -2129,14 +2179,14 @@ function openPlaceSearch(idx){
   modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:flex-end';
   modal.onclick=function(e){if(e.target===modal)modal.remove();};
   var inner=document.createElement('div');
-  inner.style.cssText='background:#fff;width:100%;max-height:85vh;border-radius:20px 20px 0 0;padding:16px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column';
+  inner.style.cssText='background:#fff;width:100%;height:85vh;border-radius:20px 20px 0 0;padding:16px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column';
   inner.onclick=function(e){e.stopPropagation();};
   inner.innerHTML=
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
       +'<div style="font-size:15px;font-weight:700;color:var(--rose)">장소 선택</div>'
       +'<button id="ps-close-btn" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">×</button>'
     +'</div>'
-    +'<div id="ps-tabs" style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none">'
+    +'<div id="ps-tabs" style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px">'
       +'<button class="ps-tab" data-cat="" style="padding:5px 14px;border-radius:20px;border:1px solid var(--rose);background:var(--rose);color:#fff;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">전체</button>'
       +'<button class="ps-tab" data-cat="restaurants" style="padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--ink);font-size:12px;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">🍽️ 맛집</button>'
       +'<button class="ps-tab" data-cat="cafes" style="padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--ink);font-size:12px;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">☕ 카페</button>'
@@ -2236,9 +2286,10 @@ var FORMS={
       :buildStepRow(0,'','');
     return{title:d?'코스 수정':'데이트 코스 추가',
       html:'<div class="fg"><label>코스 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="예: 홍대 반나절 코스"></div>'
-        +'<div class="fg"><label>카테고리</label><select id="f-cat"><option value="">선택 안 함</option>'
-        +['💑 로맨틱','🏃 액티비티','🌿 힐링','🍴 맛집투어','🌃 야경'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
-        +'</select></div>'
+        +'<div class="fg"><label>카테고리</label><div style="display:flex;gap:4px"><select id="f-cat" style="flex:1"><option value="">선택 안 함</option>'
+        +getCatList('courses').map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select><button type="button" onclick="addCatItem(\'courses\')" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:12px;cursor:pointer;flex-shrink:0">+ 추가</button>'
+        +'<button type="button" onclick="delCatItem(\'courses\')" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:12px;cursor:pointer;flex-shrink:0;color:#c0392b">🗑</button></div></div>'
         +'<div class="fg"><label>장소 목록</label><div id="f-steps-list">'+stepsHtml+'</div>'
           +'<button type="button" onclick="addStepRow()" style="margin-top:6px;padding:6px 14px;border:1.5px dashed var(--border);border-radius:12px;background:#fff;font-size:12px;color:var(--muted);cursor:pointer;font-family:\'Pretendard\',sans-serif;width:100%">+ 장소 추가</button>'
         +'</div>'
@@ -2248,9 +2299,10 @@ var FORMS={
     var alld=d&&d.allday;
     return{title:d?'맛집 수정':'맛집 추가',
       html:'<div class="fg"><label>상호명 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="맛집 이름"></div>'
-        +'<div class="fg"><label>종류</label><select id="f-cat"><option value="">선택 안 함</option>'
-        +['🍚 한식','🍣 일식','🍝 양식','🥢 중식','🥪 분식','🍽️ 기타'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
-        +'</select></div>'
+        +'<div class="fg"><label>종류</label><div style="display:flex;gap:4px"><select id="f-cat" style="flex:1"><option value="">선택 안 함</option>'
+        +getCatList('restaurants').map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select><button type="button" onclick="addCatItem(\'restaurants\')" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:12px;cursor:pointer;flex-shrink:0">+ 추가</button>'
+        +'<button type="button" onclick="delCatItem(\'restaurants\')" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:12px;cursor:pointer;flex-shrink:0;color:#c0392b">🗑</button></div></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
         +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 영업</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
@@ -2285,9 +2337,10 @@ var FORMS={
     var alld=d&&d.allday;
     return{title:d?'카페 수정':'카페 추가',
       html:'<div class="fg"><label>카페 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="카페 이름"></div>'
-        +'<div class="fg"><label>분위기</label><select id="f-cat"><option value="">선택 안 함</option>'
-        +['📷 감성카페','🏢 대형카페','🍰 디저트','🌇 루프탑','🥐 베이커리'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
-        +'</select></div>'
+        +'<div class="fg"><label>분위기</label><div style="display:flex;gap:4px"><select id="f-cat" style="flex:1"><option value="">선택 안 함</option>'
+        +getCatList('cafes').map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
+        +'</select><button type="button" onclick="addCatItem(\'cafes\')" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:12px;cursor:pointer;flex-shrink:0">+ 추가</button>'
+        +'<button type="button" onclick="delCatItem(\'cafes\')" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:12px;cursor:pointer;flex-shrink:0;color:#c0392b">🗑</button></div></div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
         +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 영업</label></div>'
         +'<div id="f-time-wrap" style="'+(alld?'display:none':'')+'">'
