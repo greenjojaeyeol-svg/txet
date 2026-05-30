@@ -2186,30 +2186,21 @@ function openPlaceSearch(idx){
       +'<div style="font-size:15px;font-weight:700;color:var(--rose)">장소 선택</div>'
       +'<button id="ps-close-btn" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">×</button>'
     +'</div>'
-    +'<div id="ps-tabs" style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px">'
+    +'<div id="ps-tabs" style="display:flex;gap:6px;margin-bottom:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px;flex-shrink:0">'
       +'<button class="ps-tab" data-cat="" style="padding:5px 14px;border-radius:20px;border:1px solid var(--rose);background:var(--rose);color:#fff;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">전체</button>'
       +'<button class="ps-tab" data-cat="restaurants" style="padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--ink);font-size:12px;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">🍽️ 맛집</button>'
       +'<button class="ps-tab" data-cat="cafes" style="padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--ink);font-size:12px;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">☕ 카페</button>'
       +'<button class="ps-tab" data-cat="spots" style="padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--ink);font-size:12px;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">🎡 명소</button>'
     +'</div>'
-    +'<input type="text" id="place-search-inp" placeholder="장소명 검색…" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:Pretendard,sans-serif;outline:none;box-sizing:border-box;margin-bottom:8px">'
+    +'<div id="ps-subtabs" style="display:none;gap:5px;margin-bottom:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-shrink:0"></div>'
+    +'<input type="text" id="place-search-inp" placeholder="장소명 검색…" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:Pretendard,sans-serif;outline:none;box-sizing:border-box;margin-bottom:8px;flex-shrink:0">'
     +'<div id="place-search-list" style="overflow-y:auto;flex:1"></div>';
   modal.appendChild(inner);
   document.body.appendChild(modal);
   document.getElementById('ps-close-btn').onclick=function(){modal.remove();};
   document.getElementById('place-search-inp').oninput=function(){updatePlaceList();};
   inner.querySelectorAll('.ps-tab').forEach(function(btn){
-    btn.onclick=function(){
-      _psActiveCat=btn.dataset.cat;
-      inner.querySelectorAll('.ps-tab').forEach(function(b){
-        var on=b===btn;
-        b.style.background=on?'var(--rose)':'#fff';
-        b.style.color=on?'#fff':'var(--ink)';
-        b.style.borderColor=on?'var(--rose)':'var(--border)';
-        b.style.fontWeight=on?'600':'400';
-      });
-      updatePlaceList();
-    };
+    btn.onclick=function(){filterPlaceTab(btn,btn.dataset.cat);};
   });
   updatePlaceList();
   setTimeout(function(){document.getElementById('place-search-inp').focus();},100);
@@ -2221,7 +2212,9 @@ function updatePlaceList(){
   var inp=document.getElementById('place-search-inp');
   var q=inp?inp.value.toLowerCase().trim():'';
   var filtered=_placeSearchAll.filter(function(p){
-    return(!_psActiveCat||p.catKey===_psActiveCat)&&(!q||p.name.toLowerCase().indexOf(q)>=0);
+    return(!_psActiveCat||p.catKey===_psActiveCat)
+      &&(!_psActiveSub||p.sub===_psActiveSub)
+      &&(!q||p.name.toLowerCase().indexOf(q)>=0);
   });
   if(!filtered.length){list.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">등록된 장소가 없어요</div>';return;}
   list.innerHTML=filtered.map(function(p){
@@ -2236,8 +2229,57 @@ function updatePlaceList(){
   });
 }
 
-function filterPlaceTab(){}
-function filterPlaceSearch(){}
+var _psActiveCat='';
+var _psActiveSub='';
+
+function renderPsSubTabs(cat){
+  var subEl=document.getElementById('ps-subtabs');
+  if(!subEl)return;
+  _psActiveSub='';
+  // 카테고리별 서브 목록 수집 (DB에 실제 등록된 카테고리)
+  var subs=[];
+  if(cat){
+    Object.values(DB[cat]||{}).forEach(function(item){
+      if(item.category&&subs.indexOf(item.category)<0)subs.push(item.category);
+    });
+  }
+  if(!subs.length){subEl.style.display='none';return;}
+  subEl.style.cssText='display:flex;gap:5px;margin-bottom:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-shrink:0';
+  subEl.innerHTML='<button class="ps-subtab" data-sub="" style="padding:3px 10px;border-radius:20px;border:1px solid var(--rose);background:var(--rose);color:#fff;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">전체</button>'
+    +subs.map(function(s){
+      return'<button class="ps-subtab" data-sub="'+esc(s)+'" style="padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--ink);font-size:11px;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">'+esc(s)+'</button>';
+    }).join('');
+  subEl.querySelectorAll('.ps-subtab').forEach(function(btn){
+    btn.onclick=function(){
+      _psActiveSub=btn.dataset.sub;
+      subEl.querySelectorAll('.ps-subtab').forEach(function(b){
+        var on=b===btn;
+        b.style.background=on?'var(--rose)':'#fff';
+        b.style.color=on?'#fff':'var(--ink)';
+        b.style.borderColor=on?'var(--rose)':'var(--border)';
+        b.style.fontWeight=on?'600':'400';
+      });
+      updatePlaceList();
+    };
+  });
+}
+
+function filterPlaceTab(btn,cat){
+  _psActiveCat=cat;
+  _psActiveSub='';
+  var tabsEl=document.getElementById('ps-tabs');
+  if(tabsEl)tabsEl.querySelectorAll('.ps-tab').forEach(function(b){
+    var on=b===btn;
+    b.style.background=on?'var(--rose)':'#fff';
+    b.style.color=on?'#fff':'var(--ink)';
+    b.style.borderColor=on?'var(--rose)':'var(--border)';
+    b.style.fontWeight=on?'600':'400';
+  });
+  renderPsSubTabs(cat);
+  updatePlaceList();
+}
+
+function filterPlaceSearch(){updatePlaceList();}
 
 function selectPlace(el){
   var name=el.dataset.name||'';
