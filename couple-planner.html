@@ -433,6 +433,7 @@ html,body{min-height:100vh;background:var(--sand);font-family:'Pretendard',sans-
   <div class="pg" id="pg-spots">
     <button class="addbtn" onclick="openAdd('spots')">+ 명소 추가</button>
     <div class="fbar" id="fb-spots"></div>
+    <div id="fb-spots-sub" style="display:none;padding-bottom:6px"></div>
     <div class="sec">가고 싶은 명소 <span id="sec-upd-spots" class="sec-upd"></span></div>
     <div id="lst-spots"><div class="loading">불러오는 중…</div></div>
   </div>
@@ -662,11 +663,12 @@ function renderFbar(cat){
   var favBtn='<button class="fbtn'+(FILTER.fav?' on':'')+'" onclick="setFfav(\''+cat+'\')">'+(FILTER.fav?'⭐ 즐겨찾기':'☆ 즐겨찾기')+'</button>';
   el.innerHTML=catBtns+'<div class="fbar-div"></div>'+visitBtns+'<div class="fbar-div"></div>'+favBtn+sortBtns;
 
-  // spots 소분류 필터 추가
+  // spots 소분류 필터 - 별도 div에 렌더
   if(cat==='spots'){
+    var subEl=g('fb-spots-sub');
+    if(!subEl)return;
     var selCat=FILTER['spots'];
     if(selCat&&selCat!=='전체'){
-      // DB에 등록된 실제 소분류 + 기본 소분류 합치기
       var defaultSubs=(SPOTS_CATS[selCat]||[]).filter(function(s){return s!=='전체';});
       var dbSubs=[];
       Object.values(DB.spots||{}).forEach(function(item){
@@ -678,16 +680,23 @@ function renderFbar(cat){
       var allSubs=['전체'].concat(defaultSubs);
       dbSubs.forEach(function(s){if(allSubs.indexOf(s)<0)allSubs.push(s);});
       userSubs.forEach(function(s){if(allSubs.indexOf(s)<0)allSubs.push(s);});
-
       if(allSubs.length>1){
-        var subBar=document.createElement('div');
-        subBar.className='fbar';
-        subBar.style.cssText='margin-top:4px;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none';
-        subBar.innerHTML=allSubs.map(function(s){
+        subEl.style.display='flex';
+        subEl.style.gap='6px';
+        subEl.style.overflowX='auto';
+        subEl.style.flexWrap='nowrap';
+        subEl.style.scrollbarWidth='none';
+        subEl.innerHTML=allSubs.map(function(s){
           return'<button class="fbtn'+(FILTER.spots_sub===s?' on':'')+'" onclick="setFspotSub(\''+s+'\')">'+s+'</button>';
         }).join('');
-        el.appendChild(subBar);
+      }else{
+        subEl.style.display='none';
+        subEl.innerHTML='';
       }
+    }else{
+      subEl.style.display='none';
+      subEl.innerHTML='';
+      FILTER.spots_sub='전체';
     }
   }
 }
