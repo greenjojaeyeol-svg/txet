@@ -640,7 +640,7 @@ var CAT_OPTS={
   restaurants:['전체','🍚 한식','🍣 일식','🍝 양식','🥢 중식','🥪 분식','🍽️ 기타'],
   cafes:['전체','📷 감성카페','🏢 대형카페','🍰 디저트','🌇 루프탑','🥐 베이커리'],
   spots:['전체','🎡 테마파크','🌸 꽃·자연','🌃 야경','🎭 문화·전시','🏖 나들이','🛍 쇼핑','💄 뷰티','📍 기타'],
-  plans:['전체','🌅 당일치기','🏨 1박2일','🎉 기념일','☀️ 일상데이트']
+  plans:['전체','🌅 당일치기','🏨 1박2일','🎉 기념일','☀️ 일상데이트'] // 기본값, DB에서 동적으로 확장
 };
 var VISIT_OPTS=['전체','방문전','방문완료'];
 
@@ -2000,7 +2000,219 @@ function startClock(){
   clockTimer=setInterval(tick,1000);
 }
 
-// ── 위치 표시 ─────────────────────────────────────────
+// ── 일정 카테고리 관리 ────────────────────────────────
+var PLANS_USER_CATS=[];
+var PLANS_DEFAULT_CATS=['🌅 당일치기','🏨 1박2일','🎉 기념일','☀️ 일상데이트'];
+
+function getPlansCats(){
+  var all=PLANS_DEFAULT_CATS.slice();
+  PLANS_USER_CATS.forEach(function(c){if(all.indexOf(c)<0)all.push(c);});
+  // DB에 등록된 카테고리도 포함
+  Object.values(DB.plans||{}).forEach(function(item){
+    if(item.category&&all.indexOf(item.category)<0)all.push(item.category);
+  });
+  return all;
+}
+
+function addPlanCat(){
+  var name=prompt('추가할 유형 이름:');
+  if(!name||!name.trim())return;
+  name=name.trim();
+  if(PLANS_USER_CATS.indexOf(name)<0)PLANS_USER_CATS.push(name);
+  var sel=g('f-cat');
+  if(sel){var opt=document.createElement('option');opt.value=name;opt.textContent=name;opt.selected=true;sel.appendChild(opt);}
+  // 필터바 업데이트
+  CAT_OPTS.plans=['전체'].concat(getPlansCats());
+  renderFbar('plans');
+  toast('"'+name+'" 유형 추가됐어요');
+}
+
+function delPlanCat(){
+  var sel=g('f-cat');
+  if(!sel||!sel.value){toast('삭제할 유형을 선택해주세요');return;}
+  var val=sel.value;
+  if(PLANS_DEFAULT_CATS.indexOf(val)>=0){
+    if(!confirm('"'+val+'" 는 기본 유형이에요. 삭제할까요?'))return;
+    PLANS_DEFAULT_CATS=PLANS_DEFAULT_CATS.filter(function(c){return c!==val;});
+  }else{
+    if(!confirm('"'+val+'" 유형을 삭제할까요?'))return;
+    PLANS_USER_CATS=PLANS_USER_CATS.filter(function(c){return c!==val;});
+  }
+  var opt=Array.from(sel.options).find(function(o){return o.value===val;});
+  if(opt)opt.remove();
+  sel.value='';
+  toast('"'+val+'" 유형 삭제됐어요');
+  // CAT_OPTS 업데이트
+  CAT_OPTS.plans=['전체'].concat(getPlansCats());
+  renderFbar('plans');
+}
+
+// ── 코스/일정 장소 행 ──────────────────────────────────
+function buildStepRow(i,name,addr){
+  return'<div class="step-input-row" id="step-row-'+i+'" data-idx="'+i+'">'
+    +'<div class="step-input-num">'+(i+1)+'</div>'
+    +'<div class="step-input-body">'
+      +'<div style="display:flex;gap:4px;margin-bottom:4px">'
+        +'<input type="text" class="step-name-input" placeholder="장소명" value="'+esc(name)+'" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:\'Pretendard\',sans-serif;background:var(--blush);color:var(--ink);outline:none">'
+        +'<button type="button" onclick="event.stopPropagation();openPlaceSearch('+i+')" style="padding:0 10px;border:1.5px solid var(--rose);border-radius:10px;background:var(--blush);color:var(--rose);font-size:13px;cursor:pointer;flex-shrink:0;font-weight:600">🔍</button>'
+        +'<button type="button" onclick="removeStepRow('+i+')" style="padding:0 10px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--muted);font-size:14px;cursor:pointer;flex-shrink:0">×</button>'
+      +'</div>'
+      +'<input type="text" class="step-addr-input" placeholder="주소 (자동입력 또는 직접 입력)" value="'+esc(addr)+'" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:10px;font-size:11px;font-family:\'Pretendard\',sans-serif;background:#fff;color:var(--muted);outline:none;box-sizing:border-box">'
+    +'</div>'
+    +'</div>';
+}
+
+function addStepRow(){
+  var list=g('f-steps-list');if(!list)return;
+  var rows=list.querySelectorAll('.step-input-row');
+  var i=rows.length;
+  var div=document.createElement('div');
+  div.innerHTML=buildStepRow(i,'','');
+  list.appendChild(div.firstChild);
+  // 번호 업데이트
+  updateStepNums();
+}
+
+function removeStepRow(i){
+  var row=g('step-row-'+i);
+  if(row)row.remove();
+  updateStepNums();
+}
+
+function updateStepNums(){
+  var list=g('f-steps-list');if(!list)return;
+  list.querySelectorAll('.step-input-row').forEach(function(row,idx){
+    row.id='step-row-'+idx;
+    row.dataset.idx=idx;
+    var num=row.querySelector('.step-input-num');
+    if(num)num.textContent=idx+1;
+    var srchBtn=row.querySelector('button');
+    if(srchBtn)srchBtn.setAttribute('onclick','event.stopPropagation();openPlaceSearch('+idx+')');
+    var delBtn=row.querySelectorAll('button')[1];
+    if(delBtn)delBtn.setAttribute('onclick','removeStepRow('+idx+')');
+  });
+}
+
+function getStepRows(){
+  var list=g('f-steps-list');if(!list)return{steps:[],addrs:[]};
+  var steps=[],addrs=[];
+  list.querySelectorAll('.step-input-row').forEach(function(row){
+    var ni=row.querySelector('.step-name-input');
+    var ai=row.querySelector('.step-addr-input');
+    var n=ni?ni.value.trim():'';
+    var a=ai?ai.value.trim():'';
+    if(n){steps.push(n);addrs.push(a);}
+  });
+  return{steps:steps,addrs:addrs};
+}
+
+// 장소 검색 팝업
+var _placeSearchIdx=0;
+var _placeSearchAll=[];
+
+function openPlaceSearch(idx){
+  _placeSearchIdx=idx;
+  _psActiveCat='';
+  _placeSearchAll=[];
+  var catMap={restaurants:{ico:'🍽️',label:'맛집'},cafes:{ico:'☕',label:'카페'},spots:{ico:'🎡',label:'명소'}};
+  Object.entries(catMap).forEach(function(ce){
+    var cat=ce[0],cm=ce[1];
+    Object.entries(DB[cat]||{}).forEach(function(kv){
+      var item=kv[1];
+      if(item.name)_placeSearchAll.push({name:item.name,addr:item.address||'',catKey:cat,catIco:cm.ico,catLabel:cm.label,sub:item.category||''});
+    });
+  });
+  var old=document.getElementById('place-search-modal');
+  if(old)old.remove();
+  var modal=document.createElement('div');
+  modal.id='place-search-modal';
+  modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:flex-end';
+  modal.onclick=function(e){if(e.target===modal)modal.remove();};
+  var inner=document.createElement('div');
+  inner.style.cssText='background:#fff;width:100%;max-height:85vh;border-radius:20px 20px 0 0;padding:16px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column';
+  inner.onclick=function(e){e.stopPropagation();};
+  inner.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      +'<div style="font-size:15px;font-weight:700;color:var(--rose)">장소 선택</div>'
+      +'<button id="ps-close-btn" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">×</button>'
+    +'</div>'
+    +'<div id="ps-tabs" style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none">'
+      +'<button class="ps-tab" data-cat="" style="padding:5px 14px;border-radius:20px;border:1px solid var(--rose);background:var(--rose);color:#fff;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">전체</button>'
+      +'<button class="ps-tab" data-cat="restaurants" style="padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--ink);font-size:12px;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">🍽️ 맛집</button>'
+      +'<button class="ps-tab" data-cat="cafes" style="padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--ink);font-size:12px;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">☕ 카페</button>'
+      +'<button class="ps-tab" data-cat="spots" style="padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--ink);font-size:12px;cursor:pointer;flex-shrink:0;font-family:Pretendard,sans-serif">🎡 명소</button>'
+    +'</div>'
+    +'<input type="text" id="place-search-inp" placeholder="장소명 검색…" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:Pretendard,sans-serif;outline:none;box-sizing:border-box;margin-bottom:8px">'
+    +'<div id="place-search-list" style="overflow-y:auto;flex:1"></div>';
+  modal.appendChild(inner);
+  document.body.appendChild(modal);
+  document.getElementById('ps-close-btn').onclick=function(){modal.remove();};
+  document.getElementById('place-search-inp').oninput=function(){updatePlaceList();};
+  inner.querySelectorAll('.ps-tab').forEach(function(btn){
+    btn.onclick=function(){
+      _psActiveCat=btn.dataset.cat;
+      inner.querySelectorAll('.ps-tab').forEach(function(b){
+        var on=b===btn;
+        b.style.background=on?'var(--rose)':'#fff';
+        b.style.color=on?'#fff':'var(--ink)';
+        b.style.borderColor=on?'var(--rose)':'var(--border)';
+        b.style.fontWeight=on?'600':'400';
+      });
+      updatePlaceList();
+    };
+  });
+  updatePlaceList();
+  setTimeout(function(){document.getElementById('place-search-inp').focus();},100);
+}
+
+function updatePlaceList(){
+  var list=document.getElementById('place-search-list');
+  if(!list)return;
+  var inp=document.getElementById('place-search-inp');
+  var q=inp?inp.value.toLowerCase().trim():'';
+  var filtered=_placeSearchAll.filter(function(p){
+    return(!_psActiveCat||p.catKey===_psActiveCat)&&(!q||p.name.toLowerCase().indexOf(q)>=0);
+  });
+  if(!filtered.length){list.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">등록된 장소가 없어요</div>';return;}
+  list.innerHTML=filtered.map(function(p){
+    return'<div data-name="'+p.name.replace(/"/g,'&quot;')+'" data-addr="'+(p.addr||'').replace(/"/g,'&quot;')+'" style="display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--border);cursor:pointer">'
+      +'<span style="font-size:20px;flex-shrink:0">'+p.catIco+'</span>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">'+p.name+'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">'+p.sub+(p.addr?' · '+p.addr:'')+'</div></div>'
+    +'</div>';
+  }).join('');
+  list.querySelectorAll('[data-name]').forEach(function(el){
+    el.onclick=function(){selectPlace(el);};
+  });
+}
+
+function filterPlaceTab(){}
+function filterPlaceSearch(){}
+
+function selectPlace(el){
+  var name=el.dataset.name||'';
+  var addr=el.dataset.addr||'';
+  var list=g('f-steps-list');
+  if(list){
+    var rows=list.querySelectorAll('.step-input-row');
+    var row=rows[_placeSearchIdx];
+    if(row){
+      var ni=row.querySelector('.step-name-input');
+      var ai=row.querySelector('.step-addr-input');
+      if(ni)ni.value=name;
+      if(ai)ai.value=addr;
+    }
+  }
+  var modal=g('place-search-modal');
+  if(modal)modal.remove();
+}
+
+// ── CSS ──────────────────────────────────────────────
+(function(){
+  var s=document.createElement('style');
+  s.textContent='.step-input-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}.step-input-num{width:22px;height:22px;border-radius:50%;background:var(--rose);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:6px}.step-input-body{flex:1;min-width:0}';
+  document.head.appendChild(s);
+})();
 // ── 내비 ──────────────────────────────────────────────
 function openNavi(name,address){
   var copyText=address||name||'';
@@ -2014,17 +2226,22 @@ function openNavi(name,address){
 }
 
 // ── 모달 폼 ───────────────────────────────────────────
+// ── 모달 폼 ───────────────────────────────────────────
 var FORMS={
   courses:function(d){
-    var stepsVal=d&&d.steps?d.steps.join('\n'):'';
-    var addrsVal=d&&d.stepAddrs?d.stepAddrs.join('\n'):'';
+    var stepsVal=d&&d.steps?d.steps:[];
+    var addrsVal=d&&d.stepAddrs?d.stepAddrs:[];
+    var stepsHtml=stepsVal.length
+      ?stepsVal.map(function(s,i){return buildStepRow(i,s,addrsVal[i]||'');}).join('')
+      :buildStepRow(0,'','');
     return{title:d?'코스 수정':'데이트 코스 추가',
       html:'<div class="fg"><label>코스 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="예: 홍대 반나절 코스"></div>'
         +'<div class="fg"><label>카테고리</label><select id="f-cat"><option value="">선택 안 함</option>'
         +['💑 로맨틱','🏃 액티비티','🌿 힐링','🍴 맛집투어','🌃 야경'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
         +'</select></div>'
-        +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="경복궁&#10;인사동&#10;광장시장">'+stepsVal+'</textarea></div>'
-        +'<div class="fg"><label>장소별 주소 (줄바꿈 구분, 순서 맞춰서)</label><textarea id="f-stepaddrs" placeholder="서울 종로구 사직로 161&#10;서울 종로구 인사동길&#10;서울 종로구 창경궁로" style="font-size:12px">'+addrsVal+'</textarea></div>'
+        +'<div class="fg"><label>장소 목록</label><div id="f-steps-list">'+stepsHtml+'</div>'
+          +'<button type="button" onclick="addStepRow()" style="margin-top:6px;padding:6px 14px;border:1.5px dashed var(--border);border-radius:12px;background:#fff;font-size:12px;color:var(--muted);cursor:pointer;font-family:\'Pretendard\',sans-serif;width:100%">+ 장소 추가</button>'
+        +'</div>'
         +'<div class="fg"><label>메모</label><input type="text" id="f-memo" value="'+esc(d?d.memo||'':'')+'" placeholder="간단한 메모"></div>'};
   },
   restaurants:function(d){
@@ -2152,16 +2369,26 @@ var FORMS={
         +'</div></div>'};
   },
   plans:function(d){
-    var stepsVal=d&&d.steps?d.steps.join('\n'):'';
-    var addrsVal=d&&d.stepAddrs?d.stepAddrs.join('\n'):'';
+    var stepsVal=d&&d.steps?d.steps:[];
+    var addrsVal=d&&d.stepAddrs?d.stepAddrs:[];
+    var stepsHtml=stepsVal.length
+      ?stepsVal.map(function(s,i){return buildStepRow(i,s,addrsVal[i]||'');}).join('')
+      :buildStepRow(0,'','');
     return{title:d?'일정 수정':'데이트 일정 추가',
       html:'<div class="fg"><label>날짜</label><input type="date" id="f-date" value="'+(d?d.date||'':'')+'"></div>'
         +'<div class="fg"><label>제목 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="예: 성수 데이트"></div>'
-        +'<div class="fg"><label>유형</label><select id="f-cat"><option value="">선택 안 함</option>'
-        +['🌅 당일치기','🏨 1박2일','🎉 기념일','☀️ 일상데이트'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
-        +'</select></div>'
-        +'<div class="fg"><label>장소 목록 (줄바꿈 구분)</label><textarea id="f-steps" placeholder="카페 투썸플레이스&#10;한강공원&#10;홍대 거리">'+stepsVal+'</textarea></div>'
-        +'<div class="fg"><label>장소별 주소 (줄바꿈 구분, 순서 맞춰서)</label><textarea id="f-stepaddrs" placeholder="서울 마포구 연남동&#10;서울 영등포구 여의도동&#10;서울 마포구 홍대입구역" style="font-size:12px">'+addrsVal+'</textarea></div>'
+        +'<div class="fg"><label>유형</label>'
+          +'<div style="display:flex;gap:4px">'
+            +'<select id="f-cat" style="flex:1"><option value="">선택 안 함</option>'
+              +getPlansCats().map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>';}).join('')
+            +'</select>'
+            +'<button type="button" onclick="addPlanCat()" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">+ 추가</button>'
+            +'<button type="button" onclick="delPlanCat()" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;color:#c0392b">🗑</button>'
+          +'</div>'
+        +'</div>'
+        +'<div class="fg"><label>장소 목록</label><div id="f-steps-list">'+stepsHtml+'</div>'
+          +'<button type="button" onclick="addStepRow()" style="margin-top:6px;padding:6px 14px;border:1.5px dashed var(--border);border-radius:12px;background:#fff;font-size:12px;color:var(--muted);cursor:pointer;font-family:\'Pretendard\',sans-serif;width:100%">+ 장소 추가</button>'
+        +'</div>'
         +'<div class="fg"><label>메모</label><textarea id="f-memo" placeholder="특별한 계획을 적어보세요">'+(d?esc(d.memo||''):'')+'</textarea></div>'};
   }
 };
@@ -2230,6 +2457,7 @@ async function saveModal(){
   var parkWrap=g('f-park-wrap')||document.querySelector('.park-wrap');
   var parkBtn=parkWrap?parkWrap.querySelector('.park-btn.on'):null;
   var parking=parkBtn?parkBtn.dataset.val:(exist.parking||'');
+  var stepData=getStepRows();
   var item={
     name:ne.value.trim(),
     category:(g('f-cat')||{}).value||'',
@@ -2237,8 +2465,8 @@ async function saveModal(){
     memo:(g('f-memo')||{}).value||'',
     price:(g('f-price')||{}).value||'',
     address:(g('f-addr')||{}).value||'',
-    steps:g('f-steps')?g('f-steps').value.split('\n').map(function(s){return s.trim()}).filter(Boolean):[],
-    stepAddrs:g('f-stepaddrs')?g('f-stepaddrs').value.split('\n').map(function(s){return s.trim()}):[],
+    steps:stepData.steps,
+    stepAddrs:stepData.addrs,
     date:(g('f-date')||{}).value||'',
     allday:alldayEl?alldayEl.checked:false,
     open_time:(g('f-open')||{}).value||'',
