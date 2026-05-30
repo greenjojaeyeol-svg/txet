@@ -538,7 +538,7 @@ window.dispatchEvent(new Event('fb-ready'));
 // ── 상태 ──────────────────────────────────────────────
 var RK=null,UNSUBS=[],M_TYPE='',M_KEY=null;
 var DB={courses:{},restaurants:{},cafes:{},spots:{},plans:{},checklist:{},settings:{}};
-var FILTER={courses:'전체',restaurants:'전체',cafes:'전체',spots:'전체',plans:'전체',visit:'전체',fav:false};
+var FILTER={courses:'전체',restaurants:'전체',cafes:'전체',spots:'전체',spots_sub:'전체',plans:'전체',visit:'전체',fav:false};
 var SORT={restaurants:'거리순',cafes:'거리순',spots:'거리순'}; // 기본 | 마감시간순 | 거리순
 // localStorage에서 정렬 상태 복원
 try{var _sv=JSON.parse(localStorage.getItem('couple_sort')||'{}');if(_sv.restaurants)SORT.restaurants=_sv.restaurants;if(_sv.cafes)SORT.cafes=_sv.cafes;}catch(e){}
@@ -638,7 +638,7 @@ var CAT_OPTS={
   courses:['전체','💑 로맨틱','🏃 액티비티','🌿 힐링','🍴 맛집투어','🌃 야경'],
   restaurants:['전체','🍚 한식','🍣 일식','🍝 양식','🥢 중식','🥪 분식','🍽️ 기타'],
   cafes:['전체','📷 감성카페','🏢 대형카페','🍰 디저트','🌇 루프탑','🥐 베이커리'],
-  spots:['전체','🎡 테마파크','🌸 꽃·자연','🌃 야경','🎭 문화·전시','🏖 나들이','🛍 쇼핑','📍 기타'],
+  spots:['전체','🎡 테마파크','🌸 꽃·자연','🌃 야경','🎭 문화·전시','🏖 나들이','🛍 쇼핑','💄 뷰티','📍 기타'],
   plans:['전체','🌅 당일치기','🏨 1박2일','🎉 기념일','☀️ 일상데이트']
 };
 var VISIT_OPTS=['전체','방문전','방문완료'];
@@ -661,6 +661,35 @@ function renderFbar(cat){
   }
   var favBtn='<button class="fbtn'+(FILTER.fav?' on':'')+'" onclick="setFfav(\''+cat+'\')">'+(FILTER.fav?'⭐ 즐겨찾기':'☆ 즐겨찾기')+'</button>';
   el.innerHTML=catBtns+'<div class="fbar-div"></div>'+visitBtns+'<div class="fbar-div"></div>'+favBtn+sortBtns;
+
+  // spots 소분류 필터 추가
+  if(cat==='spots'){
+    var selCat=FILTER['spots'];
+    if(selCat&&selCat!=='전체'){
+      // DB에 등록된 실제 소분류 + 기본 소분류 합치기
+      var defaultSubs=(SPOTS_CATS[selCat]||[]).filter(function(s){return s!=='전체';});
+      var dbSubs=[];
+      Object.values(DB.spots||{}).forEach(function(item){
+        if(item.category===selCat&&item.subcategory&&item.subcategory.trim()){
+          if(dbSubs.indexOf(item.subcategory)<0)dbSubs.push(item.subcategory);
+        }
+      });
+      var userSubs=SPOTS_USER_SUBS[selCat]||[];
+      var allSubs=['전체'].concat(defaultSubs);
+      dbSubs.forEach(function(s){if(allSubs.indexOf(s)<0)allSubs.push(s);});
+      userSubs.forEach(function(s){if(allSubs.indexOf(s)<0)allSubs.push(s);});
+
+      if(allSubs.length>1){
+        var subBar=document.createElement('div');
+        subBar.className='fbar';
+        subBar.style.cssText='margin-top:4px;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none';
+        subBar.innerHTML=allSubs.map(function(s){
+          return'<button class="fbtn'+(FILTER.spots_sub===s?' on':'')+'" onclick="setFspotSub(\''+s+'\')">'+s+'</button>';
+        }).join('');
+        el.appendChild(subBar);
+      }
+    }
+  }
 }
 
 // 카테고리별 소요시간 업데이트 진행 추적
@@ -691,7 +720,8 @@ function startRouteProgress(cat,total){
   el.textContent='⏳ 거리 계산 중…';
   el.classList.add('on');
 }
-function setFcat(cat,val){FILTER[cat]=val;renderFbar(cat);render(cat)}
+function setFcat(cat,val){FILTER[cat]=val;if(cat==='spots')FILTER.spots_sub='전체';renderFbar(cat);render(cat)}
+function setFspotSub(val){FILTER.spots_sub=val;renderFbar('spots');render('spots')}
 function setFvisit(val,cat){FILTER.visit=val;renderFbar(cat);render(cat)}
 function setFfav(cat){FILTER.fav=!FILTER.fav;renderFbar(cat);render(cat)}
 function setFsort(cat,val){
@@ -840,6 +870,9 @@ function render(cat){
   // 카테고리 필터
   if(FILTER[cat]&&FILTER[cat]!=='전체')
     items=items.filter(function(kv){return kv[1].category===FILTER[cat]});
+  // 명소 소분류 필터
+  if(cat==='spots'&&FILTER.spots_sub&&FILTER.spots_sub!=='전체')
+    items=items.filter(function(kv){return kv[1].subcategory===FILTER.spots_sub});
   // 방문 필터
   if(FILTER.visit==='방문완료')items=items.filter(function(kv){return kv[1].visited});
   else if(FILTER.visit==='방문전')items=items.filter(function(kv){return !kv[1].visited});
@@ -997,7 +1030,9 @@ function makeCard(key,item,cat){
 
 
   var dateH=item.date?'<div class="card-hd-date">'+item.date+'</div>':'';
-  var tagH=item.category?'<span class="card-tag">'+esc(item.category)+'</span>':'';
+  var tagH=item.category
+    ?'<span class="card-tag">'+esc(item.category)+'</span>'+(item.subcategory&&cat==='spots'?'<span class="card-tag" style="opacity:.75">'+esc(item.subcategory)+'</span>':'')
+    :'';
   var favbadge=item.fav?'<span style="font-size:14px">⭐</span>':'';
   // 별점 표시 (헤더)
   var ratingH='';
@@ -2035,11 +2070,25 @@ var FORMS={
   },
   spots:function(d){
     var alld=d&&d.allday;
+    var curCat=d&&d.category||'';
+    var curSub=d&&d.subcategory||'';
+    var subs=SPOTS_CATS[curCat]||[];
     return{title:d?'명소 수정':'명소 추가',
       html:'<div class="fg"><label>명소 이름 *</label><input type="text" id="f-name" value="'+esc(d?d.name||'':'')+'" placeholder="명소 이름"></div>'
-        +'<div class="fg"><label>카테고리</label><select id="f-cat"><option value="">선택 안 함</option>'
-        +['🎡 테마파크','🌸 꽃·자연','🌃 야경','🎭 문화·전시','🏖 나들이','🛍 쇼핑','기타'].map(function(c){return'<option'+(d&&d.category===c?' selected':'')+'>'+c+'</option>'}).join('')
-        +'</select></div>'
+        +'<div class="fg" style="display:flex;gap:8px">'
+          +'<div style="flex:1"><label>카테고리</label><select id="f-cat" onchange="updateSpotSubCat(this.value,\''+esc(curSub)+'\')" ><option value="">선택 안 함</option>'
+          +Object.keys(SPOTS_CATS).filter(function(k){return k!=='전체';}).map(function(c){return'<option'+(curCat===c?' selected':'')+'>'+c+'</option>';}).join('')
+          +'</select></div>'
+          +'<div style="flex:1" id="f-subcat-wrap"><label>소분류</label>'
+            +'<div style="display:flex;gap:4px">'
+              +'<select id="f-subcat" style="flex:1"><option value="">선택</option>'
+                +subs.filter(function(s){return s!=='전체';}).map(function(s){return'<option'+(curSub===s?' selected':'')+'>'+s+'</option>';}).join('')
+              +'</select>'
+              +'<button type="button" onclick="addSpotSubCat()" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">+ 추가</button>'
+              +'<button type="button" onclick="delSpotSubCat()" style="padding:0 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;color:#c0392b">🗑</button>'
+            +'</div>'
+          +'</div>'
+        +'</div>'
         +'<div class="fg"><label>주소</label><input type="text" id="f-addr" value="'+esc(d?d.address||'':'')+'" placeholder="주소 입력"></div>'
         +'<div class="fg"><label>입장료</label><input type="text" id="f-price" value="'+esc(d?d.price||'':'')+'" placeholder="예: 무료 / 성인 15,000원"></div>'
         +'<div class="fg" style="margin-bottom:4px"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-allday" onchange="toggleAllday()" style="width:15px;height:15px;accent-color:var(--rose);flex-shrink:0" '+(alld?'checked':'')+'>24시간 / 상시 개방</label></div>'
@@ -2152,6 +2201,7 @@ async function saveModal(){
   var item={
     name:ne.value.trim(),
     category:(g('f-cat')||{}).value||'',
+    subcategory:(g('f-subcat')||{}).value||'',
     memo:(g('f-memo')||{}).value||'',
     price:(g('f-price')||{}).value||'',
     address:(g('f-addr')||{}).value||'',
@@ -2728,7 +2778,75 @@ function fetchHolidays(year,month,cb){
   });
 }
 
+// 명소 카테고리 2레벨 구조
+var SPOTS_CATS={
+  '전체':[],
+  '🎡 테마파크':['전체','놀이공원','워터파크','동물원','수족관','기타'],
+  '🌸 꽃·자연':['전체','공원','수목원','해변','산·등산','기타'],
+  '🌃 야경':['전체','전망대','야경명소','드라이브','기타'],
+  '🎭 문화·전시':['전체','박물관','미술관','공연·콘서트','영화관','기타'],
+  '🏖 나들이':['전체','캠핑','피크닉','드라이브','기타'],
+  '🛍 쇼핑':['전체','옷','신발','가방','기타'],
+  '💄 뷰티':['전체','헤어','제모','네일','피부','기타'],
+  '📍 기타':[]
+};
+var SPOTS_USER_SUBS={}; // 사용자 추가 소분류 저장
 var calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
+
+function updateSpotSubCat(cat,curSub){
+  var wrap=g('f-subcat-wrap');
+  var sel=g('f-subcat');
+  if(!wrap||!sel)return;
+  var defaultSubs=(SPOTS_CATS[cat]||[]).filter(function(s){return s!=='전체';});
+  var userSubs=SPOTS_USER_SUBS[cat]||[];
+  var allSubs=defaultSubs.concat(userSubs.filter(function(s){return defaultSubs.indexOf(s)<0;}));
+  if(!allSubs.length){
+    wrap.style.display='none';
+    return;
+  }
+  wrap.style.display='';
+  sel.innerHTML='<option value="">선택</option>'
+    +allSubs.map(function(s){
+      return'<option'+(s===(curSub||'')?' selected':'')+'>'+s+'</option>';
+    }).join('');
+}
+
+function delSpotSubCat(){
+  var catEl=g('f-cat'),sel=g('f-subcat');
+  if(!catEl||!sel||!sel.value){toast('삭제할 소분류를 선택해주세요');return;}
+  var cat=catEl.value,sub=sel.value;
+  // 기본 소분류인지 확인
+  var defaultSubs=SPOTS_CATS[cat]||[];
+  if(defaultSubs.indexOf(sub)>=0){
+    if(!confirm('"'+sub+'" 는 기본 소분류예요. 삭제하면 목록에서 제거돼요. 계속할까요?'))return;
+    // 기본 목록에서 제거
+    SPOTS_CATS[cat]=defaultSubs.filter(function(s){return s!==sub;});
+  }else{
+    // 사용자 추가 소분류 제거
+    if(!confirm('"'+sub+'" 소분류를 삭제할까요?'))return;
+    if(SPOTS_USER_SUBS[cat])
+      SPOTS_USER_SUBS[cat]=SPOTS_USER_SUBS[cat].filter(function(s){return s!==sub;});
+  }
+  // select에서 제거
+  var opt=sel.querySelector('option[value="'+sub+'"]')||Array.from(sel.options).find(function(o){return o.text===sub;});
+  if(opt)opt.remove();
+  sel.value='';
+  toast('"'+sub+'" 소분류 삭제됐어요');
+}
+
+function addSpotSubCat(){
+  var catEl=g('f-cat');
+  if(!catEl||!catEl.value){toast('카테고리를 먼저 선택해주세요');return;}
+  var cat=catEl.value;
+  var name=prompt('추가할 소분류 이름:');
+  if(!name||!name.trim())return;
+  name=name.trim();
+  if(!SPOTS_USER_SUBS[cat])SPOTS_USER_SUBS[cat]=[];
+  if(SPOTS_USER_SUBS[cat].indexOf(name)<0)SPOTS_USER_SUBS[cat].push(name);
+  var sel=g('f-subcat');
+  if(sel){var opt=document.createElement('option');opt.value=name;opt.textContent=name;opt.selected=true;sel.appendChild(opt);}
+  toast('"'+name+'" 소분류 추가됐어요');
+}
 
 function calMove(dir){
   calMonth+=dir;
